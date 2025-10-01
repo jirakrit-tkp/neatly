@@ -187,10 +187,9 @@ export default function SearchBox({ onSearch, defaultValues }: SearchBoxProps) {
       if (startOfDay(date) <= ci) {
         return; // ignore invalid selection
       }
-      const sel = startOfDay(date);
-      setCheckOut(formatLocalYmd(sel));
-      // keep calendar open so the orange circle follows the click
-      setSelectedDate(sel);
+      setCheckOut(formatLocalYmd(date));
+      setCalendarOpen(null);
+      setSelectedDate(startOfDay(date));
       return;
     }
   };
@@ -623,7 +622,7 @@ export default function SearchBox({ onSearch, defaultValues }: SearchBoxProps) {
                                     ? 'bg-orange-500 text-white hover:bg-orange-600' 
                                     : (!isPast && isHovered && !isSelected)
                                     ? 'bg-orange-100 text-orange-700'
-                                    : (!isPast && calendarOpen === 'checkin' && isToday && !isSelected)
+                                    : (!isPast && isToday && !isSelected)
                                     ? 'bg-gray-100 text-gray-900'
                                     : ''
                                   }
@@ -680,9 +679,10 @@ export default function SearchBox({ onSearch, defaultValues }: SearchBoxProps) {
                       // Open at month of (check-in + 1 day) for check-out
                       const base = checkIn ? parseLocalYmd(checkIn) : new Date();
                       const nextDay = addDays(base, 1);
+                      const currentCo = checkOut ? parseLocalYmd(checkOut) : nextDay;
                       setCalendarOpen('checkout');
-                      setCurrentMonth(new Date(nextDay.getFullYear(), nextDay.getMonth(), 1));
-                      setSelectedDate(startOfDay(nextDay));
+                      setCurrentMonth(new Date(currentCo.getFullYear(), currentCo.getMonth(), 1));
+                      setSelectedDate(startOfDay(currentCo));
                     }}
                     style={{
                       height: "48px",
