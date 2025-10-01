@@ -78,7 +78,7 @@ export default function BookingCard({ booking }: { booking: Booking }) {
             <button
               type="button"
               onClick={() => setOpen((v) => !v)}
-              className="mt-[32px] w-full flex items-center justify-between bg-gray-50 border px-5 py-3 text-[16px] font-inter font-semibold text-gray-700 hover:bg-gray-100"
+              className="mt-[32px] w-full flex items-center justify-between bg-gray-200 px-5 py-3 text-[16px] font-inter font-semibold text-gray-700 hover:bg-gray-100"
               aria-expanded={open}
             >
               <span>Booking Detail</span>
@@ -97,8 +97,8 @@ export default function BookingCard({ booking }: { booking: Booking }) {
 
             {/* รายละเอียดเมื่อกดเปิด */}
             {open && (
-              <div className="mt-4 rounded-lg border overflow-hidden">
-                <div className="px-6 py-5 bg-white">
+              <div className="mt-4 overflow-hidden">
+                <div className="px-6 py-5 bg-gray-200">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-gray-600 text-[15px]">
                     <div className="mb-3 sm:mb-0">
                       <span className="text-gray-800">2 Guests</span>
@@ -124,7 +124,7 @@ export default function BookingCard({ booking }: { booking: Booking }) {
                   </div>
                 </div>
 
-                <div className="bg-gray-100 px-6 py-4 border-t text-sm text-gray-700">
+                <div className="bg-gray-300 px-6 py-4 border-t text-sm text-gray-700">
                   <div className="font-medium text-gray-700 mb-1">Additional Request</div>
                   <div>Can i have some chocolate?</div>
                 </div>
