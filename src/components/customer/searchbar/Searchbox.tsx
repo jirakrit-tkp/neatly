@@ -58,6 +58,20 @@ export default function SearchBox({ onSearch, defaultValues }: SearchBoxProps) {
   const dropdownPanelRef = useRef<HTMLDivElement>(null);
   const calendarRef = useRef<HTMLDivElement>(null);
 
+  // Ensure checkout is always at least checkin + 1 day
+  React.useEffect(() => {
+    try {
+      const ci = parseLocalYmd(checkIn);
+      const minCo = addDays(ci, 1);
+      const currentCo = parseLocalYmd(checkOut);
+      if (!checkOut || startOfDay(currentCo) <= startOfDay(ci)) {
+        setCheckOut(formatLocalYmd(minCo));
+      }
+    } catch {
+      // noop
+    }
+  }, [checkIn]);
+
   // Close dropdown on outside click
   React.useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -126,6 +140,32 @@ export default function SearchBox({ onSearch, defaultValues }: SearchBoxProps) {
     return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   };
 
+  const startOfDay = (date: Date) => {
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  };
+
+  const addDays = (date: Date, days: number) => {
+    const d = new Date(date);
+    d.setDate(d.getDate() + days);
+    return d;
+  };
+
+  // Format Date -> 'YYYY-MM-DD' in local time (avoid timezone shifts)
+  const formatLocalYmd = (date: Date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  };
+
+  // Parse 'YYYY-MM-DD' to Date in local time
+  const parseLocalYmd = (ymd: string): Date => {
+    const [y, m, d] = ymd.split('-').map(Number);
+    return new Date(y, (m || 1) - 1, d || 1);
+  };
+
   const isSameDate = (date1: Date | null, date2: Date | null) => {
     if (!date1 || !date2) return false;
     return date1.getDate() === date2.getDate() && 
@@ -135,13 +175,24 @@ export default function SearchBox({ onSearch, defaultValues }: SearchBoxProps) {
 
   const handleDateClick = (date: Date) => {
     if (calendarOpen === 'checkin') {
-      setCheckIn(date.toISOString().split('T')[0]);
-      setCalendarOpen('checkout');
-    } else if (calendarOpen === 'checkout') {
-      setCheckOut(date.toISOString().split('T')[0]);
-      setCalendarOpen(null);
+      setCheckIn(formatLocalYmd(date));
+      // Keep highlight on the selected check-in date
+      setSelectedDate(startOfDay(date));
+      // Stay on check-in calendar (do not auto-switch)
+      return;
     }
-    setSelectedDate(date);
+    if (calendarOpen === 'checkout') {
+      // Guard: checkout must be strictly greater than checkin
+      const ci = checkIn ? startOfDay(parseLocalYmd(checkIn)) : startOfDay(new Date());
+      if (startOfDay(date) <= ci) {
+        return; // ignore invalid selection
+      }
+      const sel = startOfDay(date);
+      setCheckOut(formatLocalYmd(sel));
+      // keep calendar open so the orange circle follows the click
+      setSelectedDate(sel);
+      return;
+    }
   };
 
   const navigateMonth = (direction: 'prev' | 'next') => {
@@ -483,8 +534,11 @@ export default function SearchBox({ onSearch, defaultValues }: SearchBoxProps) {
                     value={checkInDisplay}
                     readOnly
                     onClick={() => {
+                      // Open check-in at its current month and keep highlight at current check-in
                       setCalendarOpen('checkin');
-                      setCurrentMonth(new Date(checkIn));
+                      const ci = checkIn ? parseLocalYmd(checkIn) : new Date();
+                      setCurrentMonth(new Date(ci.getFullYear(), ci.getMonth(), 1));
+                      setSelectedDate(startOfDay(ci));
                     }}
                     style={{
                       height: "48px",
@@ -543,10 +597,14 @@ export default function SearchBox({ onSearch, defaultValues }: SearchBoxProps) {
                               return <div key={index} className="h-10"></div>;
                             }
 
-                            const isSelected = isSameDate(date, selectedDate);
-                            const isToday = isSameDate(date, new Date());
-                            const isHovered = isSameDate(date, hoveredDate);
-                            const isPast = date < new Date(new Date().setHours(0, 0, 0, 0));
+                        const isSelected = isSameDate(date, selectedDate);
+                        const isToday = isSameDate(date, new Date());
+                        const isHovered = isSameDate(date, hoveredDate);
+                        const todayStart = startOfDay(new Date());
+                        const checkInBase = checkIn ? startOfDay(parseLocalYmd(checkIn)) : todayStart;
+                        const isPast = calendarOpen === 'checkin'
+                          ? startOfDay(date) < todayStart
+                          : startOfDay(date) <= checkInBase;
 
                             return (
                               <button
@@ -557,15 +615,15 @@ export default function SearchBox({ onSearch, defaultValues }: SearchBoxProps) {
                                 disabled={isPast}
                                 className={`
                                   h-10 w-10 rounded-full text-sm font-medium transition-colors
-                                  ${isPast 
-                                    ? 'text-gray-300 cursor-not-allowed' 
+                              ${isPast 
+                                ? 'text-gray-300 bg-gray-100 cursor-not-allowed' 
                                     : 'text-gray-700 hover:bg-orange-50 cursor-pointer'
                                   }
                                   ${isSelected 
                                     ? 'bg-orange-500 text-white hover:bg-orange-600' 
-                                    : isHovered && !isSelected
+                                    : (!isPast && isHovered && !isSelected)
                                     ? 'bg-orange-100 text-orange-700'
-                                    : isToday && !isSelected
+                                    : (!isPast && calendarOpen === 'checkin' && isToday && !isSelected)
                                     ? 'bg-gray-100 text-gray-900'
                                     : ''
                                   }
@@ -619,8 +677,12 @@ export default function SearchBox({ onSearch, defaultValues }: SearchBoxProps) {
                     value={checkOutDisplay}
                     readOnly
                     onClick={() => {
+                      // Open at month of (check-in + 1 day) for check-out
+                      const base = checkIn ? parseLocalYmd(checkIn) : new Date();
+                      const nextDay = addDays(base, 1);
                       setCalendarOpen('checkout');
-                      setCurrentMonth(new Date(checkOut));
+                      setCurrentMonth(new Date(nextDay.getFullYear(), nextDay.getMonth(), 1));
+                      setSelectedDate(startOfDay(nextDay));
                     }}
                     style={{
                       height: "48px",
@@ -682,7 +744,10 @@ export default function SearchBox({ onSearch, defaultValues }: SearchBoxProps) {
                             const isSelected = isSameDate(date, selectedDate);
                             const isToday = isSameDate(date, new Date());
                             const isHovered = isSameDate(date, hoveredDate);
-                            const isPast = date < new Date(new Date().setHours(0, 0, 0, 0));
+                            const todayStart = startOfDay(new Date());
+                            const checkInBase = checkIn ? startOfDay(parseLocalYmd(checkIn)) : todayStart;
+                            // In checkout calendar, block days <= check-in
+                            const isPast = startOfDay(date) <= checkInBase;
 
                             return (
                               <button
@@ -694,7 +759,7 @@ export default function SearchBox({ onSearch, defaultValues }: SearchBoxProps) {
                                 className={`
                                   h-10 w-10 rounded-full text-sm font-medium transition-colors
                                   ${isPast 
-                                    ? 'text-gray-300 cursor-not-allowed' 
+                                    ? 'text-gray-300 bg-gray-100 cursor-not-allowed pointer-events-none' 
                                     : 'text-gray-700 hover:bg-orange-50 cursor-pointer'
                                   }
                                   ${isSelected 
