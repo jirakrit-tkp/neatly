@@ -1,23 +1,3 @@
-// import Layout from "@/components/Layout";
-// import Footer from "@/components/Footer";
-
-// export default function BookingHistoryPage() {
-//     return (
-//         <Layout>
-//             <main className="max-w-[1440px] mx-auto">
-//                 <div className="w-[473px] h-[85px] mt-[80px] ml-[162px] mr-[805px] mb-[69px]">
-//                 <h1 className="font-noto text-[68px] text-green-700 leading-[125%] tracking-[-0.02em]">Booking History</h1>
-//                 </div>
-//                 <div>
-//                 </div>
-//             </main>
-//         <Footer />
-//         </Layout>
-
-//     );
-//   }
-
-
 import Layout from "@/components/Layout";
 import Footer from "@/components/Footer";
 import BookingCard, { type Booking } from "@/components/bookings/BookingCard";
@@ -32,6 +12,17 @@ const data: Booking[] = [
     checkOutDate: "Thu, 2 Oct 2025",
     checkOutNote: "Before 12:00 PM",
     bookedAtText: "Tue, 30 Sep 2025",
+    guests: 2,
+    nights: 1,
+    payment: { status: "success", method: "Credit Card", mask: "*888" },
+    items: [
+      { label: "Superior Garden View Room", amount: 2500.0 },
+      { label: "Airport transfer", amount: 200.0 },
+      { label: "Promotion Code", amount: -400.0 },
+    ],
+    currency: "THB",
+    total: 2300.0,
+    additionalRequest: "Can i have some chocolate?",
   },
   {
     id: "bk_1002",
@@ -42,6 +33,17 @@ const data: Booking[] = [
     checkOutDate: "Fri, 3 Oct 2025",
     checkOutNote: "Before 12:00 PM",
     bookedAtText: "Tue, 16 Oct 2022",
+    guests: 2,
+    nights: 1,
+    payment: { status: "success", method: "Credit Card", mask: "*123" },
+    items: [
+      { label: "Deluxe Room", amount: 3200.0 },
+      { label: "Breakfast", amount: 300.0 },
+      { label: "Promo", amount: -500.0 },
+    ],
+    currency: "THB",
+    total: 3000.0,
+    additionalRequest: "Late check-out if possible.",
   },
   {
     id: "bk_1003",
@@ -52,15 +54,23 @@ const data: Booking[] = [
     checkOutDate: "Sat, 5 Oct 2025",
     checkOutNote: "Before 12:00 PM",
     bookedAtText: "Tue, 16 Oct 2022",
+    guests: 3,
+    nights: 2,
+    payment: { status: "success", method: "Bank Transfer" },
+    items: [
+      { label: "Premier Sea View", amount: 4200.0 },
+      { label: "Extra bed", amount: 600.0 },
+    ],
+    currency: "THB",
+    total: 4800.0,
   },
-  // เพิ่มรายการอื่น ๆ 
 ];
 
 export default function BookingHistoryPage() {
   return (
     <Layout>
-      <main className="max-w-[1120px] mx-auto px-4 md:px-6 py-10">
-        <h1 className="text-[40px] md:text-[56px] font-medium text-green-800 tracking-[-0.02em] mb-6">
+      <main className="max-w-[1120px] mx-auto  md:px-6 pb-5 pt-[80px] sm:pt-[96px] md:pt-12">
+        <h1 className="text-[44px] md:text-[68px] px-5 font-noto font-medium text-green-700 leading-[125%] tracking-[-0.02em] mb-6">
           Booking History
         </h1>
 
