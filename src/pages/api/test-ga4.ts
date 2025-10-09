@@ -5,12 +5,32 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
 ) {
-  const analyticsDataClient = new BetaAnalyticsDataClient({
-    credentials: {
-      client_email: process.env.GOOGLE_CLIENT_EMAIL,
-      private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n"), // Important: Convert \n to actual newlines
-    },
-  });
+  const privateKey = process.env.GOOGLE_PRIVATE_KEY;
+
+  const base64Credentials = process.env.GA_CREDENTIALS_BASE64;
+  let credentials;
+  try {
+    if (base64Credentials) {
+      const jsonString = Buffer.from(base64Credentials, "base64").toString(
+        "utf-8"
+      );
+      credentials = JSON.parse(jsonString);
+    } else {
+      // Fallback for local testing if you still use individual ENV variables
+      credentials = {
+        client_email: process.env.GOOGLE_CLIENT_EMAIL,
+        private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+      };
+    }
+  } catch (parseError) {
+    // Handle error if Base64 string is corrupt
+    console.error("Failed to parse GA credentials:", parseError);
+    return res
+      .status(500)
+      .json({ success: false, error: "Invalid GA credentials format." });
+  }
+
+  const analyticsDataClient = new BetaAnalyticsDataClient();
   try {
     if (!process.env.GOOGLE_ANALYTICS_PROPERTY_ID) {
       throw new Error("Missing GA4 property ID");
