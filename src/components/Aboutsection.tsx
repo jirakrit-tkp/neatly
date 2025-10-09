@@ -102,25 +102,41 @@ export default function Aboutsection() {
           )}
         </div>
       </div>
-      {/* Image Carousel */}
+      {/* Image Carousel - Horizontal Strip Style */}
       <div
         className="relative w-full flex flex-col items-center"
         style={{
           maxWidth: "1440px",
           margin: "0 auto",
           marginTop: "48px",
-          height: "600px",
         }}
       >
-        <div className="relative w-full h-[600px] overflow-hidden rounded-2xl shadow-lg bg-[#F7F7FA]">
+        <div
+          className="
+            relative
+            flex
+            items-center
+            w-full
+            overflow-x-hidden
+            bg-[#F7F7FA]
+            rounded-2xl
+            shadow-lg
+            py-4
+            md:py-8
+          "
+          style={{
+            minHeight: "250px",
+            maxWidth: "100vw",
+          }}
+        >
           {/* ปุ่มเลื่อนซ้าย */}
           <button
             aria-label="Previous image"
             onClick={goToPrev}
-            className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-white/80 hover:bg-white text-gray-700 rounded-full shadow p-2 transition-colors"
+            className="absolute left-2 md:left-4 top-1/2 -translate-y-1/2 z-20 bg-white/80 hover:bg-white text-gray-700 rounded-full shadow p-1 md:p-2 transition-colors"
             style={{ outline: "none", border: "none" }}
           >
-            <svg width="28" height="28" fill="none" viewBox="0 0 24 24">
+            <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
               <path
                 d="M15 6l-6 6 6 6"
                 stroke="currentColor"
@@ -134,10 +150,10 @@ export default function Aboutsection() {
           <button
             aria-label="Next image"
             onClick={goToNext}
-            className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-white/80 hover:bg-white text-gray-700 rounded-full shadow p-2 transition-colors"
+            className="absolute right-2 md:right-4 top-1/2 -translate-y-1/2 z-20 bg-white/80 hover:bg-white text-gray-700 rounded-full shadow p-1 md:p-2 transition-colors"
             style={{ outline: "none", border: "none" }}
           >
-            <svg width="28" height="28" fill="none" viewBox="0 0 24 24">
+            <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
               <path
                 d="M9 6l6 6-6 6"
                 stroke="currentColor"
@@ -147,25 +163,55 @@ export default function Aboutsection() {
               />
             </svg>
           </button>
-          <AnimatePresence>
-            <motion.img
-              key={images[index].src}
-              src={images[index].src}
-              alt={images[index].alt}
-              className="w-full h-full object-cover absolute"
-              initial={{ opacity: 0, x: 100 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -100 }}
-              transition={{ duration: 0.8 }}
-              style={{ minHeight: "600px", maxHeight: "600px" }}
-            />
-          </AnimatePresence>
+          {/* Carousel Images as horizontal strip */}
+          <div
+            className="flex gap-2 md:gap-4 w-full justify-center items-center transition-transform duration-700"
+            style={{
+              transform: `translateX(calc(${-index * 100}% / 5))`,
+              transition: "transform 0.7s cubic-bezier(0.4,0,0.2,1)",
+              width: "100%",
+              overflow: "visible",
+            }}
+          >
+            {images.map((img, i) => (
+              <motion.div
+                key={img.src}
+                className="flex-shrink-0 rounded-xl overflow-hidden bg-white"
+                style={{
+                  width: "180px",
+                  height: "225px",
+                  boxShadow: i === index ? "0 4px 24px rgba(0,0,0,0.10)" : "0 2px 8px rgba(0,0,0,0.06)",
+                  border: i === index ? "2px solid #fff" : "2px solid transparent",
+                  opacity: i === index ? 1 : 0.7,
+                  transform: i === index ? "scale(1.04)" : "scale(0.96)",
+                  transition: "all 0.4s cubic-bezier(0.4,0,0.2,1)",
+                  zIndex: i === index ? 2 : 1,
+                }}
+                animate={{
+                  opacity: i === index ? 1 : 0.7,
+                  scale: i === index ? 1.04 : 0.96,
+                }}
+                transition={{ duration: 0.4 }}
+              >
+                <img
+                  src={img.src}
+                  alt={img.alt}
+                  className="object-cover w-full h-full"
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    borderRadius: "0.75rem",
+                  }}
+                />
+              </motion.div>
+            ))}
+          </div>
           {/* จุดบอกตำแหน่ง (Indicators) */}
-          <div className="absolute bottom-4 w-full flex justify-center gap-2 z-10">
+          <div className="absolute bottom-2 md:bottom-4 w-full flex justify-center gap-1 md:gap-2 z-10">
             {images.map((_, i) => (
               <div
                 key={i}
-                className={`w-3 h-3 rounded-full transition-colors duration-300 ${
+                className={`w-2 h-2 md:w-3 md:h-3 rounded-full transition-colors duration-300 ${
                   i === index ? "bg-white" : "bg-gray-400"
                 }`}
               />
@@ -173,7 +219,6 @@ export default function Aboutsection() {
           </div>
         </div>
       </div>
-      
     </section>
   );
 }

@@ -212,7 +212,7 @@ const Testimonial = () => {
 
         {/* Auto Slide Indicator */}
         <div className="mt-4 text-[#999] text-[10px] md:text-[12px]">
-          auto slide - after 8s
+          
         </div>
       </div>
     </section>
