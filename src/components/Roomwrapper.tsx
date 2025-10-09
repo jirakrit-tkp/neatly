@@ -171,7 +171,13 @@ const Roomwrapper = () => {
                     className="text-white text-sm"
                     style={{ textDecoration: "none" }}
                   >
-                    Explore Room &rarr;
+                    <a
+                      href="/customer/search-result/1"
+                      className="text-white text-sm"
+                      style={{ textDecoration: "none" }}
+                    >
+                      Explore Room &rarr;
+                    </a>
                   </a>
                 </div>
               </div>
@@ -240,7 +246,13 @@ const Roomwrapper = () => {
                         className="text-white text-xs"
                         style={{ textDecoration: "none" }}
                       >
-                        Explore Room &rarr;
+                        <a
+                      href="/customer/search-result/2"
+                      className="text-white text-sm"
+                      style={{ textDecoration: "none" }}
+                    >
+                      Explore Room &rarr;
+                    </a>
                       </a>
                     </div>
                   </div>
@@ -306,7 +318,13 @@ const Roomwrapper = () => {
                         className="text-white text-xs"
                         style={{ textDecoration: "none" }}
                       >
-                        Explore Room &rarr;
+                        <a
+                      href="/customer/search-result/3"
+                      className="text-white text-sm"
+                      style={{ textDecoration: "none" }}
+                    >
+                      Explore Room &rarr;
+                    </a>
                       </a>
                     </div>
                   </div>
@@ -377,7 +395,13 @@ const Roomwrapper = () => {
                         className="text-white text-xs"
                         style={{ textDecoration: "none" }}
                       >
-                        Explore Room &rarr;
+                      <a
+                      href="/customer/search-result/4"
+                      className="text-white text-sm"
+                      style={{ textDecoration: "none" }}
+                    >
+                      Explore Room &rarr;
+                    </a>
                       </a>
                     </div>
                   </div>
@@ -462,7 +486,13 @@ const Roomwrapper = () => {
                             href={rooms[4].link || "#"}
                             className="text-white text-xs underline underline-offset-2"
                           >
-                            Explore Stays &rarr;
+                            <a
+                      href="/customer/search-result/5"
+                      className="text-white text-sm"
+                      style={{ textDecoration: "none" }}
+                    >
+                      Explore Room &rarr;
+                    </a>
                           </a>
                         </div>
                       </div>
@@ -528,7 +558,13 @@ const Roomwrapper = () => {
                             className="text-white text-xs"
                             style={{ textDecoration: "none" }}
                           >
-                            Explore Room &rarr;
+                            <a
+                      href="/customer/search-result/6"
+                      className="text-white text-sm"
+                      style={{ textDecoration: "none" }}
+                    >
+                      Explore Room &rarr;
+                    </a>
                           </a>
                         </div>
                       </div>

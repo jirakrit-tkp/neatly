@@ -54,7 +54,8 @@ export default function Aboutsection() {
         minWidth: "100vw",
         width: "100vw",
         maxWidth: "100vw",
-        minHeight: "auto",
+        minHeight: "1178px",
+        height: "1178px",
         margin: "0 auto",
         marginLeft: "calc(50% - 50vw)",
         marginRight: "calc(50% - 50vw)",
@@ -108,10 +109,10 @@ export default function Aboutsection() {
           maxWidth: "1440px",
           margin: "0 auto",
           marginTop: "48px",
-          height: "500px",
+          height: "600px",
         }}
       >
-        <div className="relative w-full h-[500px] overflow-hidden rounded-2xl shadow-lg bg-[#F7F7FA]">
+        <div className="relative w-full h-[600px] overflow-hidden rounded-2xl shadow-lg bg-[#F7F7FA]">
           {/* ปุ่มเลื่อนซ้าย */}
           <button
             aria-label="Previous image"
@@ -156,7 +157,7 @@ export default function Aboutsection() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -100 }}
               transition={{ duration: 0.8 }}
-              style={{ minHeight: "500px", maxHeight: "500px" }}
+              style={{ minHeight: "600px", maxHeight: "600px" }}
             />
           </AnimatePresence>
           {/* จุดบอกตำแหน่ง (Indicators) */}
