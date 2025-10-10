@@ -592,7 +592,6 @@ export default function BookingHistoryPage() {
           </div>
         )}
       </main>
-      <Footer />
     </Layout>
   );
 }

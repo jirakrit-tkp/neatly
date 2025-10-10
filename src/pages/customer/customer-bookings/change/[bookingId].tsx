@@ -2,68 +2,98 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import Layout from "@/components/Layout";
 import Image from "next/image";
+import { useQuery } from "@/hooks/useQuery";
+import { formatDate } from "@/utils/formatDate";
 
-interface Booking {
-  id: string;
-  checkIn: string;
-  checkOut: string;
-  roomType: string;
-  roomImage: string;
-  bookingDate: string;
-}
-
+import ChangeDateForm from "@/components/booking/changeDateForm";
 export default function ChangeBookingPage() {
   const router = useRouter();
   const { bookingId } = router.query;
-  const [booking, setBooking] = useState<Booking | null>(null);
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
 
+  interface RoomforBookings {
+    guests: number;
+    bed_type: string;
+    room_type: string;
+    main_image_url: string[];
+  }
+
+  interface Booking {
+    id: string;
+    user_id: string;
+    room_id: string;
+    customer_id: string;
+    status: "pending" | "confirmed" | "cancelled" | "refunded";
+    booking_date: string;
+    payment_method: string;
+    check_in_date: string;
+    check_out_date: string;
+    total_amount: number;
+    special_requests?: string[];
+    additional_request?: string[];
+    standard_request?: string[];
+    created_at: string;
+    rooms?: RoomforBookings | undefined;
+  }
+
+  type BookingApiResponse = {
+    success: boolean;
+    message: string;
+    data?: Booking | null;
+    error?: string;
+  };
+
+  // Fetch booking data using useQuery
+  const { data: bookingResponse } = useQuery<BookingApiResponse>(
+    `/api/bookings/${bookingId}`
+  );
+
+  const booking = bookingResponse?.data;
+
+  // Update form fields when booking data is loaded
   useEffect(() => {
-    if (!bookingId) return;
-
-    const fetchBooking = async () => {
-      setLoading(true);
-
-      // Mock booking data - replace with actual API call
-      const mockBooking: Booking = {
-        id: bookingId as string,
-        checkIn: "2022-10-19",
-        checkOut: "2022-10-20",
-        roomType: "Superior Garden View",
-        roomImage: "/images/garden-view.jpg", // Replace with actual image
-        bookingDate: "Tue, 18 Oct 2022",
-      };
-
-      setBooking(mockBooking);
-      setCheckIn(mockBooking.checkIn);
-      setCheckOut(mockBooking.checkOut);
-      setLoading(false);
-    };
-
-    fetchBooking();
-  }, [bookingId]);
+    if (booking) {
+      setCheckIn(booking.check_in_date);
+      setCheckOut(booking.check_out_date);
+    }
+  }, [booking]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!booking) return;
 
-    console.log("Updating booking:", {
-      id: booking.id,
-      checkIn,
-      checkOut,
-    });
+    try {
+      const response = await fetch(`/api/bookings/${booking.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          check_in_date: checkIn,
+          check_out_date: checkOut,
+        }),
+      });
 
-    alert("Booking updated successfully!");
-    router.push("/booking-history");
+      if (!response.ok) {
+        throw new Error("Failed to update booking");
+      }
+
+      alert("Booking updated successfully!");
+      router.push("/booking-history");
+    } catch (error) {
+      console.error("Error updating booking:", error);
+      alert("Failed to update booking. Please try again.");
+    }
   };
 
   const handleCancel = () => {
     router.back();
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <Layout>
         <div className="min-h-screen bg-[#F7F7FB] flex items-center justify-center">
@@ -73,11 +103,13 @@ export default function ChangeBookingPage() {
     );
   }
 
-  if (!booking) {
+  if (error || !booking) {
     return (
       <Layout>
         <div className="min-h-screen bg-[#F7F7FB] flex items-center justify-center">
-          <p className="text-red-500">Booking not found.</p>
+          <p className="text-red-500">
+            {error ? "Error loading booking." : "Booking not found."}
+          </p>
         </div>
       </Layout>
     );
@@ -104,14 +136,17 @@ export default function ChangeBookingPage() {
                 {/* Room Image */}
                 <div className="w-full md:w-[370px] h-50 md:h-[200px] relative md:rounded-md overflow-hidden">
                   <Image
-                    src="https://images.unsplash.com/photo-1566073771259-6a8506099945"
-                    alt="room-image"
+                    src={
+                      booking.rooms?.main_image_url[0] ||
+                      "https://images.unsplash.com/photo-1566073771259-6a8506099945"
+                    }
+                    alt={booking.rooms?.room_type || "room-image"}
                     fill
                     className="block object-cover"
                   />
                 </div>
 
-                {/* Cancel Button */}
+                {/* Desktop Cancel Button */}
                 <div className="flex h-full">
                   <button
                     type="button"
@@ -124,13 +159,16 @@ export default function ChangeBookingPage() {
               </div>
 
               {/* Booking Details */}
-              <div className="md:w-full p-5 md:pl-15">
+              <div className="md:w-full p-5 md:p-0 md:pl-15">
                 <div className="flex flex-col md:flex-row justify-between items-start mb-6">
                   <h2 className="text-3xl md:text-4xl font-bold text-black font-inter mt-2">
-                    {booking.roomType}
+                    {booking.rooms?.room_type}
                   </h2>
                   <p className="text-md text-gray-600">
-                    Booking date: {booking.bookingDate}
+                    Booking date:{" "}
+                    {booking?.booking_date
+                      ? formatDate(booking.booking_date)
+                      : "N/A"}
                   </p>
                 </div>
 
@@ -140,83 +178,20 @@ export default function ChangeBookingPage() {
                     Original Date
                   </p>
                   <p className="text-gray-700 text-md">
-                    {new Date(booking.checkIn).toLocaleDateString("en-US", {
-                      weekday: "short",
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    })}{" "}
-                    -{" "}
-                    {new Date(booking.checkOut).toLocaleDateString("en-US", {
-                      weekday: "short",
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    })}
+                    {formatDate(booking.check_in_date)} -{" "}
+                    {formatDate(booking.check_out_date)}
                   </p>
                 </div>
 
-                {/* Change Date Form */}
-                <form
+                {/* Change Date Form Component */}
+                <ChangeDateForm
+                  checkIn={checkIn}
+                  checkOut={checkOut}
+                  onCheckInChange={setCheckIn}
+                  onCheckOutChange={setCheckOut}
                   onSubmit={handleSubmit}
-                  className="bg-white px-5 pt-5 pb-2 rounded-lg"
-                >
-                  <p className="text-lg font-bold text-gray-800 mb-4">
-                    Change Date
-                  </p>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                    {/* Check In */}
-                    <div>
-                      <label className="block text-lg text-gray-800 mb-2">
-                        Check In
-                      </label>
-                      <div className="relative">
-                        <input
-                          type="date"
-                          value={checkIn}
-                          onChange={(e) => setCheckIn(e.target.value)}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                          required
-                        />
-                      </div>
-                    </div>
-
-                    {/* Check Out */}
-                    <div>
-                      <label className="block text-lg text-gray-800 mb-2">
-                        Check Out
-                      </label>
-                      <div className="relative">
-                        <input
-                          type="date"
-                          value={checkOut}
-                          onChange={(e) => setCheckOut(e.target.value)}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                          required
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </form>
-                {/* Confirm change date button */}
-                <div className="flex justify-end mt-10">
-                  <button
-                    type="submit"
-                    className="flex-1 md:flex-none px-8 py-3 bg-orange-600 hover:bg-orange-700 text-white font-medium rounded-md transition-colors"
-                  >
-                    Confirm Change Date
-                  </button>
-                </div>
-                <div className="flex h-full justify-center items-center mt-3">
-                  <button
-                    type="button"
-                    onClick={handleCancel}
-                    className="md:hidden px-6 py-3 text-orange-600 hover:text-orange-700 font-medium transition-colors"
-                  >
-                    Cancel
-                  </button>
-                </div>
+                  onCancel={handleCancel}
+                />
               </div>
             </div>
           </div>
