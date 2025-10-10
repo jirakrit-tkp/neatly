@@ -361,12 +361,18 @@ export default function BookingCard({ booking, onDeleted }: Props) {
               >
                 Room Detail
               </Link>
-              <button
-                type="button"
-                className="inline-flex h-11 w-full items-center justify-center rounded-md bg-orange-600 font-semibold font-inter px-4 text-[16px] text-white hover:brightness-110"
+
+              <Link
+                href={`/customer/customer-bookings/change/${booking.id}`}
+                passHref
               >
-                Change Date
-              </button>
+                <button
+                  type="button"
+                  className="inline-flex h-11 w-full items-center justify-center rounded-md bg-orange-600 font-semibold font-inter px-4 text-[16px] text-white hover:brightness-110"
+                >
+                  Change Date
+                </button>
+              </Link>
             </div>
 
             <div className="mt-3 flex w-full justify-end">
@@ -403,12 +409,18 @@ export default function BookingCard({ booking, onDeleted }: Props) {
               >
                 Room Detail
               </Link>
-              <button
-                type="button"
-                className="rounded-md bg-orange-600 text-white px-5 py-2 text-[16px] font-semibold font-inter cursor-pointer hover:brightness-110"
+
+              <Link
+                href={`/customer/customer-bookings/change/${booking.id}`}
+                passHref
               >
-                Change Date
-              </button>
+                <button
+                  type="button"
+                  className="rounded-md bg-orange-600 text-white px-5 py-2 text-[16px] font-semibold font-inter cursor-pointer hover:brightness-110"
+                >
+                  Change Date
+                </button>
+              </Link>
             </div>
           </div>
         </div>
