@@ -89,6 +89,18 @@ function fmtDateUTC(d?: string | null) {
     "Oct",
     "Nov",
     "Dec",
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
   ][dt.getUTCMonth()];
   const day = dt.getUTCDate();
   const year = dt.getUTCFullYear();
