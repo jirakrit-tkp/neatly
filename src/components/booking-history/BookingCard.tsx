@@ -3,7 +3,9 @@ import Link from "next/link";
 import Image from "next/image";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import NonRefundModal from "@/components/ui/NonRefundModal";
+import { supabase } from "@/lib/supabaseClient";
 
+/** ---- Types ---- */
 export type Booking = {
   id: string;
   roomName: string;
@@ -15,8 +17,6 @@ export type Booking = {
   checkOutNote?: string;
 
   bookedAtText: string;
-
-  // วันที่ดิบไว้คำนวณ (ISO หรือ string จาก DB)
   checkInAtRaw?: string | null;
 
   guests: number;
@@ -27,90 +27,141 @@ export type Booking = {
     mask?: string;
   };
   items: Array<{ label: string; amount: number }>;
-  currency: "THB" | "USD" | string;
+  currency: string; // "THB" | "USD" | etc.
   total: number;
   additionalRequest?: string;
-
-  // เพิ่มเพื่อให้ตรงกับ index.tsx
   promoCode?: string;
 };
 
-export default function BookingCard({ booking }: { booking: Booking }) {
-  const [open, setOpen] = useState(false);
-  const [showRefundModal, setShowRefundModal] = useState(false);
-  const [showNonRefundModal, setShowNonRefundModal] = useState(false);
-  const panelId = useId();
+type Props = {
+  booking: Booking;
+  /** ให้ parent ถอดแถวออกเมื่อยกเลิกสำเร็จ */
+  onDeleted?: (id: string) => void;
+};
 
-  const money = (n: number) =>
-    new Intl.NumberFormat("en-US", {
+/** ---- Helpers ---- */
+function money(n: number) {
+  return new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(n);
+}
+function moneyWithCurrency(n: number, currency: string) {
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency,
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(n);
-
-  const moneyWithCurrency = (n: number) => {
-    try {
-      return new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: booking.currency as string,
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      }).format(n);
-    } catch {
-      return `${booking.currency} ${money(n)}`;
-    }
-  };
-
-  // แปลงสตริงวันที่จาก Supabase -> ISO ที่ JS parse ได้เสถียร
-  function normalizeToISO(rawInput: string): string | null {
-    if (!rawInput) return null;
-    let s = rawInput.trim();
-
-    // "YYYY-MM-DD HH:mm:ss" -> "YYYY-MM-DDTHH:mm:ss"
-    if (s.includes(" ")) s = s.replace(" ", "T");
-
-    // timezone แบบ +0700 -> +07:00
-    s = s.replace(/([+\-]\d{2})(\d{2})$/, "$1:$2");
-
-    // กรณี +00 หรือ +0000 ให้เป็น Z (UTC)
-    s = s.replace(/\+00(?::?00)?$/, "Z");
-
-    // ถ้าไม่มี timezone เลย เติม Z เป็น UTC
-    if (!/[zZ]|[+\-]\d{2}:\d{2}$/.test(s)) s = `${s}Z`;
-
-    return s;
+  } catch {
+    return `${currency} ${money(n)}`;
   }
+}
 
-  // ตัดสินใจว่าเป็น non-refund หรือไม่จาก 48 ชั่วโมงก่อน check-in
-  function shouldNonRefund(): boolean {
-    if (!booking.checkInAtRaw) return false; // ไม่มีข้อมูล: ถือว่า refund ได้
-    const iso = normalizeToISO(booking.checkInAtRaw);
-    if (!iso) return false;
+/** แปลงสตริงวันที่จาก DB ให้ JS parse ได้เสถียร */
+function normalizeToISO(rawInput?: string | null): string | null {
+  if (!rawInput) return null;
+  let s = rawInput.trim();
+  if (!s) return null;
+  if (s.includes(" ")) s = s.replace(" ", "T");         // "YYYY-MM-DD HH:mm:ss" -> "YYYY-MM-DDTHH:mm:ss"
+  s = s.replace(/([+\-]\d{2})(\d{2})$/, "$1:$2");        // +0700 -> +07:00
+  s = s.replace(/\+00(?::?00)?$/, "Z");                  // +00 / +0000 -> Z
+  if (!/[zZ]|[+\-]\d{2}:\d{2}$/.test(s)) s = `${s}Z`;   // ไม่มี timezone -> ใส่ Z
+  return s;
+}
 
-    const checkInTs = new Date(iso).getTime();
-    if (Number.isNaN(checkInTs)) return false;
+/** ภายใน 24 ชม.ก่อนเช็คอินถือว่า non-refund */
+function isNonRefundWindow(checkInAtRaw?: string | null): boolean {
+  const iso = normalizeToISO(checkInAtRaw);
+  if (!iso) return false;
+  const ts = new Date(iso).getTime();
+  if (Number.isNaN(ts)) return false;
+  const hours = (ts - Date.now()) / 36e5;
+  return hours <= 24;
+}
 
-    const hours = (checkInTs - Date.now()) / (1000 * 60 * 60);
-    // <= 48 ชม. (หรือเลยวันเช็คอิน) ⇒ non-refund
-    return hours <= 48;
-  }
+/** รูปแบบ error ของ Supabase/Postgrest */
+type PostgrestErrorLite = {
+  message?: string;
+  details?: string | null;
+  hint?: string | null;
+  code?: string | null;
+  name?: string;
+};
+
+export default function BookingCard({ booking, onDeleted }: Props) {
+  const [open, setOpen] = useState(false);
+  const [showRefundModal, setShowRefundModal] = useState(false);
+  const [showNonRefundModal, setShowNonRefundModal] = useState(false);
+
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  const panelId = useId();
 
   const handleCancelClick = () => {
-    if (shouldNonRefund()) {
+    if (isNonRefundWindow(booking.checkInAtRaw)) {
       setShowNonRefundModal(true);
     } else {
       setShowRefundModal(true);
     }
   };
 
-  const handleCancelConfirm = () => {
-    console.log("Cancel with refund:", booking.id);
-    setShowRefundModal(false);
-  };
+  /** ลบที่ Supabase แบบกันแฮง/กดซ้ำ + แสดงข้อผิดพลาด */
+  async function deleteBookingRow() {
+    if (deleting) return;
+    setDeleting(true);
+    setDeleteError(null);
 
-  const handleNonRefundConfirm = () => {
-    console.log("Cancel without refund:", booking.id);
+    // ปิด modal ให้รู้สึกว่ามี action เกิดขึ้นทันที
+    setShowRefundModal(false);
     setShowNonRefundModal(false);
-  };
+
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 12000); // 12s timeout
+
+      const { error } = await supabase
+        .from("bookings")
+        .delete()
+        .eq("id", booking.id)
+        .abortSignal(controller.signal);
+
+      clearTimeout(timeout);
+      if (error) throw error as PostgrestErrorLite;
+
+      onDeleted?.(booking.id); // แจ้ง parent ให้ถอดการ์ดออก
+    } catch (e: unknown) {
+      // ปลอดภัยกับ type: แปลงเป็นข้อความที่อ่านได้
+      let msg = "Failed to cancel booking";
+
+      if (e && typeof e === "object") {
+        const err = e as PostgrestErrorLite;
+        if (err.name === "AbortError") {
+          msg = "Network timeout. Please try again.";
+        } else if (typeof err.message === "string" && err.message) {
+          msg = err.message;
+        } else if (typeof (err.details ?? "") === "string" && err.details) {
+          msg = err.details as string;
+        } else if (typeof (err.hint ?? "") === "string" && err.hint) {
+          msg = err.hint as string;
+        }
+      }
+
+      if (/row level security|RLS/i.test(msg)) {
+        msg = "Permission denied. Please sign in again.";
+      }
+
+      setDeleteError(msg);
+      setOpen(true); // เปิด panel เพื่อโชว์ error
+    } finally {
+      setTimeout(() => setDeleting(false), 300); // กันค้างที่ Cancelling...
+    }
+  }
+
+  const onConfirmRefund = () => void deleteBookingRow();
+  const onConfirmNonRefund = () => void deleteBookingRow();
 
   return (
     <article className="bg-white border-b border-gray-200 last:border-b-0 mt-6 md:mt-0">
@@ -227,15 +278,21 @@ export default function BookingCard({ booking }: { booking: Booking }) {
                     <div className="flex items-center justify-between">
                       <span className="text-gray-700 text-[16px] font-inter">Total</span>
                       <span className="text-[20px] font-inter font-semibold text-gray-900">
-                        {moneyWithCurrency(booking.total)}
+                        {moneyWithCurrency(booking.total, booking.currency)}
                       </span>
                     </div>
                   </div>
+
+                  {deleteError && (
+                    <div className="mt-4 text-sm text-red-600">{deleteError}</div>
+                  )}
                 </div>
 
                 {booking.additionalRequest && (
                   <div className="bg-gray-300 px-4 sm:px-6 py-4 text-[16px] font-inter text-gray-700">
-                    <div className="font-semibold font-inter text-gray-700 mb-1">Additional Request</div>
+                    <div className="font-semibold font-inter text-gray-700 mb-1">
+                      Additional Request
+                    </div>
                     <div>{booking.additionalRequest}</div>
                   </div>
                 )}
@@ -264,9 +321,12 @@ export default function BookingCard({ booking }: { booking: Booking }) {
               <button
                 type="button"
                 onClick={handleCancelClick}
-                className="text-[16px] font-inter font-semibold text-orange-500 hover:underline"
+                disabled={deleting}
+                className={`text-[16px] font-inter font-semibold text-orange-500 hover:underline ${
+                  deleting ? "opacity-60 cursor-not-allowed" : "cursor-pointer"
+                }`}
               >
-                Cancel Booking
+                {deleting ? "Cancelling..." : "Cancel Booking"}
               </button>
             </div>
           </div>
@@ -276,9 +336,12 @@ export default function BookingCard({ booking }: { booking: Booking }) {
             <button
               type="button"
               onClick={handleCancelClick}
-              className="text-[16px] text-orange-500 font-semibold font-inter hover:underline cursor-pointer"
+              disabled={deleting}
+              className={`text-[16px] text-orange-500 font-semibold font-inter hover:underline ${
+                deleting ? "opacity-60 cursor-not-allowed" : "cursor-pointer"
+              }`}
             >
-              Cancel Booking
+              {deleting ? "Cancelling..." : "Cancel Booking"}
             </button>
 
             <div className="flex items-center gap-6 shrink-0">
@@ -299,22 +362,22 @@ export default function BookingCard({ booking }: { booking: Booking }) {
         </div>
       </div>
 
-      {/* Refund modal (คืนเงิน) */}
+      {/* Refund modal */}
       <ConfirmModal
         open={showRefundModal}
         onClose={() => setShowRefundModal(false)}
-        onConfirm={handleCancelConfirm}
+        onConfirm={onConfirmRefund}
         title="Cancel Booking"
         message="Are you sure you would like to cancel this booking?"
         confirmText="Yes, I want to cancel and request refund"
         cancelText="No, Don’t Cancel"
       />
 
-      {/* Non-refund modal (ไม่คืนเงิน) */}
+      {/* Non-refund modal */}
       <NonRefundModal
         open={showNonRefundModal}
         onClose={() => setShowNonRefundModal(false)}
-        onConfirm={handleNonRefundConfirm}
+        onConfirm={onConfirmNonRefund}
       />
     </article>
   );
@@ -324,7 +387,9 @@ function Row({ label, amount }: { label: string; amount: string }) {
   return (
     <div className="py-2 flex items-start justify-between">
       <span className="font-inter text-[16px] text-gray-700">{label}</span>
-      <span className="font-inter text-[16px] text-gray-900 font-semibold">{amount}</span>
+      <span className="font-inter text-[16px] text-gray-900 font-semibold">
+        {amount}
+      </span>
     </div>
   );
 }
