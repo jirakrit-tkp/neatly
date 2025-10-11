@@ -57,7 +57,7 @@ export interface RoomInfo {
   room_size: number;
   bed_type: string;
   description: string;
-  main_image_url: string;
+  main_image_url: string[];
   gallery_images: string[];
   amenities: string[];
 }
@@ -85,7 +85,7 @@ export interface BookingFormData {
 
   // Room & Dates
   roomId: string;
-  roomInfo?: RoomInfo;
+  roomInfo?: Partial<RoomInfo>;
   checkIn: string;
   checkOut: string;
   guests: number;
