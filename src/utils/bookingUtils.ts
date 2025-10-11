@@ -13,13 +13,16 @@ export const calculateBookingTotal = (
     .filter((req) => req.selected && req.price)
     .reduce((sum, req) => sum + (req.price || 0), 0);
 
+  // ตรวจสอบไม่ให้ total ติดลบ
+  const total = Math.max(0, subtotal + specialRequestsTotal - promoDiscount);
+
   return {
     basePrice,
     nights,
     subtotal,
     specialRequestsTotal,
     promoDiscount,
-    total: subtotal + specialRequestsTotal - promoDiscount,
+    total,
     currency: "THB",
   };
 };

@@ -155,6 +155,12 @@ export interface PromotionCode {
   applicableRooms: string[];
   isValid: boolean;
   errorMessage?: string;
+  discount_amount?: number;  
+  discount_percent?: number; 
+  max_uses?: number;         
+  used_count?: number;       
+  is_active?: boolean;       
+  description?: string; 
 }
 
 // ===== BOOKING POLICIES =====
