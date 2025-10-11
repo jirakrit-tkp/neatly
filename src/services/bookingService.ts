@@ -97,13 +97,19 @@ export class BookingService {
       // 4. Create booking record
       const bookingInsertData = {
         room_id: bookingData.roomId,
-        customer_id: user.id, // ← ใช้ user.id แทน email
+        customer_id: user.id,
         check_in_date: bookingData.checkIn,
         check_out_date: bookingData.checkOut,
         total_amount: calculation.total,
         status: BOOKING_STATUSES.PENDING,
         promo_code: bookingData.promoCode,
-        special_requests: bookingData.specialRequests,
+        special_requests: bookingData.specialRequests.filter(
+          (req) => req.type === "special" && req.selected
+        ), // ← เฉพาะ special requests
+        standard_request:
+          bookingData.specialRequests
+            .filter((req) => req.type === "standard" && req.selected) // ← เฉพาะ standard ที่เลือก
+            .map((req) => req.name), // ← ส่งเป็น array ตรงๆ
         additional_request: bookingData.additionalRequests,
         payment_method: bookingData.paymentMethod,
       };
@@ -445,7 +451,7 @@ export class BookingService {
 
     return {
       roomType: roomInfo.room_type,
-      roomImage: roomInfo.main_image_url,
+      roomImage: roomInfo.main_image_url[0], // ← เพิ่ม [0] เพื่อเอา element แรก
       checkIn: booking.check_in_date, // แก้ไขเป็น check_in_date
       checkOut: booking.check_out_date, // แก้ไขเป็น check_out_date
       guests: 2,
