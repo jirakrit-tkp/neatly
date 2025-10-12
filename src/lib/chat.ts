@@ -1,8 +1,23 @@
 import { VertexAI } from "@google-cloud/vertexai";
 
+const credentialsString = process.env.GOOGLE_APPLICATION_CREDENTIALS_VERTEX_JSON;
+if (!credentialsString) {
+  throw new Error("GOOGLE_APPLICATION_CREDENTIALS_VERTEX_JSON environment variable is not set");
+}
+
+let credentials;
+try {
+  credentials = JSON.parse(credentialsString);
+} catch (error) {
+  throw new Error(`Invalid JSON in GOOGLE_APPLICATION_CREDENTIALS_VERTEX_JSON: ${error instanceof Error ? error.message : 'Unknown error'}`);
+}
+
 const vertex = new VertexAI({
   project: process.env.GCLOUD_PROJECT_ID!,
   location: process.env.GCLOUD_LOCATION!,
+  googleAuthOptions: {
+    credentials
+  }
 });
 
 const model = vertex.getGenerativeModel({ model: "gemini-2.5-flash" });
