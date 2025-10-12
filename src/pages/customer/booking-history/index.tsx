@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Layout from "@/components/Layout";
-import Footer from "@/components/Footer";
 import BookingCard, {
   type Booking,
 } from "@/components/booking-history/BookingCard";
