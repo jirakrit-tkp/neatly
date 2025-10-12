@@ -1,9 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { createClient } from "@supabase/supabase-js";
 
+// Initialize Supabase client
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
 type Data = {
@@ -18,7 +19,6 @@ type Profile = {
   first_name?: string | null;
   last_name?: string | null;
   username?: string | null;
-  full_name?: string | null;
 };
 
 type BookingRow = {
@@ -31,6 +31,8 @@ type BookingRow = {
   room_type?: string | null;
   bed_type?: string | null;
   main_image_url?: string[] | null;
+  check_in_date?: string | null;
+  check_out_date?: string | null;
   rooms?: {
     guests?: number | null;
     room_type?: string | null;
@@ -41,13 +43,22 @@ type BookingRow = {
   [key: string]: unknown;
 };
 
+// Helper to synthesize customer name
+function getCustomerName(data: BookingRow) {
+  const profile = data.profiles;
+  return (
+    [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") ||
+    profile?.username ||
+    null
+  );
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<Data>
 ) {
   const { id } = req.query as { id?: string };
 
-  // ✅ 1. Validate ID
   if (!id) {
     return res.status(400).json({
       success: false,
@@ -56,117 +67,110 @@ export default async function handler(
     });
   }
 
-  // ✅ 2. Only allow GET
-  if (req.method !== "GET") {
-    return res.status(405).json({
-      success: false,
-      message: "Method not allowed. Use GET.",
-    });
-  }
-
   try {
-    // ✅ 3. Try main query (bookings + rooms + profiles)
-    const result = await supabase
-      .from("bookings")
-      .select(
-        `
-        *,
-        rooms(guests, room_type, bed_type, main_image_url),
-        profiles(first_name, last_name, username, full_name)
-      `
-      )
-      .eq("id", id)
-      .single();
-
-    let data = result.data as BookingRow | null;
-    const error = result.error;
-
-    // ✅ 4. Fallback if join fails
-    if (error) {
-      const fallback = await supabase
+    if (req.method === "GET") {
+      // Fetch booking
+      const { data, error } = await supabase
         .from("bookings")
         .select(
           `
           *,
-          rooms(guests, room_type, bed_type, main_image_url)
+          rooms(guests, room_type, bed_type, main_image_url),
+          profiles(first_name, last_name, username)
         `
         )
         .eq("id", id)
         .single();
 
-      if (fallback.error) {
-        return res.status(400).json({
+      if (error || !data) {
+        return res.status(404).json({
           success: false,
-          message: "Failed to fetch booking",
-          error: fallback.error.message,
+          message: "Booking not found",
+          error: error?.message ?? "No data",
         });
       }
-      data = fallback.data as BookingRow;
-    }
 
-    if (!data) {
-      return res.status(404).json({
-        success: false,
-        message: "Booking not found",
+      const enriched: BookingRow = {
+        ...data,
+        customer_name: getCustomerName(data),
+        guests: data.rooms?.guests ?? data.guests ?? null,
+        room_type: data.rooms?.room_type ?? data.room_type ?? null,
+        bed_type: data.rooms?.bed_type ?? data.bed_type ?? null,
+        main_image_url:
+          data.rooms?.main_image_url ?? data.main_image_url ?? null,
+      };
+
+      return res.status(200).json({
+        success: true,
+        message: "Booking fetched successfully",
+        data: enriched,
       });
     }
 
-    // ✅ 5. Enrich / synthesize data
-    const profile = data.profiles;
-    const synthesizedName =
-      data.customer_name ||
-      profile?.full_name ||
-      [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") ||
-      profile?.username ||
-      null;
+    if (req.method === "PUT") {
+      let { check_in_date, check_out_date } = req.body;
 
-    let enriched: BookingRow = {
-      ...data,
-      customer_name: synthesizedName,
-      guests: data.rooms?.guests ?? data.guests ?? null,
-      room_type: data.rooms?.room_type ?? data.room_type ?? null,
-      bed_type: data.rooms?.bed_type ?? data.bed_type ?? null,
-      main_image_url: data.rooms?.main_image_url ?? data.main_image_url ?? null,
-    };
-
-    // ✅ 6. If still missing name → fetch from profiles table
-    if (
-      !enriched.customer_name &&
-      (enriched.customer_id || enriched.user_id || enriched.profile_id)
-    ) {
-      const profileId =
-        enriched.customer_id || enriched.user_id || enriched.profile_id;
-
-      const { data: profileData, error: profileError } = await supabase
-        .from("profiles")
-        .select("id, first_name, last_name, username, full_name")
-        .eq("id", profileId)
-        .single();
-
-      if (!profileError && profileData) {
-        const synthesized =
-          profileData.full_name ||
-          [profileData.first_name, profileData.last_name]
-            .filter(Boolean)
-            .join(" ") ||
-          profileData.username ||
-          null;
-
-        enriched = { ...enriched, customer_name: synthesized };
+      if (!check_in_date || !check_out_date) {
+        return res.status(400).json({
+          success: false,
+          message: "Check-in and Check-out dates are required",
+        });
       }
+
+      // Convert date strings to ISO 8601 for timestamptz
+      try {
+        check_in_date = new Date(check_in_date).toISOString();
+        check_out_date = new Date(check_out_date).toISOString();
+      } catch (e) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid date format",
+          error: e instanceof Error ? e.message : "Invalid date",
+        });
+      }
+
+      // Update booking
+
+      const { data, error } = await supabase
+        .from("bookings")
+        .update({ check_in_date, check_out_date })
+        .eq("id", id)
+        .select();
+
+      // console.log("Booking Data", data);
+
+      if (error) {
+        return res.status(400).json({
+          success: false,
+          message: "Failed to update booking",
+          error: error.message,
+        });
+      }
+
+      if (!data || data.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "Booking not found",
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Booking updated successfully",
+        data: data[0],
+      });
     }
 
-    // ✅ 7. Send success response
-    return res.status(200).json({
-      success: true,
-      message: "Booking fetched successfully",
-      data: enriched,
+    // Method not allowed
+    return res.status(405).json({
+      success: false,
+      message: "Method not allowed. Use GET or PUT.",
     });
-  } catch (error) {
+  } catch (err) {
     return res.status(500).json({
       success: false,
       message: "Server error",
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: err instanceof Error ? err.message : "Unknown error",
     });
   }
 }
