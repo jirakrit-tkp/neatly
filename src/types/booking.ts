@@ -41,7 +41,7 @@ export interface Payment {
   amount: number;
   status: PaymentStatus;
   payment_method: PaymentMethod;
-  card_last_four?: string;
+  card_last_three?: string;
   meta?: PaymentMeta; // ← ใช้ interface ที่กำหนด
   created_at: string;
   paid_at: string;

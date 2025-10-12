@@ -12,7 +12,7 @@ type RoomFields = {
 };
 
 type PaymentLite = {
-  card_last_four: string | null;
+  card_last_three: string | null;
   amount: number | null;
 };
 
@@ -89,11 +89,11 @@ function safeImageUrl(raw: string | string[] | null | undefined): string {
 }
 
 // ทำหน้ากากเลขบัตร 4 ตัวท้าย (รองรับหลายรูปแบบ)
-function last4Mask(v?: string | null) {
+function last3Mask(v?: string | null) {
   if (!v) return undefined;
   const cleaned = v.replace(/\s+/g, "").replace(/[^\d]/g, "");
-  if (cleaned.length >= 3 && cleaned.length <= 4) return `*${cleaned}`;
-  if (cleaned.length > 4) return `*${cleaned.slice(-4)}`;
+  if (cleaned.length >= 3 && cleaned.length <= 3) return `*${cleaned}`;
+  if (cleaned.length > 3) return `*${cleaned.slice(-3)}`;
   return undefined;
 }
 
@@ -184,7 +184,7 @@ export default function BookingHistoryPage() {
               guests
             ),
             payments:payments!booking_id (
-              card_last_four,
+              card_last_three,
               amount
             )
           `,
@@ -247,7 +247,7 @@ export default function BookingHistoryPage() {
             ? row.payments[0] ?? null
             : row.payments;
 
-          const mask = last4Mask(paymentObj?.card_last_four);
+          const mask = last3Mask(paymentObj?.card_last_three);
           // ถ้าไม่มีจำนวนเงินใน payments ใช้ total_amount ใน bookings แทน
           const totalAmount =
             typeof paymentObj?.amount === "number"

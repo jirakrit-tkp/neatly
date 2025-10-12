@@ -51,7 +51,7 @@ export class PaymentService {
 
       // 3. Add card details if credit card
       if (paymentMethod === PAYMENT_METHODS.CREDIT_CARD && cardDetails) {
-        paymentData.card_last_four = cardDetails.cardNumber.slice(-4);
+        paymentData.card_last_three = cardDetails.cardNumber.slice(-3);
         paymentData.meta = {
           card_owner: cardDetails.cardOwner,
           expiry_date: cardDetails.expiryDate,
@@ -443,8 +443,8 @@ export class PaymentService {
 
   // ===== MASK CARD NUMBER =====
   static maskCardNumber(cardNumber: string): string {
-    if (!cardNumber || cardNumber.length < 4) return "****";
-    return "*".repeat(cardNumber.length - 4) + cardNumber.slice(-4);
+    if (!cardNumber || cardNumber.length < 3) return "****";
+    return "*".repeat(cardNumber.length - 3) + cardNumber.slice(-3);
   }
 
   // ===== FORMAT PAYMENT METHOD =====
