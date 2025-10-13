@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import Layout from "@/components/admin/Layout";
 import { ButtonShadcn as Button } from "@/components/ui/button-shadcn";
@@ -11,6 +11,53 @@ interface ChatMessage {
   message: string;
   is_bot: boolean;
   created_at: string;
+}
+
+// Bot Message Renderer Component
+function BotMessageRenderer({ message, onOptionClick }: { message: ChatMessage; onOptionClick: (option: string) => void }) {
+  try {
+    // Try to parse the message as JSON (for encoded responseData)
+    const parsed = JSON.parse(message.message);
+    if (parsed.responseData) {
+      const { text, responseData } = parsed;
+      
+      // Render based on format
+      if (responseData.format === 'option_details') {
+        return (
+          <div className="text-sm">
+            <p className="whitespace-pre-wrap mb-3">{text}</p>
+            <div className="space-y-2">
+              {responseData.options?.map((option: { option: string; detail: string }, index: number) => (
+                <div 
+                  key={index} 
+                  className="bg-orange-100 rounded-md p-3 cursor-pointer hover:bg-orange-200"
+                  onClick={() => onOptionClick(option.option)}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-orange-700">{option.option}</span>
+                    <svg className="w-4 h-4 text-orange-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      } else if (responseData.format === 'room_type') {
+        return (
+          <div className="text-sm">
+            <p className="whitespace-pre-wrap">{text}</p>
+          </div>
+        );
+      }
+    }
+  } catch (error) {
+    // Not JSON, treat as regular message
+  }
+  
+  // Default: render as regular message
+  return <p className="text-sm whitespace-pre-wrap">{message.message.replace(/\*\*(.*?)\*\*/g, '$1')}</p>;
 }
 
 interface Ticket {
@@ -49,6 +96,47 @@ export default function TicketDetail() {
   
   // Ref for auto-scroll
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const cardScrollRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+  const [scrollStates, setScrollStates] = useState<{ [key: string]: { canScrollLeft: boolean; canScrollRight: boolean } }>({});
+
+  // Card navigation functions
+  const updateScrollState = useCallback((messageId: string) => {
+    const scrollContainer = cardScrollRefs.current[messageId];
+    if (scrollContainer) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollContainer;
+      const canScrollLeft = scrollLeft > 5;
+      const canScrollRight = scrollLeft < scrollWidth - clientWidth - 5;
+      
+      setScrollStates(prev => {
+        const current = prev[messageId];
+        if (!current || current.canScrollLeft !== canScrollLeft || current.canScrollRight !== canScrollRight) {
+          return {
+            ...prev,
+            [messageId]: { canScrollLeft, canScrollRight }
+          };
+        }
+        return prev;
+      });
+    }
+  }, []);
+
+  const scrollCardsLeft = useCallback((messageId: string) => {
+    const scrollContainer = cardScrollRefs.current[messageId];
+    if (scrollContainer) {
+      const cardWidth = 255 + 16;
+      scrollContainer.scrollBy({ left: -cardWidth, behavior: 'smooth' });
+      requestAnimationFrame(() => updateScrollState(messageId));
+    }
+  }, [updateScrollState]);
+
+  const scrollCardsRight = useCallback((messageId: string) => {
+    const scrollContainer = cardScrollRefs.current[messageId];
+    if (scrollContainer) {
+      const cardWidth = 255 + 16;
+      scrollContainer.scrollBy({ left: cardWidth, behavior: 'smooth' });
+      requestAnimationFrame(() => updateScrollState(messageId));
+    }
+  }, [updateScrollState]);
 
   useEffect(() => {
     if (id) {
@@ -365,14 +453,25 @@ export default function TicketDetail() {
                   )}
                 </div>
               </div>
-              <TicketActions
-                ticketId={ticket.id}
-                status={ticket.status}
-                onStatusUpdate={(newStatus) => {
-                  setTicket(prev => prev ? { ...prev, status: newStatus } : null);
-                }}
-                variant="detail"
-              />
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={() => router.push('/admin/ticket')}
+                  variant="outline"
+                  className="border-orange-600 text-orange-600 hover:bg-orange-50"
+                >
+                  Back
+                </Button>
+                <TicketActions
+                  ticketId={ticket.id}
+                  status={ticket.status}
+                  onStatusUpdate={(newStatus) => {
+                    setTicket(prev => prev ? { ...prev, status: newStatus } : null);
+                  }}
+                  variant="detail"
+                  showViewDetail={false}
+                  hideDelete={true}
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -405,31 +504,175 @@ export default function TicketDetail() {
             <div>
               <h2 className="text-lg font-semibold text-gray-600 mb-4">Chat History</h2>
               {messages.length > 0 ? (
-                <div className="space-y-4 max-h-96 overflow-y-auto">
-                   {messages.map((message) => (
-                     <div key={message.id} className={`flex ${message.is_bot ? 'justify-end' : 'justify-start'}`}>
-                       <div className={`max-w-[70%] p-3 rounded-lg ${
-                         message.is_bot 
-                           ? 'bg-orange-500 text-white' 
-                           : 'bg-gray-100 text-gray-800'
-                       }`}>
-                         <p className="text-sm">{message.message}</p>
-                         <p className={`text-xs mt-1 ${
-                           message.is_bot ? 'text-orange-100' : 'text-gray-500'
-                         }`}>
-                           {new Date(message.created_at).toLocaleTimeString('en-US', { 
-                             hour: '2-digit', 
-                             minute: '2-digit',
-                             hour12: false 
-                           })}
-                         </p>
+                <div className="bg-gray-50 rounded-lg shadow-[inset_0_-16px_16px_-8px_rgba(0,0,0,0.1)] space-y-2 max-h-96 overflow-y-auto">
+                   <div className="py-4 px-4 space-y-2">
+                   {messages.map((message) => {
+                     // Check if this is a room_type message
+                     let isRoomTypeMessage = false;
+                     let roomTypeData = null;
+                     
+                     // Check if this is a room_type message
+                     if (message.is_bot) {
+                       try {
+                         const parsed = JSON.parse(message.message);
+                         if (parsed.responseData && parsed.responseData.format === 'room_type') {
+                           isRoomTypeMessage = true;
+                           roomTypeData = parsed.responseData;
+                         }
+                       } catch (error) {
+                         // Not JSON, treat as regular message
+                       }
+                     }
+
+                     return (
+                       <div key={message.id} className="w-full">
+                         {/* Text Message */}
+                         <div className={`flex flex-col ${message.is_bot ? 'items-end' : 'items-start'}`}>
+                           <div className={`max-w-[80%] p-3 rounded-lg ${
+                             message.is_bot 
+                               ? 'bg-orange-600 text-white' 
+                               : 'bg-white text-gray-800'
+                           }`}>
+                             {message.is_bot ? (
+                               <BotMessageRenderer 
+                                 message={message} 
+                                 onOptionClick={(option) => {
+                                   // Admin can't send messages as customer, just show the option
+                                   console.log('Option clicked:', option);
+                                 }}
+                               />
+                             ) : (
+                               <p className="text-sm whitespace-pre-wrap">{message.message.replace(/\*\*(.*?)\*\*/g, '$1')}</p>
+                             )}
+                           </div>
+                           <p className="text-xs mt-1 text-gray-500 px-1">
+                             {new Date(message.created_at).toLocaleTimeString('th-TH', { 
+                               hour: '2-digit', 
+                               minute: '2-digit'
+                             })}
+                           </p>
+                         </div>
+
+                         {/* Room Type Cards */}
+                         {isRoomTypeMessage && roomTypeData && (
+                           <div className="mt-2 w-full overflow-hidden relative flex justify-end">
+                             <div 
+                               ref={(el) => {
+                                 cardScrollRefs.current[message.id] = el;
+                                 if (el) {
+                                   requestAnimationFrame(() => updateScrollState(message.id));
+                                   let scrollTimeout: NodeJS.Timeout;
+                                   el.addEventListener('scroll', () => {
+                                     if (scrollTimeout) clearTimeout(scrollTimeout);
+                                     scrollTimeout = setTimeout(() => updateScrollState(message.id), 50);
+                                   });
+                                 }
+                               }}
+                               className="flex flex-row flex-nowrap gap-4 overflow-x-hidden pb-2 scroll-smooth max-w-[80%]"
+                             >
+                               {roomTypeData.rooms?.map((roomName: string, index: number) => {
+                                 const roomData = roomTypeData.roomDetails?.[roomName];
+                                 if (!roomData) return null;
+                                 
+                                 return (
+                                   <div key={index} className="bg-white rounded-lg shadow-sm flex-shrink-0 flex flex-col" style={{ width: '255px', height: '317px' }}>
+                                     {/* Room Image */}
+                                     {roomData.main_image && (
+                                       <div className="w-full rounded-t-lg overflow-hidden flex-shrink-0" style={{ height: '50%' }}>
+                                         <img 
+                                           src={roomData.main_image} 
+                                           alt={roomName}
+                                           className="w-full h-full object-cover"
+                                         />
+                                       </div>
+                                     )}
+                                     
+                                     {/* Room Details */}
+                                     <div className="p-3 flex flex-col justify-between flex-shrink-0" style={{ height: '37.5%' }}>
+                                       <div>
+                                         <h3 className="font-bold text-gray-900 mb-0 text-base">{roomName}</h3>
+                                         
+                                         {/* Pricing */}
+                                         <div className="mb-2">
+                                           {roomData.promo_price && roomData.promo_price < roomData.base_price ? (
+                                             <div className="flex items-center gap-2">
+                                               <span className="text-base font-bold text-orange-500">
+                                                 THB {roomData.promo_price.toLocaleString()}.00
+                                               </span>
+                                               <span className="text-sm text-gray-500 line-through">
+                                                 THB {roomData.base_price.toLocaleString()}.00
+                                               </span>
+                                             </div>
+                                           ) : (
+                                             <span className="text-base font-bold text-gray-900">
+                                               THB {roomData.base_price.toLocaleString()}.00
+                                             </span>
+                                           )}
+                                         </div>
+                                         
+                                         {/* Description */}
+                                         {roomData.description && (
+                                           <p className="text-gray-600 text-sm line-clamp-2">
+                                             {roomData.description}
+                                           </p>
+                                         )}
+                                       </div>
+                                     </div>
+                                       
+                                     {/* Call to Action Button */}
+                                     <Button
+                                       className="w-full bg-orange-100 text-orange-500 hover:bg-orange-200 text-sm font-semibold flex-shrink-0 rounded-none"
+                                       style={{ height: '12.5%' }}
+                                       onClick={() => {
+                                         if (roomData.id) {
+                                           window.open(`/customer/search-result/${roomData.id}`, '_blank');
+                                         } else {
+                                           console.error('Room ID is undefined');
+                                         }
+                                       }}
+                                     >
+                                       <span className="flex items-center justify-between w-full px-3">
+                                         <span>{roomTypeData.buttonName || 'View Details'}</span>
+                                         <svg className="w-4 h-4 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                         </svg>
+                                       </span>
+                                     </Button>
+                                   </div>
+                                 );
+                               })}
+                             </div>
+                             
+                             {/* Navigation Buttons */}
+                             {scrollStates[message.id]?.canScrollLeft && (
+                               <button
+                                 onClick={() => scrollCardsLeft(message.id)}
+                                 className="absolute left-2 top-1/2 transform -translate-y-1/2 w-8 h-8 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center z-10 shadow-md transition-opacity"
+                               >
+                                 <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                 </svg>
+                               </button>
+                             )}
+                             {scrollStates[message.id]?.canScrollRight && (
+                               <button
+                                 onClick={() => scrollCardsRight(message.id)}
+                                 className="absolute right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center z-10 shadow-md transition-opacity"
+                               >
+                                 <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                 </svg>
+                               </button>
+                             )}
+                           </div>
+                         )}
                        </div>
-                     </div>
-                   ))}
+                     );
+                   })}
                    
                    {/* User Typing Indicator - Same as Bot Typing */}
                    {userTyping && (
-                     <div className="flex justify-start">
+                     <div className="flex flex-col items-start">
                        <div className="w-12 h-8 rounded-full bg-white shadow-sm flex items-center justify-center">
                          <div className="flex gap-1">
                            <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
@@ -442,6 +685,7 @@ export default function TicketDetail() {
                    
                    {/* Invisible div for auto-scroll */}
                    <div ref={messagesEndRef} />
+                   </div>
                 </div>
               ) : (
                 <div className="text-center py-8 text-gray-500">
@@ -465,7 +709,14 @@ export default function TicketDetail() {
                       </span>
                     </div>
                   </div>
-                  <div className="flex justify-center">
+                  <div className="flex justify-center items-center gap-2">
+                    <Button
+                      onClick={() => router.push('/admin/ticket')}
+                      variant="outline"
+                      className="border-orange-600 text-orange-600 hover:bg-orange-50"
+                    >
+                      Back
+                    </Button>
                     <TicketActions
                       ticketId={ticket.id}
                       status={ticket.status}
@@ -474,7 +725,22 @@ export default function TicketDetail() {
                       }}
                       variant="detail"
                       showViewDetail={false}
+                      hideDelete={true}
                     />
+                  </div>
+                </div>
+              ) : ticket.status === 'solved' ? (
+                <div className="space-y-4">
+                  {/* Ticket Solved Message */}
+                  <div className="flex items-center justify-center py-4 px-4 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="flex items-center">
+                      <svg className="h-5 w-5 text-green-500 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      <span className="text-green-800 text-sm font-medium">
+                        Ticket has been solved successfully!
+                      </span>
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -510,9 +776,10 @@ export default function TicketDetail() {
                           console.error('Error toggling live chat:', error);
                         }
                       }}
-                      className={`px-4 py-1 text-sm ${
+                      variant={isLiveChat ? "outline" : "default"}
+                      className={`px-4 py-1 text-sm cursor-pointer ${
                         isLiveChat 
-                          ? 'bg-orange-700 hover:bg-orange-800 text-white' 
+                          ? 'border-orange-600 text-orange-600 hover:bg-orange-50' 
                           : 'bg-orange-500 hover:bg-orange-600 text-white'
                       }`}
                     >
@@ -521,18 +788,7 @@ export default function TicketDetail() {
                   </div>
 
                   {/* Chat Input */}
-                  {ticket.status === 'solved' ? (
-                    <div className="flex items-center justify-center py-4 px-4 bg-green-50 border border-green-200 rounded-lg">
-                      <div className="flex items-center">
-                        <svg className="h-5 w-5 text-green-500 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                        </svg>
-                        <span className="text-green-800 text-sm font-medium">
-                          Ticket has been solved successfully!
-                        </span>
-                      </div>
-                    </div>
-                  ) : isLiveChat ? (
+                  {isLiveChat ? (
                     <div className="flex gap-2 items-center">
                       <Input 
                         value={newMessage}
@@ -545,7 +801,7 @@ export default function TicketDetail() {
                       <Button 
                         onClick={sendMessage}
                         disabled={!newMessage.trim() || sendingMessage}
-                        className="bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 rounded-full p-2 w-10 h-10 flex items-center justify-center"
+                        className="bg-orange-500 text-white hover:bg-orange-600 disabled:bg-gray-300 disabled:text-gray-600 rounded-full p-2 w-10 h-10 flex items-center justify-center"
                       >
                         {sendingMessage ? (
                           <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>

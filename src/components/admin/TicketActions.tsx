@@ -10,6 +10,7 @@ interface TicketActionsProps {
   variant?: 'list' | 'detail';
   showViewDetail?: boolean;
   onViewDetail?: () => void;
+  hideDelete?: boolean;
 }
 
 export default function TicketActions({
@@ -19,7 +20,8 @@ export default function TicketActions({
   onTicketDelete,
   variant = 'list',
   showViewDetail = true,
-  onViewDetail
+  onViewDetail,
+  hideDelete = false
 }: TicketActionsProps) {
   const router = useRouter();
 
@@ -78,8 +80,8 @@ export default function TicketActions({
         )}
       </div>
 
-      {/* Divider */}
-      <div className="h-10 w-px bg-gray-300" />
+      {/* Divider - Hidden when hideDelete is true */}
+      {!hideDelete && <div className="h-10 w-px bg-gray-300" />}
 
       {/* Right: Icon column */}
       <div className="flex flex-col items-center gap-2">
@@ -92,19 +94,21 @@ export default function TicketActions({
             <Eye className="w-4 h-4" />
           </button>
         )}
-        <button
-          onClick={status === 'solved' ? handleDeleteTicket : undefined}
-          className={`p-2 ${
-            status === 'solved'
-              ? 'text-gray-600 hover:text-gray-800 cursor-pointer'
-              : 'text-gray-400'
-          }`}
-          title={status === 'solved' ? 'Delete ticket' : 'Delete available after solved'}
-          aria-disabled={status !== 'solved'}
-          disabled={status !== 'solved'}
-        >
-          <Trash className="w-4 h-4" />
-        </button>
+        {!hideDelete && (
+          <button
+            onClick={status === 'solved' ? handleDeleteTicket : undefined}
+            className={`p-2 ${
+              status === 'solved'
+                ? 'text-gray-600 hover:text-gray-800 cursor-pointer'
+                : 'text-gray-400'
+            }`}
+            title={status === 'solved' ? 'Delete ticket' : 'Delete available after solved'}
+            aria-disabled={status !== 'solved'}
+            disabled={status !== 'solved'}
+          >
+            <Trash className="w-4 h-4" />
+          </button>
+        )}
       </div>
     </div>
   );
