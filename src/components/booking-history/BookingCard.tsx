@@ -4,6 +4,7 @@ import Image from "next/image";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import NonRefundModal from "@/components/ui/NonRefundModal";
 import { supabase } from "@/lib/supabaseClient";
+import { useRouter } from "next/router";
 
 /** ---- Types ---- */
 export type Booking = {
@@ -92,6 +93,7 @@ type PostgrestErrorLite = {
 };
 
 export default function BookingCard({ booking, onDeleted }: Props) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [showRefundModal, setShowRefundModal] = useState(false);
   const [showNonRefundModal, setShowNonRefundModal] = useState(false);
@@ -378,7 +380,11 @@ export default function BookingCard({ booking, onDeleted }: Props) {
             <div className="mt-3 flex w-full justify-end">
               <button
                 type="button"
-                onClick={handleCancelClick}
+                onClick={() =>
+                  router.push(
+                    `/customer/customer-bookings/cancel/${booking.id}`
+                  )
+                }
                 disabled={deleting}
                 className={`text-[16px] font-inter font-semibold text-orange-500 hover:underline ${
                   deleting ? "opacity-60 cursor-not-allowed" : "cursor-pointer"

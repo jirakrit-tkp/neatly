@@ -3,10 +3,8 @@ import { useEffect, useState } from "react";
 import Layout from "@/components/Layout";
 import Image from "next/image";
 import { useQuery } from "@/hooks/useQuery";
-import OriginalBookingDetail from "@/components/booking/OriginalBookingDetail";
 import LoadingScreen from "@/components/admin/LoadingScreen";
 import ConfirmModal from "@/components/ui/ConfirmModal";
-import { calculateNights } from "@/utils/dateUtils";
 import { formatDate } from "@/utils/formatDate";
 import { Button } from "@/components/admin/ui/Button";
 
@@ -49,7 +47,6 @@ export default function ChangeBookingPage() {
   const [checkOut, setCheckOut] = useState("");
   const [error, setError] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [validationError, setValidationError] = useState("");
 
   // Fetch booking data using useQuery
   const { data: bookingResponse, loading } = useQuery<BookingApiResponse>(
@@ -66,86 +63,16 @@ export default function ChangeBookingPage() {
     }
   }, [booking]);
 
-  // Validate number of nights whenever dates change
-  useEffect(() => {
-    if (booking && checkIn && checkOut) {
-      const originalNights = calculateNights(
-        booking.check_in_date,
-        booking.check_out_date
-      );
-      const newNights = calculateNights(checkIn, checkOut);
-
-      if (newNights !== originalNights) {
-        setValidationError(
-          `Number of nights must match the original booking (${originalNights} ${
-            originalNights === 1 ? "night" : "nights"
-          }). Currently selected: ${newNights} ${
-            newNights === 1 ? "night" : "nights"
-          }.`
-        );
-      } else {
-        setValidationError("");
-      }
-    }
-  }, [checkIn, checkOut, booking]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!booking) return;
-
-    // Final validation before submission
-    const originalNights = calculateNights(
-      booking.check_in_date,
-      booking.check_out_date
-    );
-    const newNights = calculateNights(checkIn, checkOut);
-
-    if (newNights !== originalNights) {
-      alert(
-        `Cannot update booking: Number of nights must match the original booking (${originalNights} ${
-          originalNights === 1 ? "night" : "nights"
-        }).`
-      );
-      return;
-    }
-
-    try {
-      const response = await fetch(`/api/bookings/${booking.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          check_in_date: checkIn,
-          check_out_date: checkOut,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to update booking");
-      }
-
-      alert("Booking updated successfully!");
-      router.push("/customer/booking-history");
-    } catch (error) {
-      console.error("Error updating booking:", error);
-      alert("Failed to update booking. Please try again.");
-    }
   };
 
   const handleCancel = () => {
     router.back();
   };
 
-  const handleOpenModal = () => {
-    // Prevent opening modal if validation fails
-    if (validationError) {
-      return;
-    }
-    setIsModalOpen(true);
-  };
-
-  if (!booking) {
+  if (loading || !booking) {
     return (
       <Layout>
         <LoadingScreen />
@@ -194,7 +121,7 @@ export default function ChangeBookingPage() {
               </div>
 
               {/* Booking Details Section */}
-              <div className="flex flex-col">
+              <div className="flex flex-col w-full">
                 <div className="md:w-full p-5 md:p-0 md:pl-15">
                   {/* Room Type and Booking Date Header */}
                   <div className="flex flex-col md:flex-row justify-between items-start mb-6">
@@ -250,10 +177,14 @@ export default function ChangeBookingPage() {
                 <ConfirmModal
                   open={isModalOpen}
                   title="Change Date"
-                  message="Are you sure you want to change your check-in and check-out date?"
-                  confirmText="Yes, I want to change"
+                  message="Are you sure you want to cancel this booking?"
+                  confirmText="Yes, I want to cancel"
                   cancelText="No, I don't"
-                  onConfirm={handleSubmit}
+                  onConfirm={() =>
+                    router.push(
+                      `/customer/customer-bookings/cancel/${bookingId}/cancel-completed`
+                    )
+                  }
                   onClose={() => setIsModalOpen(false)}
                 />
               )}

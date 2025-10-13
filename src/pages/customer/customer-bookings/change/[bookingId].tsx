@@ -78,9 +78,7 @@ export default function ChangeBookingPage() {
         setValidationError(
           `Number of nights must match the original booking (${originalNights} ${
             originalNights === 1 ? "night" : "nights"
-          }). Currently selected: ${newNights} ${
-            newNights === 1 ? "night" : "nights"
-          }.`
+          }).`
         );
       } else {
         setValidationError("");

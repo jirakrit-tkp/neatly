@@ -1,7 +1,6 @@
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import Layout from "@/components/Layout";
-import Image from "next/image";
 import { useQuery } from "@/hooks/useQuery";
 import LoadingScreen from "@/components/admin/LoadingScreen";
 import { formatDate } from "@/utils/formatDate";
@@ -55,7 +54,7 @@ export default function ChangeBookingPage() {
   // Update form fields when booking data is loaded
   useEffect(() => {}, [booking]);
 
-  if (!booking) {
+  if (!booking || loading) {
     return (
       <Layout>
         <LoadingScreen />
@@ -78,16 +77,16 @@ export default function ChangeBookingPage() {
   return (
     <Layout>
       <div className="bg-[#F7F7FB] flex flex-col justify-center items-center">
-        <div className="bg-green-700 md:h-[620px] w-full md:w-[750px] mt-10 md:mt-20 md:rounded-md">
+        <div className="bg-green-700 h-[580px] md:h-[500px] w-full md:w-[750px] mt-10 md:mt-20 md:rounded-md">
           <div className="bg-green-800 md:w-[750px] justify-center items-center text-center p-10 md:p-8 md:rounded-md">
             <h1 className="text-5xl md:text-4xl text-white font-noto mb-4">
-              Your Request has been Submitted
+              The Cancellation is Complete
             </h1>
-            <p className="text-green-400 text-sm">
+            <p className="text-green-400 text-md md:text-sm">
               The cancellation is complete.
             </p>
-            <p className="text-green-400 text-sm">
-              You will recieve an email with a detail and refund within 48
+            <p className="text-green-400 text-md md:text-sm">
+              You will recieve an email with a detail of cancellation within 24
               hours.
             </p>
           </div>
@@ -115,15 +114,6 @@ export default function ChangeBookingPage() {
                 Cancellation date: {cancelledDate}
               </p>
             </div>
-          </div>
-
-          <div className="border-b mx-10 mt-10 md:mt-0 border-green-500" />
-          {/* Total Refund */}
-          <div className="flex flex-row m-10 items-center justify-between">
-            <p className="text-white">Total Refund</p>
-            <p className="text-white font-bold text-xl">
-              THB {booking?.total_amount}
-            </p>
           </div>
         </div>
         <Button
