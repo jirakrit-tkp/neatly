@@ -301,15 +301,35 @@ export default function BookingHistoryPage() {
           const sr = row.special_requests;
           if (Array.isArray(sr)) {
             // ถ้าเป็น array ของ JSON objects (jsonb)
-            requests = sr.map((req: any) => req.name || req);
+            requests = sr.map((req: unknown) => {
+              if (typeof req === "object" && req !== null && "name" in req) {
+                return String((req as { name: unknown }).name);
+              }
+              return String(req);
+            });
           } else if (typeof sr === "string" && sr.trim()) {
             // ถ้าเป็น JSON string
             try {
               const parsed = JSON.parse(sr);
               if (Array.isArray(parsed)) {
-                requests = parsed.map((req: any) => req.name || req);
+                requests = parsed.map((req: unknown) => {
+                  if (
+                    typeof req === "object" &&
+                    req !== null &&
+                    "name" in req
+                  ) {
+                    return String((req as { name: unknown }).name);
+                  }
+                  return String(req);
+                });
               } else {
-                requests = [parsed.name || parsed];
+                requests = [
+                  typeof parsed === "object" &&
+                  parsed !== null &&
+                  "name" in parsed
+                    ? String((parsed as { name: unknown }).name)
+                    : String(parsed),
+                ];
               }
             } catch {
               // ถ้า parse ไม่ได้ ให้ใช้เป็น string ตรงๆ
@@ -335,15 +355,24 @@ export default function BookingHistoryPage() {
             ) {
               const sr = row.special_requests;
               if (Array.isArray(sr)) {
-                const foundItem = sr.find(
-                  (item: any) => (item.name || item) === r || item === r
-                );
-                amount =
+                const foundItem = sr.find((item: unknown) => {
+                  if (
+                    typeof item === "object" &&
+                    item !== null &&
+                    "name" in item
+                  ) {
+                    return (item as { name: unknown }).name === r;
+                  }
+                  return item === r;
+                });
+                if (
                   typeof foundItem === "object" &&
                   foundItem &&
                   "price" in foundItem
-                    ? (foundItem as any).price
-                    : 0;
+                ) {
+                  const price = (foundItem as { price: unknown }).price;
+                  amount = typeof price === "number" ? price : 0;
+                }
               }
             }
             return { label: r, amount };
