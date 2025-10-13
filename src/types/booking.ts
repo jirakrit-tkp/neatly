@@ -41,7 +41,7 @@ export interface Payment {
   amount: number;
   status: PaymentStatus;
   payment_method: PaymentMethod;
-  card_last_four?: string;
+  card_last_three?: string;
   meta?: PaymentMeta; // ← ใช้ interface ที่กำหนด
   created_at: string;
   paid_at: string;
@@ -57,7 +57,7 @@ export interface RoomInfo {
   room_size: number;
   bed_type: string;
   description: string;
-  main_image_url: string;
+  main_image_url: string[];
   gallery_images: string[];
   amenities: string[];
 }
@@ -85,7 +85,7 @@ export interface BookingFormData {
 
   // Room & Dates
   roomId: string;
-  roomInfo?: RoomInfo;
+  roomInfo?: Partial<RoomInfo>;
   checkIn: string;
   checkOut: string;
   guests: number;
@@ -155,6 +155,12 @@ export interface PromotionCode {
   applicableRooms: string[];
   isValid: boolean;
   errorMessage?: string;
+  discount_amount?: number;  
+  discount_percent?: number; 
+  max_uses?: number;         
+  used_count?: number;       
+  is_active?: boolean;       
+  description?: string; 
 }
 
 // ===== BOOKING POLICIES =====

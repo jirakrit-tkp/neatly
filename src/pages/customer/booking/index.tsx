@@ -21,6 +21,7 @@ import {
   BookingCalculation,
   Booking,
   Payment,
+  RoomInfo,
 } from "@/types/booking";
 import { SPECIAL_REQUESTS } from "@/constants/booking";
 import { PAYMENT_METHODS } from "@/constants/booking";
@@ -287,6 +288,12 @@ export default function BookingPage() {
       const bookingData: BookingFormData = {
         guestInfo,
         roomId: selectedRoom.id,
+        roomInfo: {
+          room_type: selectedRoom.room_type,      // ประเภทห้อง
+          price: selectedRoom.price,              // ราคาห้อง (สำคัญ!)
+          main_image_url: selectedRoom.main_image_url,  // รูปภาพ
+          amenities: selectedRoom.amenities,      // สิ่งอำนวยความสะดวก
+        } as Partial<RoomInfo>,
         checkIn: checkIn as string,
         checkOut: checkOut as string,
         guests: parseInt(guests as string),

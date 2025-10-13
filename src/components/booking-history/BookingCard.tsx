@@ -31,6 +31,7 @@ export type Booking = {
   total: number;
   additionalRequest?: string;
   promoCode?: string;
+  promoDiscount?: number;
 };
 
 type Props = {
@@ -64,10 +65,10 @@ function normalizeToISO(rawInput?: string | null): string | null {
   if (!rawInput) return null;
   let s = rawInput.trim();
   if (!s) return null;
-  if (s.includes(" ")) s = s.replace(" ", "T");         // "YYYY-MM-DD HH:mm:ss" -> "YYYY-MM-DDTHH:mm:ss"
-  s = s.replace(/([+\-]\d{2})(\d{2})$/, "$1:$2");        // +0700 -> +07:00
-  s = s.replace(/\+00(?::?00)?$/, "Z");                  // +00 / +0000 -> Z
-  if (!/[zZ]|[+\-]\d{2}:\d{2}$/.test(s)) s = `${s}Z`;   // ไม่มี timezone -> ใส่ Z
+  if (s.includes(" ")) s = s.replace(" ", "T"); // "YYYY-MM-DD HH:mm:ss" -> "YYYY-MM-DDTHH:mm:ss"
+  s = s.replace(/([+\-]\d{2})(\d{2})$/, "$1:$2"); // +0700 -> +07:00
+  s = s.replace(/\+00(?::?00)?$/, "Z"); // +00 / +0000 -> Z
+  if (!/[zZ]|[+\-]\d{2}:\d{2}$/.test(s)) s = `${s}Z`; // ไม่มี timezone -> ใส่ Z
   return s;
 }
 
@@ -202,7 +203,10 @@ export default function BookingCard({ booking, onDeleted }: Props) {
                   <span>{booking.checkInDate}</span>
                   {booking.checkInNote && (
                     <>
-                      <span className="mx-2 sm:mx-3 h-4 w-px bg-gray-800" aria-hidden />
+                      <span
+                        className="mx-2 sm:mx-3 h-4 w-px bg-gray-800"
+                        aria-hidden
+                      />
                       <span>{booking.checkInNote}</span>
                     </>
                   )}
@@ -217,7 +221,10 @@ export default function BookingCard({ booking, onDeleted }: Props) {
                   <span>{booking.checkOutDate}</span>
                   {booking.checkOutNote && (
                     <>
-                      <span className="mx-2 sm:mx-3 h-4 w-px bg-gray-800" aria-hidden />
+                      <span
+                        className="mx-2 sm:mx-3 h-4 w-px bg-gray-800"
+                        aria-hidden
+                      />
                       <span>{booking.checkOutNote}</span>
                     </>
                   )}
@@ -235,7 +242,9 @@ export default function BookingCard({ booking, onDeleted }: Props) {
             >
               <span>Booking Detail</span>
               <svg
-                className={`h-5 w-5 transition-transform ${open ? "rotate-180" : "rotate-0"}`}
+                className={`h-5 w-5 transition-transform ${
+                  open ? "rotate-180" : "rotate-0"
+                }`}
                 viewBox="0 0 20 20"
                 fill="currentColor"
                 aria-hidden
@@ -255,38 +264,81 @@ export default function BookingCard({ booking, onDeleted }: Props) {
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-gray-600 text-[14px] sm:text-[15px]">
                     <div>
                       <span className="text-gray-700 text-[16px] font-inter">
-                        {booking.guests} {booking.guests > 1 ? "Guests" : "Guest"}
+                        {booking.guests}{" "}
+                        {booking.guests > 1 ? "Guests" : "Guest"}
                       </span>
                       <span className="text-gray-700 text-[16px] font-inter">
-                        {" "}({booking.nights} {booking.nights > 1 ? "Nights" : "Night"})
+                        {" "}
+                        ({booking.nights}{" "}
+                        {booking.nights > 1 ? "Nights" : "Night"})
                       </span>
                     </div>
                     <div className="sm:text-right">
                       <span className="text-gray-700 text-[16px] font-inter">{`Payment ${booking.payment.status} via `}</span>
                       <span className="text-gray-700 text-[16px] font-inter font-semibold">
                         {booking.payment.method}
-                        {booking.payment.mask ? ` - ${booking.payment.mask}` : ""}
+                        {booking.payment.mask
+                          ? ` - ${booking.payment.mask}`
+                          : ""}
                       </span>
                     </div>
                   </div>
 
                   <div className="mt-6">
                     {booking.items.map((it, idx) => (
-                      <Row key={idx} label={it.label} amount={money(it.amount)} />
+                      <Row
+                        key={idx}
+                        label={it.label}
+                        amount={money(it.amount)}
+                      />
                     ))}
+
+                    {booking.promoDiscount && booking.promoDiscount > 0 && (
+                      <div className="py-2 flex items-start justify-between">
+                        <span className="font-inter text-[16px] text-green-600">
+                          Promo Discount ({booking.promoCode})
+                        </span>
+                        <span className="font-inter text-[16px] text-green-600 font-semibold">
+                          -
+                          {moneyWithCurrency(
+                            booking.promoDiscount,
+                            booking.currency
+                          )}
+                        </span>
+                      </div>
+                    )}
+
                     <div className="my-4" />
                     <div className="flex items-center justify-between">
-                      <span className="text-gray-700 text-[16px] font-inter">Total</span>
+                      <span className="text-gray-700 text-[16px] font-inter">
+                        Total
+                      </span>
                       <span className="text-[20px] font-inter font-semibold text-gray-900">
-                        {moneyWithCurrency(booking.total, booking.currency)}
+                        {moneyWithCurrency(
+                          booking.total - (booking.promoDiscount || 0),
+                          booking.currency
+                        )}
                       </span>
                     </div>
                   </div>
 
                   {deleteError && (
-                    <div className="mt-4 text-sm text-red-600">{deleteError}</div>
+                    <div className="mt-4 text-sm text-red-600">
+                      {deleteError}
+                    </div>
                   )}
                 </div>
+
+                {booking.promoCode && (
+                  <div className="bg-gray-300 px-4 sm:px-6 py-4 text-[16px] font-inter text-gray-700">
+                    <div className="font-semibold font-inter text-gray-700 mb-1">
+                      Promo Code Used
+                    </div>
+                    <div className="font-mono text-orange-600 font-semibold">
+                      {booking.promoCode}
+                    </div>
+                  </div>
+                )}
 
                 {booking.additionalRequest && (
                   <div className="bg-gray-300 px-4 sm:px-6 py-4 text-[16px] font-inter text-gray-700">

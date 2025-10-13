@@ -33,51 +33,61 @@ export class PromotionService {
         .select("*")
         .eq("code", code.toUpperCase())
         .single();
-
+  
       if (error || !promotion) {
         return {
           isValid: false,
           error: BOOKING_ERROR_CODES.INVALID_PROMO_CODE,
         };
       }
-
-      // 2. Check if promotion is within valid date range
+  
+      // 2. Check if promotion is active
+      if (!promotion.is_active) {
+        return {
+          isValid: false,
+          error: "Promotion code is not active",
+        };
+      }
+  
+      // 3. Check if promotion is within valid date range
       const now = new Date();
       const expiresAt = new Date(promotion.expires_at);
-
+  
       if (now > expiresAt) {
         return {
           isValid: false,
           error: BOOKING_ERROR_CODES.PROMO_CODE_EXPIRED,
         };
       }
-
-      // 3. Check if promotion has remaining uses
+  
+      // 4. Check if promotion has remaining uses
       if (promotion.max_uses && promotion.max_uses > 0) {
-        const { count } = await supabase
-          .from("bookings")
-          .select("*", { count: "exact" })
-          .eq("promo_code", code.toUpperCase());
-
-        if (count && count >= promotion.max_uses) {
+        if (promotion.used_count >= promotion.max_uses) {
           return {
             isValid: false,
             error: BOOKING_ERROR_CODES.PROMO_CODE_USAGE_LIMIT_REACHED,
           };
         }
       }
-
-      // 4. Return valid promotion code
+  
+      // 5. Return valid promotion code
       const promotionCode: PromotionCode = {
         code: promotion.code,
-        discount: promotion.discount_percent,
-        discountType: DISCOUNT_TYPES.PERCENTAGE,
+        discount: promotion.discount_amount || promotion.discount_percent || 0,
+        discountType: promotion.discount_amount ? "fixed" : "percentage",
         validFrom: new Date().toISOString(),
         validTo: promotion.expires_at,
         applicableRooms: [],
         isValid: true,
+        // เพิ่มข้อมูลใหม่
+        discount_amount: promotion.discount_amount,
+        discount_percent: promotion.discount_percent,
+        max_uses: promotion.max_uses,
+        used_count: promotion.used_count,
+        is_active: promotion.is_active,
+        description: promotion.description,
       };
-
+  
       return {
         isValid: true,
         promotionCode,
@@ -98,11 +108,24 @@ export class PromotionService {
   ): number {
     if (!promotionCode.isValid) return 0;
 
-    if (promotionCode.discountType === DISCOUNT_TYPES.PERCENTAGE) {
-      return (baseAmount * promotionCode.discount) / 100;
-    } else {
-      return Math.min(promotionCode.discount, baseAmount);
-    }
+  // ใช้ discount_amount เป็นหลัก (จำนวนเงินคงที่)
+  if (promotionCode.discount_amount && promotionCode.discount_amount > 0) {
+    return Math.min(promotionCode.discount_amount, baseAmount);
+  }
+  
+  // Fallback ใช้ discount_percent (ถ้าไม่มี discount_amount)
+  if (promotionCode.discount_percent && promotionCode.discount_percent > 0) {
+    return (baseAmount * promotionCode.discount_percent) / 100;
+  }
+  
+  // Fallback ใช้ discountType เดิม (เพื่อ backward compatibility)
+  if (promotionCode.discountType === "fixed") {
+    return Math.min(promotionCode.discount, baseAmount);
+  } else if (promotionCode.discountType === "percentage") {
+    return (baseAmount * promotionCode.discount) / 100;
+  }
+  
+  return 0;
   }
 
   // ===== APPLY PROMOTION CODE =====

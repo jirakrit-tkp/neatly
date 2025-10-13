@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Layout from "@/components/Layout";
 import Footer from "@/components/Footer";
-import BookingCard, { type Booking } from "@/components/booking-history/BookingCard";
+import BookingCard, {
+  type Booking,
+} from "@/components/booking-history/BookingCard";
 import { supabase } from "@/lib/supabaseClient";
 
 type RoomFields = {
@@ -12,8 +14,13 @@ type RoomFields = {
 };
 
 type PaymentLite = {
-  card_last_four: string | null;
+  card_last_three: string | null;
   amount: number | null;
+};
+
+type PromoCodeLite = {
+  discount_amount: number | null;
+  discount_percent: number | null;
 };
 
 type BookingRowRaw = {
@@ -27,6 +34,7 @@ type BookingRowRaw = {
   additional_request: string | null;
   promo_code: string | null;
   special_requests: string[] | string | null;
+  standard_request: string[] | null;
   status: string | null;
   payment_method: string | null;
 
@@ -38,6 +46,29 @@ type BookingRowRaw = {
 type PostgrestErrorLite = { message?: string } | null;
 
 /* ---------- Utils (ฟังก์ชันช่วย) ---------- */
+// คำนวณราคาลดจาก Promocode
+function calculatePromoDiscount(
+  promo_codes: PromoCodeLite | PromoCodeLite[] | null,
+  totalAmount: number
+): number {
+  if (!promo_codes) return 0;
+
+  const promo = Array.isArray(promo_codes) ? promo_codes[0] : promo_codes;
+  if (!promo) return 0;
+
+  // ใช้ discount_amount เป็นหลัก
+  if (promo.discount_amount && promo.discount_amount > 0) {
+    return Math.min(promo.discount_amount, totalAmount);
+  }
+
+  // Fallback ใช้ discount_percent
+  if (promo.discount_percent && promo.discount_percent > 0) {
+    return (totalAmount * promo.discount_percent) / 100;
+  }
+
+  return 0;
+}
+
 // แปลง string วันที่ (UTC) ให้เป็นข้อความอ่านง่าย เช่น "Fri, Oct 10, 2025"
 function fmtDateUTC(d?: string | null) {
   if (!d) return "-";
@@ -46,7 +77,18 @@ function fmtDateUTC(d?: string | null) {
   if (Number.isNaN(dt.getTime())) return "-";
   const w = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][dt.getUTCDay()];
   const m = [
-    "Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec",
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
   ][dt.getUTCMonth()];
   const day = dt.getUTCDate();
   const year = dt.getUTCFullYear();
@@ -77,7 +119,9 @@ function safeImageUrl(raw: string | string[] | null | undefined): string {
   try {
     const parsed = JSON.parse(s);
     if (Array.isArray(parsed)) {
-      const first = parsed.find((x) => typeof x === "string" && x.trim().length > 0);
+      const first = parsed.find(
+        (x) => typeof x === "string" && x.trim().length > 0
+      );
       return first ?? FALLBACK_IMG;
     }
     if (typeof parsed === "string" && parsed.trim()) return parsed;
@@ -89,11 +133,11 @@ function safeImageUrl(raw: string | string[] | null | undefined): string {
 }
 
 // ทำหน้ากากเลขบัตร 4 ตัวท้าย (รองรับหลายรูปแบบ)
-function last4Mask(v?: string | null) {
+function last3Mask(v?: string | null) {
   if (!v) return undefined;
   const cleaned = v.replace(/\s+/g, "").replace(/[^\d]/g, "");
-  if (cleaned.length >= 3 && cleaned.length <= 4) return `*${cleaned}`;
-  if (cleaned.length > 4) return `*${cleaned.slice(-4)}`;
+  if (cleaned.length >= 3 && cleaned.length <= 3) return `*${cleaned}`;
+  if (cleaned.length > 3) return `*${cleaned.slice(-3)}`;
   return undefined;
 }
 
@@ -103,13 +147,13 @@ const PAGE_SIZE = 6;
 export default function BookingHistoryPage() {
   // รายการจองที่แปลงแล้ว -> ส่งให้ BookingCard แสดง
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [loading, setLoading] = useState(true);          // สถานะกำลังโหลด
+  const [loading, setLoading] = useState(true); // สถานะกำลังโหลด
   const [error, setError] = useState<string | null>(null); // ข้อความผิดพลาดถ้ามี
-  const [page, setPage] = useState(1);                   // หน้า pagination ปัจจุบัน
-  const [total, setTotal] = useState(0);                 // จำนวนทั้งหมด (ไว้คำนวณหน้ารวม)
+  const [page, setPage] = useState(1); // หน้า pagination ปัจจุบัน
+  const [total, setTotal] = useState(0); // จำนวนทั้งหมด (ไว้คำนวณหน้ารวม)
 
   const [userId, setUserId] = useState<string | null>(null); // id ผู้ใช้จาก Supabase Auth
-  const [authLoading, setAuthLoading] = useState(true);      // รอเช็ค session ให้เรียบร้อยก่อน
+  const [authLoading, setAuthLoading] = useState(true); // รอเช็ค session ให้เรียบร้อยก่อน
 
   // requestSeqRef: ตัวนับลำดับ request ล่าสุด เพื่อกัน race condition
   // ถ้า response เก่ากลับมาทีหลัง จะไม่เอามาทับ state ปัจจุบัน
@@ -146,7 +190,7 @@ export default function BookingHistoryPage() {
     // เพิ่มลำดับ request (seq) เพื่อบอกว่า request ชุดนี้ใหม่สุด
     const mySeq = ++requestSeqRef.current;
 
-    let alive = true;       // flag กัน setState ตอน component unmount แล้ว
+    let alive = true; // flag กัน setState ตอน component unmount แล้ว
     setLoading(true);
     setError(null);
 
@@ -175,6 +219,7 @@ export default function BookingHistoryPage() {
             additional_request,
             promo_code,
             special_requests,
+            standard_request,
             status,
             payment_method,
             rooms:room_id (
@@ -184,7 +229,7 @@ export default function BookingHistoryPage() {
               guests
             ),
             payments:payments!booking_id (
-              card_last_four,
+              card_last_three,
               amount
             )
           `,
@@ -210,10 +255,37 @@ export default function BookingHistoryPage() {
 
         // map ข้อมูลจาก DB ในรูปแบบที่การ์ดใช้
         const rows = (data ?? []) as BookingRowRaw[];
+
+        // ดึงข้อมูล promocode แยกต่างหาก (ถ้ามี promo_code)
+        const promoCodeMap = new Map<string, PromoCodeLite>();
+        const uniquePromoCodes = [
+          ...new Set(rows.map((row) => row.promo_code).filter(Boolean)),
+        ];
+
+        if (uniquePromoCodes.length > 0) {
+          try {
+            const { data: promoCodes, error: promoError } = await supabase
+              .from("promo_codes")
+              .select("code, discount_amount, discount_percent")
+              .in("code", uniquePromoCodes);
+
+            if (!promoError && promoCodes) {
+              promoCodes.forEach((promo) => {
+                promoCodeMap.set(promo.code, {
+                  discount_amount: promo.discount_amount,
+                  discount_percent: promo.discount_percent,
+                });
+              });
+            }
+          } catch (e) {
+            console.warn("Failed to fetch promocodes:", e);
+          }
+        }
+
         const mapped: Booking[] = rows.map((row) => {
           // rooms อาจเป็น object หรือ array → normalize เอาตัวแรก
           const roomsObj: RoomFields | null = Array.isArray(row.rooms)
-            ? (row.rooms[0] ?? null)
+            ? row.rooms[0] ?? null
             : row.rooms;
 
           const roomName = roomsObj?.room_type?.trim() || "Room";
@@ -224,30 +296,101 @@ export default function BookingHistoryPage() {
               ? roomsObj.guests
               : 1;
 
-          // แปลง special_requests ให้เป็น array ของ string 
+          // แปลง special_requests ให้เป็น array ของ string (รองรับ jsonb)
           let requests: string[] = [];
           const sr = row.special_requests;
           if (Array.isArray(sr)) {
-            requests = [...sr];
+            // ถ้าเป็น array ของ JSON objects (jsonb)
+            requests = sr.map((req: unknown) => {
+              if (typeof req === "object" && req !== null && "name" in req) {
+                return String((req as { name: unknown }).name);
+              }
+              return String(req);
+            });
           } else if (typeof sr === "string" && sr.trim()) {
+            // ถ้าเป็น JSON string
             try {
               const parsed = JSON.parse(sr);
-              requests = Array.isArray(parsed)
-                ? parsed.filter(Boolean)
-                : sr.split(",").map((s) => s.trim()).filter(Boolean);
+              if (Array.isArray(parsed)) {
+                requests = parsed.map((req: unknown) => {
+                  if (
+                    typeof req === "object" &&
+                    req !== null &&
+                    "name" in req
+                  ) {
+                    return String((req as { name: unknown }).name);
+                  }
+                  return String(req);
+                });
+              } else {
+                requests = [
+                  typeof parsed === "object" &&
+                  parsed !== null &&
+                  "name" in parsed
+                    ? String((parsed as { name: unknown }).name)
+                    : String(parsed),
+                ];
+              }
             } catch {
-              requests = sr.split(",").map((s) => s.trim()).filter(Boolean);
+              // ถ้า parse ไม่ได้ ให้ใช้เป็น string ตรงๆ
+              requests = [sr];
             }
           }
           requests.sort();
-          const items = requests.map((r) => ({ label: r, amount: 0 }));
+
+          // แปลง standard_request ให้เป็น array ของ string
+          let standardRequests: string[] = [];
+          const stdReq = row.standard_request;
+          if (Array.isArray(stdReq)) {
+            standardRequests = [...stdReq];
+          }
+
+          // รวม standard requests เข้ากับ special requests พร้อมราคา
+          const specialRequestItems = requests.map((r) => {
+            // หาราคาจาก special_requests ถ้ามี
+            let amount = 0;
+            if (
+              typeof row.special_requests === "object" &&
+              row.special_requests
+            ) {
+              const sr = row.special_requests;
+              if (Array.isArray(sr)) {
+                const foundItem = sr.find((item: unknown) => {
+                  if (
+                    typeof item === "object" &&
+                    item !== null &&
+                    "name" in item
+                  ) {
+                    return (item as { name: unknown }).name === r;
+                  }
+                  return item === r;
+                });
+                if (
+                  typeof foundItem === "object" &&
+                  foundItem &&
+                  "price" in foundItem
+                ) {
+                  const price = (foundItem as { price: unknown }).price;
+                  amount = typeof price === "number" ? price : 0;
+                }
+              }
+            }
+            return { label: r, amount };
+          });
+
+          const standardRequestItems = standardRequests.map((req) => ({
+            label: `Standard: ${req}`,
+            amount: 0,
+          }));
+
+          const items = [...specialRequestItems, ...standardRequestItems];
 
           // ดึงข้อมูลจ่ายเงินตัวแรก (ถ้ามีหลาย payment)
           const paymentObj = Array.isArray(row.payments)
             ? row.payments[0] ?? null
             : row.payments;
 
-          const mask = last4Mask(paymentObj?.card_last_four);
+          const mask = last3Mask(paymentObj?.card_last_three);
           // ถ้าไม่มีจำนวนเงินใน payments ใช้ total_amount ใน bookings แทน
           const totalAmount =
             typeof paymentObj?.amount === "number"
@@ -279,6 +422,12 @@ export default function BookingHistoryPage() {
             total: totalAmount,
             additionalRequest: row.additional_request || undefined,
             promoCode: row.promo_code || undefined,
+            promoDiscount: row.promo_code
+              ? calculatePromoDiscount(
+                  promoCodeMap.get(row.promo_code) || null,
+                  totalAmount
+                )
+              : 0,
           };
         });
 
@@ -318,12 +467,15 @@ export default function BookingHistoryPage() {
   };
 
   // จำนวนหน้าทั้งหมด (อย่างน้อย 1 หน้า)
-  const totalPages = useMemo(() => Math.max(1, Math.ceil(total / PAGE_SIZE)), [total]);
+  const totalPages = useMemo(
+    () => Math.max(1, Math.ceil(total / PAGE_SIZE)),
+    [total]
+  );
 
   // สร้างกลุ่มหมายเลขหน้าให้แสดง (แถบ pagination)
   const visiblePages = useMemo(() => {
     const pages: number[] = [];
-    const maxToShow = 5;           // แสดงได้สูงสุดกี่ปุ่ม
+    const maxToShow = 5; // แสดงได้สูงสุดกี่ปุ่ม
     const totalP = totalPages;
     if (totalP <= maxToShow) {
       for (let i = 1; i <= totalP; i++) pages.push(i);
@@ -345,14 +497,22 @@ export default function BookingHistoryPage() {
         </h1>
 
         {/* สถานะต่างๆตอนบน */}
-        {(authLoading || loading) && <div className="px-5 text-gray-600">Loading...</div>}
-
-        {!authLoading && !loading && !error && userId && bookings.length === 0 && (
-          <div className="px-5 text-gray-600">No bookings found.</div>
+        {(authLoading || loading) && (
+          <div className="px-5 text-gray-600">Loading...</div>
         )}
 
+        {!authLoading &&
+          !loading &&
+          !error &&
+          userId &&
+          bookings.length === 0 && (
+            <div className="px-5 text-gray-600">No bookings found.</div>
+          )}
+
         {!authLoading && !userId && (
-          <div className="px-5 text-gray-600">Please sign in to view your bookings.</div>
+          <div className="px-5 text-gray-600">
+            Please sign in to view your bookings.
+          </div>
         )}
 
         {error && !loading && (
@@ -409,7 +569,9 @@ export default function BookingHistoryPage() {
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page === totalPages}
               className={`h-8 w-8 grid place-items-center rounded-md text-gray-400 hover:text-gray-700 ${
-                page === totalPages ? "opacity-40 cursor-not-allowed" : "cursor-pointer"
+                page === totalPages
+                  ? "opacity-40 cursor-not-allowed"
+                  : "cursor-pointer"
               }`}
               aria-label="Next page"
             >

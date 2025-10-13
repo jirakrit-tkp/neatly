@@ -19,7 +19,7 @@ import {
   calculateNights,
   isBookingExpired,
 } from "@/utils/bookingUtils";
-
+import { PromotionService } from "@/services/promotionService";
 export class BookingService {
   // ===== CREATE BOOKING =====
   static async createBooking(
@@ -86,24 +86,71 @@ export class BookingService {
         specialRequests: bookingData.specialRequests,
       });
 
+      // คำนวณส่วนลดใหม่โดยใช้ PromotionService
+      console.log("=== DEBUG PROMOCODE ===");
+      console.log("PromotionCode:", bookingData.promotionCode);
+      console.log("PromoCode:", bookingData.promoCode);
+      console.log("SpecialRequests:", bookingData.specialRequests);
+
+      let promoDiscount = 0;
+      if (bookingData.promoCode) {
+        const promoResult = await this.getPromoDiscountFromDatabase(
+          bookingData.promoCode,
+          basePrice * nights +
+            bookingData.specialRequests
+              .filter((req) => req.selected && req.price)
+              .reduce((sum, req) => sum + (req.price || 0), 0)
+        );
+
+        if (promoResult.error) {
+          console.log("Promo code error:", promoResult.error);
+          return {
+            success: false,
+            message: "Invalid promotion code",
+            error: promoResult.error,
+          };
+        }
+
+        promoDiscount = promoResult.discount;
+      }
+
+      console.log("PromoDiscount calculated:", promoDiscount);
+      console.log("Base calculation:", {
+        basePrice,
+        nights,
+        subtotal: basePrice * nights,
+        specialRequestsTotal: bookingData.specialRequests
+          .filter((req) => req.selected && req.price)
+          .reduce((sum, req) => sum + (req.price || 0), 0),
+      });
+
       const calculation = calculateBookingTotal(
         basePrice,
         nights,
         bookingData.specialRequests,
-        bookingData.promotionCode?.discount || 0
+        promoDiscount // ← เพิ่มเครื่องหมายลบ
       );
+
+      console.log("Final calculation result:", calculation);
+      console.log("=== END DEBUG PROMOCODE ===");
+
       console.log("Calculation result:", calculation);
 
       // 4. Create booking record
       const bookingInsertData = {
         room_id: bookingData.roomId,
-        customer_id: user.id, // ← ใช้ user.id แทน email
+        customer_id: user.id,
         check_in_date: bookingData.checkIn,
         check_out_date: bookingData.checkOut,
         total_amount: calculation.total,
         status: BOOKING_STATUSES.PENDING,
         promo_code: bookingData.promoCode,
-        special_requests: bookingData.specialRequests,
+        special_requests: bookingData.specialRequests.filter(
+          (req) => req.type === "special" && req.selected
+        ), // ← เฉพาะ special requests
+        standard_request: bookingData.specialRequests
+          .filter((req) => req.type === "standard" && req.selected) // ← เฉพาะ standard ที่เลือก
+          .map((req) => req.name), // ← ส่งเป็น array ตรงๆ
         additional_request: bookingData.additionalRequests,
         payment_method: bookingData.paymentMethod,
       };
@@ -445,7 +492,7 @@ export class BookingService {
 
     return {
       roomType: roomInfo.room_type,
-      roomImage: roomInfo.main_image_url,
+      roomImage: roomInfo.main_image_url[0], // ← เพิ่ม [0] เพื่อเอา element แรก
       checkIn: booking.check_in_date, // แก้ไขเป็น check_in_date
       checkOut: booking.check_out_date, // แก้ไขเป็น check_out_date
       guests: 2,
@@ -461,5 +508,102 @@ export class BookingService {
   // ===== CHECK BOOKING EXPIRY =====
   static isBookingExpired(booking: Booking): boolean {
     return isBookingExpired(booking.created_at);
+  }
+
+  // ===== GET PROMO DISCOUNT FROM DATABASE =====
+  private static async getPromoDiscountFromDatabase(
+    promoCode: string,
+    totalAmount: number
+  ): Promise<{ discount: number; error?: string }> {
+    try {
+      console.log("=== Getting promo discount from database ===");
+      console.log("PromoCode:", promoCode);
+      console.log("TotalAmount:", totalAmount);
+
+      const { data: promotion, error } = await supabase
+        .from("promo_codes")
+        .select("discount_amount, discount_percent")
+        .eq("code", promoCode.toUpperCase())
+        .eq("is_active", true)
+        .single();
+
+      if (error || !promotion) {
+        console.log("Promotion not found or inactive:", error);
+        return {
+          discount: 0,
+          error: "Promotion code not found or inactive",
+        };
+      }
+
+      console.log("Promotion found:", promotion);
+
+      // ใช้ discount_amount เป็นหลัก
+      if (promotion.discount_amount && promotion.discount_amount > 0) {
+        const discount = Math.min(promotion.discount_amount, totalAmount);
+        console.log("Using discount_amount:", discount);
+
+        // อัปเดต used_count
+        await this.incrementPromoUsedCount(promoCode);
+
+        return { discount };
+      }
+
+      // Fallback ใช้ discount_percent
+      if (promotion.discount_percent && promotion.discount_percent > 0) {
+        const discount = (totalAmount * promotion.discount_percent) / 100;
+        console.log("Using discount_percent:", discount);
+
+        // อัปเดต used_count
+        await this.incrementPromoUsedCount(promoCode);
+
+        return { discount };
+      }
+
+      console.log("No valid discount found");
+      return {
+        discount: 0,
+        error: "No valid discount configuration found",
+      };
+    } catch (error) {
+      console.error("Error fetching promo discount:", error);
+      return {
+        discount: 0,
+        error: "Failed to fetch promotion code details",
+      };
+    }
+  }
+
+  private static async incrementPromoUsedCount(
+    promoCode: string
+  ): Promise<void> {
+    try {
+      // ใช้ RPC function หรือ select + update แทน raw
+      const { data: currentPromo, error: fetchError } = await supabase
+        .from("promo_codes")
+        .select("used_count")
+        .eq("code", promoCode.toUpperCase())
+        .single();
+
+      if (fetchError || !currentPromo) {
+        console.error("Failed to fetch current used_count:", fetchError);
+        return;
+      }
+
+      const { error } = await supabase
+        .from("promo_codes")
+        .update({
+          used_count: currentPromo.used_count + 1,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("code", promoCode.toUpperCase());
+
+      if (error) {
+        console.error("Failed to increment used_count:", error);
+      } else {
+        console.log("Successfully incremented used_count for:", promoCode);
+      }
+    } catch (error) {
+      console.error("Error incrementing used_count:", error);
+    }
   }
 }
