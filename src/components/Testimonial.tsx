@@ -54,7 +54,7 @@ const Testimonial = () => {
   return (
     <section
       className="
-        bg-[#F5F5F5]
+        bg-green-300
         w-full
         flex flex-col items-center
         py-16 md:py-32
@@ -94,19 +94,21 @@ const Testimonial = () => {
           {/* Navigation Buttons */}
           <button
             onClick={prevSlide}
-            className="
+            className={`
               absolute left-0 md:left-[-60px]
               w-10 h-10 md:w-12 md:h-12
-              bg-[#FF6B35] hover:bg-[#E55A2B]
+              bg-transparent
               rounded-full
               flex items-center justify-center
               transition-colors duration-200
               z-10
-            "
+              border-2 border-orange-400
+              hover:border-orange-500
+            `}
             aria-label="Previous testimonial"
           >
             <svg
-              className="w-4 h-4 md:w-5 md:h-5 text-white"
+              className="w-4 h-4 md:w-5 md:h-5 text-orange-400"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -122,19 +124,21 @@ const Testimonial = () => {
 
           <button
             onClick={nextSlide}
-            className="
+            className={`
               absolute right-0 md:right-[-60px]
               w-10 h-10 md:w-12 md:h-12
-              bg-[#FF6B35] hover:bg-[#E55A2B]
+              bg-transparent
               rounded-full
               flex items-center justify-center
               transition-colors duration-200
               z-10
-            "
+              border-2 border-orange-400
+              hover:border-orange-500
+            `}
             aria-label="Next testimonial"
           >
             <svg
-              className="w-4 h-4 md:w-5 md:h-5 text-white"
+              className="w-4 h-4 md:w-5 md:h-5 text-orange-400"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -199,10 +203,11 @@ const Testimonial = () => {
                 w-2 h-2 md:w-3 md:h-3
                 rounded-full
                 transition-colors duration-200
+                border-2
                 ${
                   index === currentSlide
-                    ? "bg-[#6B46C1]"
-                    : "bg-[#D1D5DB] hover:bg-[#9CA3AF]"
+                    ? "bg-orange-400 border-orange-400"
+                    : "bg-transparent border-orange-400 hover:bg-orange-200"
                 }
               `}
               aria-label={`Go to testimonial ${index + 1}`}
@@ -212,7 +217,7 @@ const Testimonial = () => {
 
         {/* Auto Slide Indicator */}
         <div className="mt-4 text-[#999] text-[10px] md:text-[12px]">
-          
+        
         </div>
       </div>
     </section>
