@@ -195,12 +195,13 @@ export default function Chatbot() {
     try {
       console.log('🔄 Calling clear messages API...');
       
-      const response = await fetch('/api/chat/clear-messages', {
+      const response = await fetch('/api/chat/cleanup', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          mode: 'manual',
           sessionId: currentSession.id,
         }),
       });
@@ -224,6 +225,10 @@ export default function Chatbot() {
       setCurrentTicket(null);
       setIsTicketSolved(false);
       setIsBotTyping(false);
+      
+      // Reset session so the next message creates a fresh session
+      // This prevents posting to a deleted session id
+      setCurrentSession(null);
       
       console.log('✅ Messages and tickets cleared successfully');
       console.log('📊 Messages count after clear:', 0);

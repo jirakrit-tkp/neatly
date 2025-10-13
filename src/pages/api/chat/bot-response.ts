@@ -37,6 +37,23 @@ export default async function handler(
       return res.status(400).json({ error: 'Session ID and user message are required' });
     }
 
+    // Check if session exists and is active
+    const { data: session, error: sessionError } = await supabase
+      .from('chatbot_sessions')
+      .select('id, status, anonymous_id, customer_id')
+      .eq('id', sessionId)
+      .single();
+
+    if (sessionError || !session) {
+      console.error('❌ Session not found:', { sessionId, error: sessionError });
+      return res.status(404).json({ error: 'Session not found' });
+    }
+
+    if (session.status !== 'active') {
+      console.error('❌ Session is not active:', { sessionId, status: session.status });
+      return res.status(400).json({ error: 'Session is not active' });
+    }
+
     // Check if there's an active ticket with in_progress status AND live chat is enabled
     const { data: activeTickets, error: ticketError } = await supabase
       .from('chatbot_tickets')
