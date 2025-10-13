@@ -76,7 +76,7 @@ export default function ConfirmModal({
           </p>
 
           {/* Buttons row */}
-          <div className="mt-6 flex justify-end gap-4">
+          <div className="mt-6 flex justify-end flex-col md:flex-row gap-4">
             <button
               ref={confirmBtnRef}
               type="button"
