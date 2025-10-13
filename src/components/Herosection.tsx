@@ -64,19 +64,26 @@ export default function Herosection() {
           <h1
             className="text-white text-center font-serif"
             style={{
-              fontSize: "clamp(2.5rem, 6vw, 56px)",
-              lineHeight: "clamp(2.5rem, 7vw, 68px)",
+              fontSize: "clamp(2.75rem, 7vw, 88px)", // 44px on mobile, 88px on desktop
+              lineHeight: "clamp(3rem, 8vw, 92px)",
               marginTop: "0",
               marginBottom: "32px",
               textShadow: "0 2px 16px rgba(0,0,0,0.25)",
               letterSpacing: 0.5,
               fontWeight: 500,
-              maxWidth: 700,
+              maxWidth: 1000,
               width: "100%",
               display: "block",
             }}
           >
-            A Best Place for Your<br />Neatly Experience
+            <span className="hidden sm:inline">
+              A Best Place for Your<br />Neatly Experience
+            </span>
+            <span className="inline sm:hidden">
+              A Best Place<br />
+              for Your<br />
+              Neatly Experience
+            </span>
           </h1>
           <div style={{ height: 40 }} />
           {/* Search Box */}
