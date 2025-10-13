@@ -8,6 +8,7 @@ import OriginalBookingDetail from "@/components/booking/OriginalBookingDetail";
 import LoadingScreen from "@/components/admin/LoadingScreen";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import { calculateNights } from "@/utils/dateUtils";
+import { toast } from "sonner";
 
 interface RoomforBookings {
   guests: number;
@@ -98,7 +99,7 @@ export default function ChangeBookingPage() {
     const newNights = calculateNights(checkIn, checkOut);
 
     if (newNights !== originalNights) {
-      alert(
+      toast.error(
         `Cannot update booking: Number of nights must match the original booking (${originalNights} ${
           originalNights === 1 ? "night" : "nights"
         }).`
@@ -122,11 +123,14 @@ export default function ChangeBookingPage() {
         throw new Error("Failed to update booking");
       }
 
-      alert("Booking updated successfully!");
-      router.push("/customer/booking-history");
+      toast.success("Booking updated successfully!");
+      // Delay redirect to allow toast to be visible
+      setTimeout(() => {
+        router.push("/customer/booking-history");
+      }, 1000);
     } catch (error) {
       console.error("Error updating booking:", error);
-      alert("Failed to update booking. Please try again.");
+      toast.error("Failed to update booking. Please try again.");
     }
   };
 
@@ -179,6 +183,9 @@ export default function ChangeBookingPage() {
             <br className="hidden md:block" />
             <span>and Check-out Date</span>
           </h1>
+          <button onClick={() => toast.success("Test toast!")}>
+            Test Toast
+          </button>
 
           {/* Booking Card */}
           <div className="bg-[#F7F7FB] md:mt-30">
