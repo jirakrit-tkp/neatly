@@ -1,7 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { PaymentMethod, CreditCardDetails } from "@/types/booking";
 import { PAYMENT_METHODS } from "@/constants/booking";
 import { BookingButtons } from "../BookingButtons";
+import { CreditCardIcon } from "@/components/customer/icons/CreditCardIcon";
+import { CashIcon } from "@/components/customer/icons/CashIcon";
+import { Input } from "@/components/customer/forms/form-fields/Input";
+import { FormField } from "@/components/customer/forms/form-fields/FormField";
+import { usePaymentValidation } from "@/hooks/usePaymentValidation";
+import { Controller } from "react-hook-form";
 
 interface PaymentMethodFormProps {
   paymentMethod: PaymentMethod;
@@ -13,15 +19,11 @@ interface PaymentMethodFormProps {
   onPromoCodeApply: () => void;
   promoCodeApplied: boolean;
   promoDiscount: number;
+  onPromoDiscountUpdate?: (discount: number) => void;
   onBack?: () => void;
   onConfirm?: () => void;
   disabled?: boolean;
   loading?: boolean;
-  errors?: {
-    paymentMethod?: string;
-    creditCard?: Record<string, string>;
-    promoCode?: string;
-  };
 }
 
 export const PaymentMethodForm: React.FC<PaymentMethodFormProps> = ({
@@ -34,17 +36,63 @@ export const PaymentMethodForm: React.FC<PaymentMethodFormProps> = ({
   onPromoCodeApply,
   promoCodeApplied,
   promoDiscount,
+  onPromoDiscountUpdate,
   onBack,
   onConfirm,
   disabled = false,
   loading = false,
-  errors = {},
 }) => {
   const [showCreditCardForm, setShowCreditCardForm] = useState(false);
+
+  // Initialize payment validation hook
+  const {
+    form,
+    errors: validationErrors,
+    onSubmit,
+    watchedValues,
+    setValue,
+    clearFieldError,
+    promoDiscount: validationPromoDiscount,
+    promoCodeApplied: validationPromoCodeApplied,
+  } = usePaymentValidation();
+
+  // Sync form values with props
+  useEffect(() => {
+    const formMethod =
+      paymentMethod === PAYMENT_METHODS.CREDIT_CARD ? "credit_card" : "cash";
+
+    console.log("🔍 PaymentMethodForm: Syncing form values with props");
+    console.log("🔍 paymentMethod:", paymentMethod);
+    console.log("🔍 creditCardDetails:", creditCardDetails);
+    console.log("🔍 promoCode:", promoCode);
+
+    setValue("paymentMethod", formMethod);
+    setValue("creditCard.cardNumber", creditCardDetails.cardNumber);
+    setValue("creditCard.cardOwner", creditCardDetails.cardOwner);
+    setValue("creditCard.expiryDate", creditCardDetails.expiryDate);
+    setValue("creditCard.cvc", creditCardDetails.cvc);
+    setValue("promoCode", promoCode || "");
+
+    console.log("✅ PaymentMethodForm: Form values synced");
+  }, [paymentMethod, creditCardDetails, promoCode, setValue]);
+
+  // Debug validation errors
+  useEffect(() => {
+    console.log(
+      "🔍 PaymentMethodForm: validationErrors changed:",
+      validationErrors
+    );
+  }, [validationErrors]);
 
   const handlePaymentMethodChange = (method: PaymentMethod) => {
     onPaymentMethodChange(method);
     setShowCreditCardForm(method === PAYMENT_METHODS.CREDIT_CARD);
+    // Update form value (convert to schema format)
+    const formMethod =
+      method === PAYMENT_METHODS.CREDIT_CARD ? "credit_card" : "cash";
+    setValue("paymentMethod", formMethod);
+    // Clear any existing errors
+    clearFieldError("paymentMethod");
   };
 
   const handleCreditCardChange = (
@@ -55,6 +103,55 @@ export const PaymentMethodForm: React.FC<PaymentMethodFormProps> = ({
       ...creditCardDetails,
       [field]: value,
     });
+    // Update form value
+    setValue(`creditCard.${field}` as any, value);
+    // Clear field error when user starts typing
+    clearFieldError(`creditCard.${field}`);
+  };
+
+  const handlePromoCodeChange = (value: string) => {
+    onPromoCodeChange(value);
+    // Update form value
+    setValue("promoCode", value);
+    // Clear field error when user starts typing
+    clearFieldError("promoCode");
+  };
+
+  // Effect to update parent component when promo discount changes
+  useEffect(() => {
+    // Update promo discount in parent component when validation changes
+    if (onPromoDiscountUpdate) {
+      onPromoDiscountUpdate(validationPromoDiscount);
+    }
+  }, [validationPromoDiscount, onPromoDiscountUpdate]);
+
+  // Handle form submission with validation
+  const handleFormSubmit = async () => {
+    console.log("🔍 PaymentMethodForm: handleFormSubmit called");
+
+    try {
+      console.log("🔍 PaymentMethodForm: Calling onSubmit...");
+      const validatedData = await onSubmit();
+
+      // Check if validation passed (returned data) or failed (returned false)
+      if (validatedData === false) {
+        console.log(
+          "❌ PaymentMethodForm: Validation failed - not calling onConfirm"
+        );
+        return;
+      }
+
+      console.log("✅ PaymentMethodForm: Validation passed, calling onConfirm");
+
+      // If validation passes, call the original onConfirm
+      if (onConfirm) {
+        onConfirm();
+      }
+    } catch (error) {
+      // This should not happen anymore since we don't throw errors
+      console.error("❌ PaymentMethodForm: Unexpected error:", error);
+      return;
+    }
   };
 
   const formatCardNumber = (value: string) => {
@@ -78,223 +175,240 @@ export const PaymentMethodForm: React.FC<PaymentMethodFormProps> = ({
     {
       value: PAYMENT_METHODS.CREDIT_CARD,
       label: "Credit Card",
-      icon: "💳",
-      description: "Pay securely with your credit card",
+      icon: CreditCardIcon,
     },
     {
       value: PAYMENT_METHODS.CASH,
       label: "Cash",
-      icon: "💵",
-      description: "Pay in cash at the hotel",
+      icon: CashIcon,
     },
   ];
 
   return (
-    <div className="p-8 space-y-8 border rounded-lg bg-[var(--color-white)] border-[var(--color-gray-300)]">
-      <h2 className="text-xl font-semibold text-[var(--color-gray-800)] mb-6 font-[var(--font-inter)]">
-        Payment Method
-      </h2>
-
+    <div className="p-8 space-y-8 border border-gray-300 rounded-lg bg-white">
       {/* Payment Method Selection */}
       <div className="space-y-4 mb-8">
-        <label className="block text-sm font-medium text-[var(--color-gray-700)] font-[var(--font-inter)]">
-          Choose Payment Method
-        </label>
-
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {paymentMethodOptions.map((option) => (
             <div
               key={option.value}
-              className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 ${
+              className={`flex items-center justify-center h-20 p-4 border rounded cursor-pointer transition-all duration-200 ${
                 paymentMethod === option.value
-                  ? "border-[var(--color-orange-500)] bg-[var(--color-orange-50)]"
-                  : "border-[var(--color-gray-200)] hover:border-[var(--color-gray-300)]"
+                  ? "border-orange-500 shadow-[4px_4px_16px_rgba(0,0,0,0.08)]"
+                  : "border-gray-300 hover:border-orange-500"
               }`}
               onClick={() => handlePaymentMethodChange(option.value)}
             >
               <div className="flex items-center">
-                <span className="mr-3 text-2xl">{option.icon}</span>
+                <div className="mr-3">
+                  <option.icon
+                    width={26}
+                    height={20}
+                    className={`${
+                      paymentMethod === option.value
+                        ? "text-orange-500"
+                        : "text-gray-600"
+                    }`}
+                  />
+                </div>
                 <div>
-                  <h3 className="font-medium text-[var(--color-gray-900)] font-[var(--font-inter)]">
+                  <h3
+                    className={`text-xl font-semibold font-inter ${
+                      paymentMethod === option.value
+                        ? "text-orange-500"
+                        : "text-gray-600"
+                    }`}
+                  >
                     {option.label}
                   </h3>
-                  <p className="text-sm text-[var(--color-gray-600)] font-[var(--font-inter)]">
-                    {option.description}
-                  </p>
                 </div>
               </div>
             </div>
           ))}
         </div>
 
-        {errors.paymentMethod && (
-          <p className="text-sm text-[var(--color-red)] font-[var(--font-inter)]">
-            {errors.paymentMethod}
+        {validationErrors.paymentMethod && (
+          <p className="text-sm text-red-500 font-inter">
+            {validationErrors.paymentMethod.message}
           </p>
         )}
       </div>
 
       {/* Credit Card Form */}
       {paymentMethod === PAYMENT_METHODS.CREDIT_CARD && (
-        <div className="pt-6 mb-6 border-t border-[var(--color-gray-200)]">
-          <h3 className="mb-4 text-lg font-medium text-[var(--color-gray-900)] font-[var(--font-inter)]">
-            Credit Card Information
+        <div className="pt-6 mb-6 border-gray-200">
+          <h3 className="mb-4 text-lg text-gray-900 font-semibold font-inter">
+            Credit Card
           </h3>
 
           <div className="space-y-4">
             {/* Card Number */}
-            <div>
-              <label className="block mb-2 text-sm font-medium text-[var(--color-gray-700)] font-[var(--font-inter)]">
-                Card Number
-              </label>
-              <input
-                type="text"
-                value={creditCardDetails.cardNumber}
-                onChange={(e) => {
-                  const formatted = formatCardNumber(e.target.value);
-                  handleCreditCardChange("cardNumber", formatted);
-                }}
-                placeholder="1234 5678 9012 3456"
-                maxLength={19}
-                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--color-orange-500)] font-[var(--font-inter)] ${
-                  errors.creditCard?.cardNumber
-                    ? "border-[var(--color-red)]"
-                    : "border-[var(--color-gray-300)] focus:border-[var(--color-orange-500)]"
-                }`}
+            <FormField
+              label="Card Number"
+              error={
+                validationErrors.creditCard?.cardNumber
+                  ? {
+                      message: validationErrors.creditCard.cardNumber.message,
+                      type: "validation",
+                    }
+                  : undefined
+              }
+            >
+              <Controller
+                control={form.control}
+                name="creditCard.cardNumber"
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    type="text"
+                    value={creditCardDetails.cardNumber}
+                    onChange={(e) => {
+                      const formatted = formatCardNumber(e.target.value);
+                      handleCreditCardChange("cardNumber", formatted);
+                    }}
+                    placeholder="1234 5678 9012 3456"
+                    maxLength={19}
+                    error={!!validationErrors.creditCard?.cardNumber}
+                  />
+                )}
               />
-              {errors.creditCard?.cardNumber && (
-                <p className="mt-1 text-sm text-[var(--color-red)] font-[var(--font-inter)]">
-                  {errors.creditCard.cardNumber}
-                </p>
-              )}
-            </div>
+            </FormField>
 
             {/* Card Holder Name */}
-            <div>
-              <label className="block mb-2 text-sm font-medium text-[var(--color-gray-700)] font-[var(--font-inter)]">
-                Cardholder Name
-              </label>
-              <input
-                type="text"
-                value={creditCardDetails.cardOwner}
-                onChange={(e) =>
-                  handleCreditCardChange("cardOwner", e.target.value)
-                }
-                placeholder="John Doe"
-                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--color-orange-500)] font-[var(--font-inter)] ${
-                  errors.creditCard?.cardholderName
-                    ? "border-[var(--color-red)]"
-                    : "border-[var(--color-gray-300)] focus:border-[var(--color-orange-500)]"
-                }`}
+            <FormField
+              label="Cardholder Name"
+              error={
+                validationErrors.creditCard?.cardOwner
+                  ? {
+                      message: validationErrors.creditCard.cardOwner.message,
+                      type: "validation",
+                    }
+                  : undefined
+              }
+            >
+              <Controller
+                control={form.control}
+                name="creditCard.cardOwner"
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    type="text"
+                    value={creditCardDetails.cardOwner}
+                    onChange={(e) =>
+                      handleCreditCardChange("cardOwner", e.target.value)
+                    }
+                    placeholder="John Doe"
+                    error={!!validationErrors.creditCard?.cardOwner}
+                  />
+                )}
               />
-              {errors.creditCard?.cardholderName && (
-                <p className="mt-1 text-sm text-[var(--color-red)] font-[var(--font-inter)]">
-                  {errors.creditCard.cardholderName}
-                </p>
-              )}
-            </div>
+            </FormField>
 
             {/* Expiry Date and CVV */}
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div>
-                <label className="block mb-2 text-sm font-medium text-[var(--color-gray-700)] font-[var(--font-inter)]">
-                  Expiry Date
-                </label>
-                <input
-                  type="text"
-                  value={creditCardDetails.expiryDate}
-                  onChange={(e) => {
-                    const formatted = formatExpiryDate(e.target.value);
-                    handleCreditCardChange("expiryDate", formatted);
-                  }}
-                  placeholder="MM/YY"
-                  maxLength={5}
-                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--color-orange-500)] font-[var(--font-inter)] ${
-                    errors.creditCard?.expiryDate
-                      ? "border-[var(--color-red)]"
-                      : "border-[var(--color-gray-300)] focus:border-[var(--color-orange-500)]"
-                  }`}
+              <FormField
+                label="Expiry Date"
+                error={
+                  validationErrors.creditCard?.expiryDate
+                    ? {
+                        message: validationErrors.creditCard.expiryDate.message,
+                        type: "validation",
+                      }
+                    : undefined
+                }
+              >
+                <Controller
+                  control={form.control}
+                  name="creditCard.expiryDate"
+                  render={({ field }) => (
+                    <Input
+                      {...field}
+                      type="text"
+                      value={creditCardDetails.expiryDate}
+                      onChange={(e) => {
+                        const formatted = formatExpiryDate(e.target.value);
+                        handleCreditCardChange("expiryDate", formatted);
+                      }}
+                      placeholder="MM/YY"
+                      maxLength={5}
+                      error={!!validationErrors.creditCard?.expiryDate}
+                    />
+                  )}
                 />
-                {errors.creditCard?.expiryDate && (
-                  <p className="mt-1 text-sm text-[var(--color-red)] font-[var(--font-inter)]">
-                    {errors.creditCard.expiryDate}
-                  </p>
-                )}
-              </div>
+              </FormField>
 
-              <div>
-                <label className="block mb-2 text-sm font-medium text-[var(--color-gray-700)] font-[var(--font-inter)]">
-                  CVV
-                </label>
-                <input
-                  type="text"
-                  value={creditCardDetails.cvc}
-                  onChange={(e) => {
-                    const digits = e.target.value.replace(/\D/g, "");
-                    handleCreditCardChange("cvc", digits);
-                  }}
-                  placeholder="123"
-                  maxLength={4}
-                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--color-orange-500)] font-[var(--font-inter)] ${
-                    errors.creditCard?.cvc
-                      ? "border-[var(--color-red)]"
-                      : "border-[var(--color-gray-300)] focus:border-[var(--color-orange-500)]"
-                  }`}
+              <FormField
+                label="CVV"
+                error={
+                  validationErrors.creditCard?.cvc
+                    ? {
+                        message: validationErrors.creditCard.cvc.message,
+                        type: "validation",
+                      }
+                    : undefined
+                }
+              >
+                <Controller
+                  control={form.control}
+                  name="creditCard.cvc"
+                  render={({ field }) => (
+                    <Input
+                      {...field}
+                      type="text"
+                      value={creditCardDetails.cvc}
+                      onChange={(e) => {
+                        const digits = e.target.value.replace(/\D/g, "");
+                        handleCreditCardChange("cvc", digits);
+                      }}
+                      placeholder="123"
+                      maxLength={4}
+                      error={!!validationErrors.creditCard?.cvc}
+                    />
+                  )}
                 />
-                {errors.creditCard?.cvc && (
-                  <p className="mt-1 text-sm text-[var(--color-red)] font-[var(--font-inter)]">
-                    {errors.creditCard.cvc}
-                  </p>
-                )}
-              </div>
+              </FormField>
             </div>
           </div>
         </div>
       )}
 
       {/* Promotion Code */}
-      <div className="pt-6 border-t border-[var(--color-gray-200)]">
-        <h3 className="mb-4 text-lg font-medium text-[var(--color-gray-900)] font-[var(--font-inter)]">
+      <div className="pt-6 border-t border-gray-200">
+        <h3 className="mb-4 text-lg text-gray-900 font-medium font-inter">
           Promotion Code
         </h3>
 
-        <div className="flex gap-4">
-          <div className="flex-1">
-            <input
-              type="text"
-              value={promoCode}
-              onChange={(e) => onPromoCodeChange(e.target.value)}
-              placeholder="Enter promotion code"
-              className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--color-orange-500)] font-[var(--font-inter)] ${
-                errors.promoCode
-                  ? "border-[var(--color-red)]"
-                  : "border-[var(--color-gray-300)] focus:border-[var(--color-orange-500)]"
-              }`}
-            />
-            {errors.promoCode && (
-              <p className="mt-1 text-sm text-[var(--color-red)] font-[var(--font-inter)]">
-                {errors.promoCode}
-              </p>
+        <FormField
+          label=""
+          error={
+            validationErrors.promoCode
+              ? {
+                  message: validationErrors.promoCode.message,
+                  type: "validation",
+                }
+              : undefined
+          }
+        >
+          <Controller
+            control={form.control}
+            name="promoCode"
+            render={({ field }) => (
+              <Input
+                {...field}
+                type="text"
+                value={promoCode}
+                onChange={(e) => handlePromoCodeChange(e.target.value)}
+                placeholder="Enter promotion code"
+                error={!!validationErrors.promoCode}
+              />
             )}
-          </div>
+          />
+        </FormField>
 
-          <button
-            onClick={onPromoCodeApply}
-            disabled={!promoCode.trim() || promoCodeApplied}
-            className={`px-6 py-3 rounded-lg font-medium transition-colors font-[var(--font-inter)] ${
-              !promoCode.trim() || promoCodeApplied
-                ? "bg-[var(--color-gray-300)] text-[var(--color-gray-500)] cursor-not-allowed"
-                : "bg-[var(--color-orange-500)] text-white hover:bg-[var(--color-orange-600)]"
-            }`}
-          >
-            {promoCodeApplied ? "Applied" : "Apply"}
-          </button>
-        </div>
-
-        {promoCodeApplied && promoDiscount > 0 && (
-          <div className="p-4 mt-4 border border-[var(--color-green-200)] rounded-lg bg-[var(--color-green-50)]">
-            <p className="text-[var(--color-green-700)] font-[var(--font-inter)]">
-              🎉 Promotion code applied! You saved {promoDiscount} THB
+        {validationPromoCodeApplied && validationPromoDiscount > 0 && (
+          <div className="p-4 mt-4 border border-green-200 rounded-lg bg-green-50">
+            <p className="text-green-700 font-inter">
+              🎉 Promotion code applied! You saved {validationPromoDiscount} THB
             </p>
           </div>
         )}
@@ -303,7 +417,7 @@ export const PaymentMethodForm: React.FC<PaymentMethodFormProps> = ({
       {/* BookingButtons */}
       <BookingButtons
         onBack={onBack}
-        onConfirm={onConfirm}
+        onConfirm={handleFormSubmit}
         nextLabel="Confirm Booking"
         showBack={true}
         disabled={disabled}

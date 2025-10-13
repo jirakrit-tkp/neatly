@@ -289,10 +289,10 @@ export default function BookingPage() {
         guestInfo,
         roomId: selectedRoom.id,
         roomInfo: {
-          room_type: selectedRoom.room_type,      // ประเภทห้อง
-          price: selectedRoom.price,              // ราคาห้อง (สำคัญ!)
-          main_image_url: selectedRoom.main_image_url,  // รูปภาพ
-          amenities: selectedRoom.amenities,      // สิ่งอำนวยความสะดวก
+          room_type: selectedRoom.room_type, // ประเภทห้อง
+          price: selectedRoom.price, // ราคาห้อง (สำคัญ!)
+          main_image_url: selectedRoom.main_image_url, // รูปภาพ
+          amenities: selectedRoom.amenities, // สิ่งอำนวยความสะดวก
         } as Partial<RoomInfo>,
         checkIn: checkIn as string,
         checkOut: checkOut as string,
@@ -469,6 +469,7 @@ export default function BookingPage() {
             onPromoCodeApply={handlePromoCodeApply}
             promoCodeApplied={promoCodeApplied}
             promoDiscount={promoDiscount}
+            onPromoDiscountUpdate={setPromoDiscount}
             onBack={handleBack}
             onConfirm={handleConfirmBooking}
             disabled={loading}
@@ -538,7 +539,7 @@ export default function BookingPage() {
                 price: req.price || 0,
               }))}
               promotionCode={
-                promoCodeApplied
+                promoDiscount > 0
                   ? { code: promoCode, discount: promoDiscount }
                   : undefined
               }

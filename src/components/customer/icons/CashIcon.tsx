@@ -1,0 +1,36 @@
+import { forwardRef } from "react";
+import { cn } from "@/lib/utils";
+
+interface CashIconProps extends React.SVGProps<SVGSVGElement> {
+  width?: number;
+  height?: number;
+  className?: string;
+}
+
+/**
+ * CashIcon – 28×24 (ตาม Figma)
+ */
+export const CashIcon = forwardRef<SVGSVGElement, CashIconProps>(
+  ({ width = 28, height = 24, className, ...props }, ref) => (
+    <svg
+      ref={ref}
+      width={width}
+      height={height}
+      viewBox="0 0 28 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={cn("text-current", className)}
+      {...props}
+    >
+      <path
+        d="M1 20C8.11414 19.9942 15.1973 20.9363 22.0627 22.8013C23.032 23.0653 24 22.3453 24 21.34V20M3 1V2C3 2.26522 2.89464 2.51957 2.70711 2.70711C2.51957 2.89464 2.26522 3 2 3H1M1 3V2.5C1 1.672 1.672 1 2.5 1H25M1 3V15M25 1V2C25 2.552 25.448 3 26 3H27M25 1H25.5C26.328 1 27 1.672 27 2.5V15.5C27 16.328 26.328 17 25.5 17H25M27 15H26C25.7348 15 25.4804 15.1054 25.2929 15.2929C25.1054 15.4804 25 15.7348 25 16V17M25 17H3M3 17H2.5C2.10218 17 1.72064 16.842 1.43934 16.5607C1.15804 16.2794 1 15.8978 1 15.5V15M3 17V16C3 15.7348 2.89464 15.4804 2.70711 15.2929C2.51957 15.1054 2.26522 15 2 15H1M18 9C18 10.0609 17.5786 11.0783 16.8284 11.8284C16.0783 12.5786 15.0609 13 14 13C12.9391 13 11.9217 12.5786 11.1716 11.8284C10.4214 11.0783 10 10.0609 10 9C10 7.93913 10.4214 6.92172 11.1716 6.17157C11.9217 5.42143 12.9391 5 14 5C15.0609 5 16.0783 5.42143 16.8284 6.17157C17.5786 6.92172 18 7.93913 18 9V9ZM22 9H22.0107V9.01067H22V9ZM6 9H6.01067V9.01067H6V9Z"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+);
+
+CashIcon.displayName = "CashIcon";
