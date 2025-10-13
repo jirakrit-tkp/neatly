@@ -62,7 +62,7 @@ export default function ChangeBookingPage() {
   }, [booking]);
 
   const handleCancel = () => {
-    router.back();
+    router.push("/customer/booking-history");
   };
 
   if (!booking) {
@@ -144,7 +144,7 @@ export default function ChangeBookingPage() {
                     {/* Total Refund */}
                     <div className="mt-10">
                       <p>Total Refund</p>
-                      <p className="font-semibold md:font-normal text-2xl md:text-sm">
+                      <p className="font-semibold md:font-bold text-2xl md:text-lg">
                         THB {booking?.total_amount}
                       </p>
                     </div>

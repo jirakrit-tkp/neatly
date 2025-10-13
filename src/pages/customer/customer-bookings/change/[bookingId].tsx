@@ -135,7 +135,7 @@ export default function ChangeBookingPage() {
   };
 
   const handleCancel = () => {
-    router.back();
+    router.push("/customer/booking-history");
   };
 
   const handleOpenModal = () => {
@@ -183,9 +183,6 @@ export default function ChangeBookingPage() {
             <br className="hidden md:block" />
             <span>and Check-out Date</span>
           </h1>
-          <button onClick={() => toast.success("Test toast!")}>
-            Test Toast
-          </button>
 
           {/* Booking Card */}
           <div className="bg-[#F7F7FB] md:mt-30">
