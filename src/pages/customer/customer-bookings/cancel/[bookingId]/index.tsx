@@ -69,7 +69,7 @@ export default function ChangeBookingPage() {
   };
 
   const handleCancel = () => {
-    router.back();
+    router.push("/customer/booking-history");
   };
 
   if (loading || !booking) {
