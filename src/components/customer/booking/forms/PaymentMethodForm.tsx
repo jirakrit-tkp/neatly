@@ -404,14 +404,6 @@ export const PaymentMethodForm: React.FC<PaymentMethodFormProps> = ({
             )}
           />
         </FormField>
-
-        {validationPromoCodeApplied && validationPromoDiscount > 0 && (
-          <div className="p-4 mt-4 border border-green-200 rounded-lg bg-green-50">
-            <p className="text-green-700 font-inter">
-              🎉 Promotion code applied! You saved {validationPromoDiscount} THB
-            </p>
-          </div>
-        )}
       </div>
 
       {/* BookingButtons */}

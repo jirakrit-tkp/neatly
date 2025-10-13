@@ -89,6 +89,13 @@ export default function BookingPage() {
   const [promoCodeApplied, setPromoCodeApplied] = useState(false);
   const [promoDiscount, setPromoDiscount] = useState(0);
 
+  // Sync promoCodeApplied with promoDiscount
+  useEffect(() => {
+    setPromoCodeApplied(promoDiscount > 0);
+    console.log("🔍 PromoDiscount changed:", promoDiscount);
+    console.log("🔍 PromoCodeApplied updated:", promoDiscount > 0);
+  }, [promoDiscount]);
+
   // Modals
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showFailedModal, setShowFailedModal] = useState(false);
@@ -314,6 +321,10 @@ export default function BookingPage() {
       console.log("guestInfo:", guestInfo);
       console.log("paymentMethod:", paymentMethod);
       console.log("creditCardDetails:", creditCardDetails);
+      console.log("promoCodeApplied:", promoCodeApplied);
+      console.log("promoCode:", promoCode);
+      console.log("promoDiscount:", promoDiscount);
+      console.log("promoCode in bookingData:", bookingData.promoCode);
 
       // Create booking
       const bookingResponse = await BookingService.createBooking(bookingData);
