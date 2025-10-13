@@ -4,6 +4,9 @@ import Layout from "@/components/admin/Layout";
 import { ButtonShadcn as Button } from "@/components/ui/button-shadcn";
 import { Input } from "@/components/ui/input";
 import TicketActions from "@/components/admin/TicketActions";
+import ChatbotConfirmModal from "@/components/admin/ui/ChatbotConfirmModal";
+import ChatbotSnackbar from "@/components/admin/ui/ChatbotSnackbar";
+import { toast } from "sonner";
 
 interface Ticket {
   id: string;
@@ -19,6 +22,9 @@ export default function TicketAdmin() {
   const [loading, setLoading] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [searchTerm, setSearchTerm] = useState<string>("");
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [ticketToDelete, setTicketToDelete] = useState<Ticket | null>(null);
+  const [snackbar, setSnackbar] = useState<{ show: boolean; message: string; type: 'success' | 'error' | 'delete' }>({ show: false, message: '', type: 'success' });
 
   // Load tickets on component mount
   useEffect(() => {
@@ -59,13 +65,13 @@ export default function TicketAdmin() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case "open":
-        return "bg-orange-100 text-orange-800";
+        return "bg-orange-200 text-orange-800";
       case "in_progress":
-        return "bg-green-100 text-green-800";
+        return "bg-green-300 text-green-800";
       case "solved":
-        return "bg-gray-100 text-gray-800";
+        return "bg-gray-200 text-gray-800";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-gray-200 text-gray-800";
     }
   };
 
@@ -176,49 +182,55 @@ export default function TicketAdmin() {
                 filteredTickets.map((ticket) => (
                   <div
                     key={ticket.id}
-                    className="p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
+                    className="p-4 border border-gray-200 rounded-lg bg-gray-100 hover:shadow-md transition-shadow text-gray-700"
                   >
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
                           <span
-                            className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                            className={`px-2 py-1 rounded-full text-xs ${getStatusColor(
                               ticket.status
                             )}`}
                           >
                             {getStatusText(ticket.status)}
                           </span>
-                          <span className="text-xs text-gray-500">
-                            Session: {ticket.session_id.substring(0, 8)}...
+                          <span className="text-xs text-gray-500 flex items-center gap-1">
+                            <span className="text-gray-600">Session:</span>
+                            <span className="font-mono bg-gray-200 text-gray-700 rounded px-2 py-0.5">
+                              {ticket.session_id.substring(0, 8)}…
+                            </span>
+                            <button
+                              onClick={() => navigator.clipboard.writeText(ticket.session_id)}
+                              className="ml-1 text-gray-500 hover:text-gray-700 cursor-pointer"
+                              title="Copy full session id"
+                            >
+                              ⧉
+                            </button>
                           </span>
                         </div>
 
-                        <h4 className="font-medium text-gray-900 mb-2">
+                        <h4 className="text-gray-800 mb-2">
                           {ticket.user_message.length > 100
                             ? `${ticket.user_message.substring(0, 100)}...`
                             : ticket.user_message}
                         </h4>
 
-                        <div className="flex items-center gap-4 text-xs text-gray-400">
-                          <span>
-                            Created:{" "}
-                            {new Date(ticket.created_at).toLocaleString(
-                              "en-US"
-                            )}
+                        <div className="flex items-center gap-4 text-xs text-gray-500">
+                          <span title={new Date(ticket.created_at).toISOString()}>
+                            <span className="text-gray-600">Created:</span>{" "}
+                            <span className="text-gray-700">{new Date(ticket.created_at).toLocaleString("en-US")}</span>
                           </span>
                           {ticket.closed_at && (
-                            <span>
-                              Closed:{" "}
-                              {new Date(ticket.closed_at).toLocaleString(
-                                "en-US"
-                              )}
+                            <span title={new Date(ticket.closed_at).toISOString()}>
+                              <span className="text-gray-600">Closed:</span>{" "}
+                              <span className="text-gray-700">{new Date(ticket.closed_at).toLocaleString("en-US")}</span>
                             </span>
                           )}
                         </div>
                       </div>
 
                       <div className="flex gap-2 ml-4">
-                        <TicketActions
+                          <TicketActions
                           ticketId={ticket.id}
                           status={ticket.status}
                           onStatusUpdate={(newStatus) => {
@@ -229,11 +241,12 @@ export default function TicketAdmin() {
                                   : t
                               )
                             );
+                              setSnackbar({ show: true, message: newStatus === 'in_progress' ? 'Ticket accepted' : 'Ticket solved', type: 'success' });
+                              setTimeout(() => setSnackbar(prev => ({ ...prev, show: false })), 3000);
                           }}
                           onTicketDelete={() => {
-                            setTickets((prev) =>
-                              prev.filter((t) => t.id !== ticket.id)
-                            );
+                              setConfirmOpen(true);
+                              setTicketToDelete(ticket);
                           }}
                           variant="list"
                           showViewDetail={true}
@@ -254,6 +267,38 @@ export default function TicketAdmin() {
         {/* Bottom spacing */}
         <div className="h-8"></div>
       </div>
+      <ChatbotSnackbar show={snackbar.show} message={snackbar.message} type={snackbar.type} />
+      <ChatbotConfirmModal
+        open={confirmOpen}
+        title="Delete Ticket?"
+        message={ticketToDelete ? `Are you sure you want to delete this ticket: "${ticketToDelete.user_message}" ?` : ''}
+        confirmText="Yes, delete"
+        cancelText={"Cancel"}
+        onConfirm={async () => {
+          if (!ticketToDelete) return;
+          try {
+            const res = await fetch(`/api/ticket/tickets?id=${ticketToDelete.id}`, { method: 'DELETE' });
+            if (res.ok) {
+              setTickets(prev => prev.filter(t => t.id !== ticketToDelete.id));
+              setSnackbar({ show: true, message: 'Ticket deleted', type: 'delete' });
+              setTimeout(() => setSnackbar(prev => ({ ...prev, show: false })), 3000);
+            } else {
+              setSnackbar({ show: true, message: 'Failed to delete ticket', type: 'error' });
+              setTimeout(() => setSnackbar(prev => ({ ...prev, show: false })), 3000);
+            }
+          } catch (e) {
+            setSnackbar({ show: true, message: 'Error deleting ticket', type: 'error' });
+            setTimeout(() => setSnackbar(prev => ({ ...prev, show: false })), 3000);
+          } finally {
+            setConfirmOpen(false);
+            setTicketToDelete(null);
+          }
+        }}
+        onClose={() => {
+          setConfirmOpen(false);
+          setTicketToDelete(null);
+        }}
+      />
     </Layout>
   );
 }

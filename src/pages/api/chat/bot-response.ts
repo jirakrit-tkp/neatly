@@ -129,7 +129,7 @@ export default async function handler(
         .from('chatbot_faqs')
         .select('topic, reply_message, reply_format, reply_payload')
         .neq('topic', '::greeting::')
-        .neq('topic', '::fallback::');
+        // .neq('topic', '::fallback::');
 
       if (!faqError && faqMatches) {
         for (const faq of faqMatches) {

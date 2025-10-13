@@ -1,5 +1,6 @@
 import { ButtonShadcn as Button } from "@/components/ui/button-shadcn";
 import { useRouter } from "next/router";
+import { Eye, Trash } from "lucide-react";
 
 interface TicketActionsProps {
   ticketId: string;
@@ -8,6 +9,7 @@ interface TicketActionsProps {
   onTicketDelete?: () => void;
   variant?: 'list' | 'detail';
   showViewDetail?: boolean;
+  onViewDetail?: () => void;
 }
 
 export default function TicketActions({
@@ -16,7 +18,8 @@ export default function TicketActions({
   onStatusUpdate,
   onTicketDelete,
   variant = 'list',
-  showViewDetail = true
+  showViewDetail = true,
+  onViewDetail
 }: TicketActionsProps) {
   const router = useRouter();
 
@@ -37,27 +40,11 @@ export default function TicketActions({
     }
   };
 
-  const handleDeleteTicket = async () => {
-    if (confirm('Are you sure you want to delete this ticket? This action cannot be undone.')) {
-      try {
-        const response = await fetch(`/api/ticket/tickets?id=${ticketId}`, {
-          method: 'DELETE'
-        });
-        
-        if (response.ok) {
-          console.log('✅ Ticket deleted');
-          onTicketDelete?.();
-          if (variant === 'detail') {
-            router.push('/admin/ticket');
-          }
-        }
-      } catch (error) {
-        console.error('Error deleting ticket:', error);
-      }
-    }
-  };
+  // Delegate deletion to parent which opens confirmation modal
+  const handleDeleteTicket = () => onTicketDelete?.();
 
   const handleViewDetail = () => {
+    if (onViewDetail) return onViewDetail();
     router.push(`/admin/ticket/${ticketId}`);
   };
 
@@ -67,63 +54,58 @@ export default function TicketActions({
     : 'px-4 py-2';
 
   return (
-    <div className="flex gap-2">
-      {/* View Detail Button - แสดงเมื่อ variant = list และ showViewDetail = true */}
-      {showViewDetail && variant === 'list' && (
-        <Button
-          onClick={handleViewDetail}
-          size={buttonSize}
-          variant="outline"
-          className={`border-orange-500 text-orange-500 hover:bg-orange-50 ${buttonClassName}`}
-        >
-          View Detail
-        </Button>
-      )}
+    <div className="flex items-center gap-4">
+      {/* Left: Action buttons */}
+      <div className="flex items-center gap-2">
+        {status === 'open' && (
+          <Button
+            onClick={() => handleUpdateStatus('in_progress')}
+            size={buttonSize}
+            variant="outline"
+            className={`border-orange-500 text-orange-500 hover:bg-orange-50 ${buttonClassName}`}
+          >
+            {variant === 'list' ? 'Accept' : 'Accept Ticket'}
+          </Button>
+        )}
+        {status === 'in_progress' && (
+          <Button
+            onClick={() => handleUpdateStatus('solved')}
+            size={buttonSize}
+            className={`bg-orange-500 hover:bg-orange-600 text-white ${buttonClassName}`}
+          >
+            {variant === 'list' ? 'Solved' : 'Solve Ticket'}
+          </Button>
+        )}
+      </div>
 
-      {/* Accept Button - แสดงเมื่อ status = open */}
-      {status === 'open' && (
-        <Button
-          onClick={() => handleUpdateStatus('in_progress')}
-          size={buttonSize}
-          variant="outline"
-          className={`border-orange-600 text-orange-600 hover:bg-orange-50 ${buttonClassName}`}
-        >
-          {variant === 'list' ? 'Accept' : 'Accept Ticket'}
-        </Button>
-      )}
+      {/* Divider */}
+      <div className="h-10 w-px bg-gray-300" />
 
-      {/* Solve Button - แสดงเมื่อ status = in_progress */}
-      {status === 'in_progress' && (
-        <Button
-          onClick={() => handleUpdateStatus('solved')}
-          size={buttonSize}
-          className={`bg-orange-500 hover:bg-orange-600 text-white ${buttonClassName}`}
+      {/* Right: Icon column */}
+      <div className="flex flex-col items-center gap-2">
+        {showViewDetail && variant === 'list' && (
+          <button
+            onClick={handleViewDetail}
+            className="p-2 text-gray-600 hover:text-gray-800 cursor-pointer"
+            title="View detail"
+          >
+            <Eye className="w-4 h-4" />
+          </button>
+        )}
+        <button
+          onClick={status === 'solved' ? handleDeleteTicket : undefined}
+          className={`p-2 ${
+            status === 'solved'
+              ? 'text-gray-600 hover:text-gray-800 cursor-pointer'
+              : 'text-gray-400'
+          }`}
+          title={status === 'solved' ? 'Delete ticket' : 'Delete available after solved'}
+          aria-disabled={status !== 'solved'}
+          disabled={status !== 'solved'}
         >
-          {variant === 'list' ? 'Solved' : 'Solve Ticket'}
-        </Button>
-      )}
-
-      {/* Delete Button - แสดงเมื่อ status = solved */}
-      {status === 'solved' && (
-        <Button
-          onClick={handleDeleteTicket}
-          size={buttonSize}
-          className={`bg-orange-700 hover:bg-orange-800 text-white ${buttonClassName}`}
-        >
-          {variant === 'list' ? 'Delete' : 'Delete Ticket'}
-        </Button>
-      )}
-
-      {/* Back to Tickets Button - แสดงเมื่อ variant = detail */}
-      {variant === 'detail' && (
-        <Button 
-          onClick={() => router.push('/admin/ticket')} 
-          variant="outline"
-          className="border-orange-500 text-orange-500 hover:bg-orange-50"
-        >
-          Back to Tickets
-        </Button>
-      )}
+          <Trash className="w-4 h-4" />
+        </button>
+      </div>
     </div>
   );
 }
