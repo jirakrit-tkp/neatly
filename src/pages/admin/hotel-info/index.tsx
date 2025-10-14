@@ -2,9 +2,6 @@ import Layout from "@/components/admin/Layout";
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 
-// เชื่อมต่อกับ database table ชื่อ hotel_information โดยตรงผ่าน API
-// (สมมติว่ามี API endpoint ที่เชื่อมกับ table นี้แล้ว เช่น /api/hotel-information)
-
 interface HotelInformation {
   name: string;
   description: string;
@@ -23,10 +20,8 @@ export default function HotelInfoPage() {
   const [updateMessage, setUpdateMessage] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // State to track if logo is removed (for upload UI)
   const [logoRemoved, setLogoRemoved] = useState(false);
 
-  // โหลดข้อมูลจาก database table hotel_information
   useEffect(() => {
     const fetchHotelInfo = async () => {
       setLoading(true);
@@ -40,7 +35,7 @@ export default function HotelInfoPage() {
             description: data.data.description,
             logo_url: data.data.logo_url,
           });
-          setLogoRemoved(!data.data.logo_url); // ถ้าไม่มีโลโก้ ให้ขึ้นอัพโหลด
+          setLogoRemoved(!data.data.logo_url);
         } else {
           setError(data.message || "Failed to fetch hotel information");
         }
@@ -53,7 +48,6 @@ export default function HotelInfoPage() {
     fetchHotelInfo();
   }, []);
 
-  // ฟังก์ชันจัดการการอัปเดตข้อมูลใน table hotel_information
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsUpdating(true);
@@ -94,7 +88,6 @@ export default function HotelInfoPage() {
     }
   };
 
-  // ฟังก์ชันเมื่อคลิกกากบาท ให้รูปหาย แล้วขึ้นให้อัพโหลด
   const handleRemoveLogo = () => {
     setHotelInfo((prev) => ({ ...prev, logo_url: "" }));
     setLogoRemoved(true);
@@ -103,7 +96,6 @@ export default function HotelInfoPage() {
     }
   };
 
-  // ฟังก์ชันเมื่อเลือกไฟล์ใหม่
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -121,9 +113,9 @@ export default function HotelInfoPage() {
 
   return (
     <Layout>
-      <main className="flex flex-1 flex-col bg-[#F6F7FC] items-center justify-center">
+      <main className="flex flex-1 flex-col bg-[#F6F7FC] items-start justify-start min-h-screen">
         {/* Header */}
-        <div className="border border-gray-200 bg-white px-10 py-6 mb-8 flex items-center justify-between w-full">
+        <div className="border border-gray-200 bg-white px-10 py-6 mb-8 flex items-center justify-between w-full" style={{ minHeight: 56 }}>
           <span className="text-xl font-semibold">Hotel Information</span>
           <button
             type="submit"
@@ -140,20 +132,30 @@ export default function HotelInfoPage() {
           </button>
         </div>
 
-        {/* Form Card */}
+        {/* Form Card - styled to match example image */}
         <div
-          className="bg-gray-100 rounded-lg max-w-[1080px] w-full flex items-center justify-center"
-          style={{ minHeight: 747 }}
+          className="bg-white rounded-lg shadow-sm border border-[#E7E9ED] flex justify-center items-center"
+          style={{
+            width: 180,
+            height: 747,
+            minWidth: 1080,
+            minHeight: 747,
+            maxWidth: 180,
+            maxHeight: 747,
+            marginLeft: 30,
+            marginRight: 30,
+          }}
         >
           <form
             id="hotel-info-form"
-            className="flex flex-col gap-8 h-full"
+            className="flex flex-col gap-7 px-7 py-10 w-full max-w-4xl"
             onSubmit={handleSubmit}
+            style={{ minWidth: 700 }}
           >
             {/* Status Messages */}
             {updateMessage && (
               <div
-                className={`p-3 rounded-md ${
+                className={`p-3 rounded-md mb-2 ${
                   updateMessage.includes("successfully")
                     ? "bg-green-100 text-green-700 border border-green-200"
                     : "bg-red-100 text-red-700 border border-red-200"
@@ -162,17 +164,16 @@ export default function HotelInfoPage() {
                 {updateMessage}
               </div>
             )}
-
             {error && (
-              <div className="p-3 rounded-md bg-red-100 text-red-700 border border-red-200">
+              <div className="p-3 rounded-md bg-red-100 text-red-700 border border-red-200 mb-2">
                 Error: {error}
               </div>
             )}
 
             {/* Hotel Name */}
-            <div>
+            <div className="mb-3 flex flex-col">
               <label
-                className="block text-sm font-medium text-gray-700 mb-2"
+                className="block text-base font-medium text-[#4C5767] mb-2"
                 htmlFor="hotel-name"
               >
                 Hotel name <span className="text-red-500">*</span>
@@ -185,23 +186,23 @@ export default function HotelInfoPage() {
                 onChange={(e) =>
                   setHotelInfo((prev) => ({ ...prev, name: e.target.value }))
                 }
-                className="border border-gray-300 rounded px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-[#B35023] bg-white"
+                className="border border-[#CED1D8] rounded px-4 py-2 text-base focus:outline-[#B35023] bg-white"
                 style={{
-                  width: 920,
-                  height: 48,
-                  minWidth: 920,
-                  maxWidth: 920,
-                  minHeight: 48,
-                  maxHeight: 48,
+                  width: "100%",
+                  height: 45,
+                  minWidth: 350,
+                  maxWidth: 900,
+                  minHeight: 45,
+                  fontSize: 16,
                 }}
                 disabled={loading}
               />
             </div>
 
             {/* Hotel Description */}
-            <div>
+            <div className="mb-3 flex flex-col">
               <label
-                className="block text-sm font-medium text-gray-700 mb-2"
+                className="block text-base font-medium text-[#4C5767] mb-2"
                 htmlFor="hotel-description"
               >
                 Hotel description <span className="text-red-500">*</span>
@@ -216,46 +217,49 @@ export default function HotelInfoPage() {
                     description: e.target.value,
                   }))
                 }
-                className="border border-gray-300 rounded px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-[#B35023] resize-none bg-white"
+                className="border border-[#CED1D8] rounded px-4 py-3 text-base focus:outline-[#B35023] bg-white"
                 style={{
-                  width: 920,
-                  height: 264,
-                  minWidth: 920,
-                  minHeight: 264,
-                  maxWidth: 920,
-                  maxHeight: 264,
+                  width: "100%",
+                  height: 168,
+                  minWidth: 350,
+                  maxWidth: 900,
+                  minHeight: 120,
+                  fontSize: 15,
+                  resize: "none",
                 }}
                 disabled={loading}
               />
             </div>
 
             {/* Hotel Logo */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+            <div className="mb-2 flex flex-col">
+              <label className="block text-base font-medium text-[#4C5767] mb-2">
                 Hotel logo <span className="text-red-500">*</span>
               </label>
               <div
                 className="relative"
                 style={{
-                  width: 167,
-                  height: 167,
-                  minWidth: 167,
-                  minHeight: 167,
-                  maxWidth: 167,
-                  maxHeight: 167,
+                  width: 120,
+                  height: 100,
+                  minWidth: 120,
+                  minHeight: 100,
+                  borderRadius: 8,
+                  background: "#F1F2F7",
+                  border: "1px solid #CED1D8",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                 }}
               >
-                {/* ถ้าไม่มีโลโก้หรือถูกลบ ให้แสดงปุ่มอัพโหลด */}
                 {logoRemoved || !hotelInfo.logo_url ? (
                   <div
                     className="w-full h-full flex flex-col items-center justify-center bg-gray-100 border-2 border-dashed border-gray-300 rounded cursor-pointer transition hover:bg-gray-200"
                     style={{
-                      width: 167,
-                      height: 167,
-                      minWidth: 167,
-                      minHeight: 167,
-                      maxWidth: 167,
-                      maxHeight: 167,
+                      width: 120,
+                      height: 100,
+                      minWidth: 120,
+                      minHeight: 100,
+                      borderRadius: 8,
                     }}
                     onClick={() => !loading && fileInputRef.current?.click()}
                     tabIndex={0}
@@ -267,34 +271,40 @@ export default function HotelInfoPage() {
                       }
                     }}
                   >
-                    <span className="text-3xl text-[#B35023] mb-1">+</span>
-                    <span className="text-[#B35023] text-sm font-medium">
+                    <span
+                      className="text-4xl text-[#B35023] mb-1 leading-none"
+                      style={{ lineHeight: "1", border: 0, fontWeight: "bold" }}
+                    >
+                      +
+                    </span>
+                    <span className="text-[#B35023] text-xs font-medium">
                       Upload photo
                     </span>
                   </div>
                 ) : (
                   <>
                     <Image
-                      width={80}
-                      height={60}
+                      width={120}
+                      height={100}
                       src={hotelInfo.logo_url}
                       alt="Hotel Logo"
-                      className="object-contain rounded bg-white border border-gray-200"
+                      className="object-contain rounded bg-white border"
                       style={{
-                        width: 167,
-                        height: 167,
-                        minWidth: 167,
-                        minHeight: 167,
-                        maxWidth: 167,
-                        maxHeight: 167,
+                        width: 120,
+                        height: 100,
+                        minWidth: 120,
+                        minHeight: 100,
+                        borderRadius: 8,
+                        border: "none",
                       }}
                     />
                     <button
                       type="button"
-                      className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center shadow hover:bg-red-600"
+                      className="absolute -top-2 -right-3 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center shadow hover:bg-red-600"
                       aria-label="Remove logo"
                       onClick={handleRemoveLogo}
                       disabled={loading}
+                      style={{ zIndex: 20 }}
                     >
                       <svg
                         width="12"
@@ -310,10 +320,9 @@ export default function HotelInfoPage() {
                         />
                       </svg>
                     </button>
-                    {/* คลิกที่รูปเพื่ออัปโหลด */}
                     <div
                       className="absolute inset-0 cursor-pointer"
-                      style={{ zIndex: 10 }}
+                      style={{ zIndex: 10, borderRadius: 8 }}
                       onClick={() => !loading && fileInputRef.current?.click()}
                       aria-label="Upload logo"
                       tabIndex={0}
@@ -326,7 +335,6 @@ export default function HotelInfoPage() {
                     />
                   </>
                 )}
-                {/* ปุ่มอัปโหลดรูปใหม่ */}
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -336,7 +344,7 @@ export default function HotelInfoPage() {
                   disabled={loading}
                 />
               </div>
-              <div className="text-xs text-gray-500 mt-2">
+              <div className="text-[10px] text-gray-500 mt-2">
                 Allowed: PNG, JPG, JPEG, GIF
               </div>
             </div>
