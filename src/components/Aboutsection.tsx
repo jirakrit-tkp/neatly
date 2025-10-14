@@ -28,17 +28,15 @@ export default function Aboutsection() {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  // Carousel auto play - for desktop only
+  // Carousel auto play - for both mobile and desktop
   useEffect(() => {
-    if (!isMobile) {
-      timerRef.current = setInterval(() => {
-        setMobileIndex((prev) => (prev + 1) % images.length);
-      }, 8000); // Change to 8 seconds (8000ms)
-    }
+    timerRef.current = setInterval(() => {
+      setMobileIndex((prev) => (prev + 1) % images.length);
+    }, 8000); // Change to 8 seconds (8000ms)
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isMobile]);
+  }, []);
 
   const handleMobilePrev = () => {
     setMobileIndex((prev) => (prev - 1 + images.length) % images.length);
@@ -239,7 +237,7 @@ export default function Aboutsection() {
                 )}
               </div>
             </div>
-            {/* Static 3-image triptych */}
+            {/* Auto-sliding 3-image carousel with left button on image */}
             <div
               style={{
                 width: "100vw",
@@ -254,50 +252,101 @@ export default function Aboutsection() {
                 borderRadius: "0px 0px 24px 24px",
                 boxShadow: "0 2px 8px 0 rgba(20,36,46,0.04)",
                 overflow: "hidden",
+                position: "relative",
               }}
             >
               <div
                 style={{
                   width: "100%",
                   display: "flex",
-                  flexDirection: "row",
+                  flexDirection: "row", // Horizontal layout for images
                   alignItems: "center",
                   justifyContent: "center",
-                  gap: "18px",
+                  gap: "100px", // Horizontal gap between images
                   paddingLeft: "18px",
                   paddingRight: "18px",
                   background: "#fff",
                 }}
               >
-                {/* Static 3-image triptych - shows first 3 images */}
-                {images.slice(0, 3).map((image, index) => (
-                  <div
-                    key={image.src}
-                    style={{
-                      width: 160,
-                      height: 200,
-                      borderRadius: "0px",
-                      overflow: "hidden",
-                      background: "#fff",
-                      boxShadow: "0 2px 8px 0 rgba(20,36,46,0.08)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      flex: "0 0 160px",
-                    }}
-                  >
-                    <img
-                      src={image.src}
-                      alt={image.alt}
+                {/* Centered Carousel - shows 3 images at once, centered on mobileIndex */}
+                {[0, 1, 2].map((k) => {
+                  // For 3-image card: center = mobileIndex, show (mobileIndex-1, mobileIndex, mobileIndex+1)
+                  const idx =
+                    (mobileIndex - 1 + k + images.length) % images.length;
+                  return (
+                    <div
+                      key={images[idx].src}
                       style={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
+                        width: 180,
+                        height: 225,
                         borderRadius: "0px",
+                        overflow: "hidden",
+                        background: "#fff",
+                        boxShadow: "0 2px 8px 0 rgba(72, 73, 74, 0.08)",
+                        opacity: 1,
+                        zIndex: 1,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        transition: "all 0.3s ease",
+                        position: "relative",
+                        flex: "0 0 180px",
                       }}
-                    />
-                  </div>
-                ))}
+                    >
+                      <img
+                        src={images[idx].src}
+                        alt={images[idx].alt}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                          borderRadius: "0px",
+                        }}
+                      />
+                      {/* Left button on center image only */}
+                      {k === 1 && (
+                        <button
+                          aria-label="Previous images"
+                          onClick={handleMobilePrev}
+                          style={{
+                            position: "absolute",
+                            left: "-100px",
+                            top: "0%",
+                            transform: "translateY(-50%)",
+                            background: "transparent",
+                            border: "2px solid silver",
+                            borderRadius: "50%",
+                            width: 36,
+                            height: 36,
+                            minWidth: 36,
+                            minHeight: 36,
+                            display: "inline-flex",
+                            alignItems: "start",
+                            justifyContent: "center",
+                            boxShadow: "0 2px 4px rgba(192,192,192, 0.6)",
+                            cursor: "pointer",
+                            zIndex: 10,
+                            transition: "all 0.2s",
+                          }}
+                          tabIndex={0}
+                        >
+                          <span
+                            style={{
+                              fontSize: "16px",
+                              color: "rgba(144, 134, 134, 0.6)",
+                              fontWeight: "bold",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                            }}
+                          >
+                            ‹
+                          </span>
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </>

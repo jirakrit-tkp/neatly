@@ -88,38 +88,44 @@ const Footer = () => {
       {/* Divider */}
       <div className="border-t border-[#465C50] w-full max-w-[1440px] mx-auto my-6" />
       {/* Social & Copyright */}
-      <div className="flex flex-col md:flex-row justify-between items-center max-w-[1440px] mx-auto px-6 md:px-12 pb-6">
-        <div className="flex items-center space-x-4 mb-4 md:mb-0">
-          {/* Social icons */}
-          <a href="https://www.facebook.com/" aria-label="Facebook" target="_blank" rel="noopener noreferrer">
-            <Image
-              src="/icons/facebook.png"
-              alt="Facebook"
-              width={18}
-              height={18}
-              style={{ minWidth: 18, minHeight: 18 }}
-            />
-          </a>
-          <a href="https://www.instagram.com/" aria-label="Instagram" target="_blank" rel="noopener noreferrer">
-            <Image
-              src="/icons/instagram.png"
-              alt="Instagram"
-              width={18}
-              height={18}
-              style={{ minWidth: 18, minHeight: 18 }}
-            />
-          </a>
-          <a href="https://x.com/" aria-label="Twitter" target="_blank" rel="noopener noreferrer">
-            <Image
-              src="/icons/twitter.png"
-              alt="Twitter"
-              width={18}
-              height={18}
-              style={{ minWidth: 18, minHeight: 18 }}
-            />
-          </a>
+      <div className="flex flex-row md:flex-row justify-between items-center max-w-[1440px] mx-auto px-6 md:px-12 pb-6 w-full">
+        {/* On mobile: social + copyright in a row, icon left; On md+: keep original */}
+        <div className="flex flex-row items-center justify-between w-full md:w-auto">
+          <div className="flex items-center space-x-4">
+            {/* Social icons */}
+            <a href="https://www.facebook.com/" aria-label="Facebook" target="_blank" rel="noopener noreferrer">
+              <Image
+                src="/icons/facebook.png"
+                alt="Facebook"
+                width={18}
+                height={18}
+                style={{ minWidth: 18, minHeight: 18 }}
+              />
+            </a>
+            <a href="https://www.instagram.com/" aria-label="Instagram" target="_blank" rel="noopener noreferrer">
+              <Image
+                src="/icons/instagram.png"
+                alt="Instagram"
+                width={18}
+                height={18}
+                style={{ minWidth: 18, minHeight: 18 }}
+              />
+            </a>
+            <a href="https://x.com/" aria-label="Twitter" target="_blank" rel="noopener noreferrer">
+              <Image
+                src="/icons/twitter.png"
+                alt="Twitter"
+                width={18}
+                height={18}
+                style={{ minWidth: 18, minHeight: 18 }}
+              />
+            </a>
+          </div>
+          <div className="text-xm text-gray-400 ml-4 md:hidden whitespace-nowrap">
+            Copyright © 2022 Neatly Hotel
+          </div>
         </div>
-        <div className="text-xm text-gray-400">
+        <div className="text-xm text-gray-400 hidden md:block">
           Copyright © 2022 Neatly Hotel
         </div>
       </div>
