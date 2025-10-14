@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 import { useHotelInfo } from "@/context/HotelInfoContext";
 
 // Images array remains unchanged
@@ -42,9 +43,9 @@ export default function Aboutsection() {
     setMobileIndex((prev) => (prev - 1 + images.length) % images.length);
   };
 
-  const handleMobileNext = () => {
-    setMobileIndex((prev) => (prev + 1) % images.length);
-  };
+  // const handleMobileNext = () => {
+  //   setMobileIndex((prev) => (prev + 1) % images.length);
+  // };
 
   // Desktop carousel functions
   const getVisibleImages = () => {
@@ -330,7 +331,7 @@ export default function Aboutsection() {
                           }}
                           tabIndex={0}
                         >
-                          <img
+                          <Image
                             src="/icons/left.png"
                             alt="Previous"
                             width={68}
@@ -442,7 +443,7 @@ export default function Aboutsection() {
                   }}
                   tabIndex={0}
                 >
-                  <img
+                  <Image
                     src="/icons/left.png"
                     alt="Previous"
                     width={68}
@@ -528,7 +529,7 @@ export default function Aboutsection() {
                   }}
                   tabIndex={0}
                 >
-                  <img
+                  <Image
                     src="/icons/right.png"
                     alt="Next"
                     width={68}

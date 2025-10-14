@@ -84,7 +84,7 @@ export default function Otherroompage() {
                 No rooms found.
               </div>
             ) : (
-              displayRooms.map((room, idx) => (
+              displayRooms.map((room) => (
                 <div
                   key={room.id}
                   className="relative rounded-xl overflow-hidden shadow bg-white group transition-all duration-200"
@@ -149,7 +149,7 @@ export default function Otherroompage() {
               opacity: rooms.length <= showCount ? 0.6 : 1,
             }}
           >
-            <img
+            <Image
               src="/icons/left.png"
               alt="Previous"
               width={68}
@@ -167,7 +167,7 @@ export default function Otherroompage() {
               opacity: rooms.length <= showCount ? 0.6 : 1,
             }}
           >
-            <img
+            <Image
               src="/icons/right.png"
               alt="Next"
               width={68}

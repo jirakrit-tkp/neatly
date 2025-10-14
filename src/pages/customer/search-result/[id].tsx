@@ -31,7 +31,7 @@ function splitAmenities(amenities: string[]) {
 }
 
 // Silver Circle for wrapping arrow buttons
-function SilverCircle({ children, className = "", ...props }: any) {
+function SilverCircle({ children, className = "", ...props }: React.HTMLAttributes<HTMLDivElement> & { children: React.ReactNode; className?: string }) {
   return (
     <div
       className={
@@ -68,7 +68,7 @@ const SilverArrowButton = ({
   disabled?: boolean;
   direction: "left" | "right";
   className?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }) => (
   <SilverCircle
     className={
@@ -103,7 +103,7 @@ const SilverArrowButton = ({
 
 function Roomdetailpage() {
   const router = useRouter();
-  const roomId = router.query.id as string;
+  // const roomId = router.query.id as string;
   const [room, setRoom] = useState<RoomDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -190,7 +190,7 @@ function Roomdetailpage() {
   const [currentImageIdx, setCurrentImageIdx] = useState(0);
   const [isSliding, setIsSliding] = useState(false);
   const [slideDirection, setSlideDirection] = useState<"left" | "right" | null>(null);
-  const sliderRef = useRef<HTMLDivElement | null>(null);
+  // const sliderRef = useRef<HTMLDivElement | null>(null);
 
   const handlePrev = () => {
     if (isSliding || images.length <= 1) return;
@@ -214,37 +214,37 @@ function Roomdetailpage() {
     }, 350);
   };
 
-  const handleSelect = (idx: number) => {
-    if (isSliding || idx === currentImageIdx) return;
-    setSlideDirection(idx > currentImageIdx ? "right" : "left");
-    setIsSliding(true);
-    setTimeout(() => {
-      setCurrentImageIdx(idx);
-      setIsSliding(false);
-      setSlideDirection(null);
-    }, 350);
-  };
+  // const handleSelect = (idx: number) => {
+  //   if (isSliding || idx === currentImageIdx) return;
+  //   setSlideDirection(idx > currentImageIdx ? "right" : "left");
+  //   setIsSliding(true);
+  //   setTimeout(() => {
+  //     setCurrentImageIdx(idx);
+  //     setIsSliding(false);
+  //     setSlideDirection(null);
+  //   }, 350);
+  // };
 
-  const touchStartX = useRef<number | null>(null);
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartX.current = e.touches[0].clientX;
-  };
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartX.current === null) return;
-    const deltaX = e.changedTouches[0].clientX - touchStartX.current;
-    if (Math.abs(deltaX) > 50) {
-      if (deltaX > 0) handlePrev();
-      else handleNext();
-    }
-    touchStartX.current = null;
-  };
+  // const touchStartX = useRef<number | null>(null);
+  // const handleTouchStart = (e: React.TouchEvent) => {
+  //   touchStartX.current = e.touches[0].clientX;
+  // };
+  // const handleTouchEnd = (e: React.TouchEvent) => {
+  //   if (touchStartX.current === null) return;
+  //   const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+  //   if (Math.abs(deltaX) > 50) {
+  //     if (deltaX > 0) handlePrev();
+  //     else handleNext();
+  //   }
+  //   touchStartX.current = null;
+  // };
 
-  const getSlideClass = () => {
-    if (!isSliding || !slideDirection) return "";
-    if (slideDirection === "left") return "animate-slide-left";
-    if (slideDirection === "right") return "animate-slide-right";
-    return "";
-  };
+  // const getSlideClass = () => {
+  //   if (!isSliding || !slideDirection) return "";
+  //   if (slideDirection === "left") return "animate-slide-left";
+  //   if (slideDirection === "right") return "animate-slide-right";
+  //   return "";
+  // };
 
   // Helper to get the correct image for desktop slider
   const getImageByOffset = (offset: number) => {
@@ -254,7 +254,7 @@ function Roomdetailpage() {
     // screen shows: prev | current | next
     // offset: -1 => prev, 0 => current, 1 => next
     // handle wrap-around
-    let showIdx = (currentImageIdx + offset + len) % len;
+    const showIdx = (currentImageIdx + offset + len) % len;
     return images[showIdx];
   };
 
