@@ -30,17 +30,17 @@ const Roomwrapper = () => {
         // Debug environment variables
         console.log("Supabase URL:", supabaseUrl ? "Set" : "Missing");
         console.log("Supabase Key:", supabaseAnonKey ? "Set" : "Missing");
-        
+
         const { data, error } = await supabase
           .from("room_types")
           .select("*")
           .order("id", { ascending: true });
-        
+
         if (error) {
           console.error("Error fetching rooms:", error);
           return;
         }
-        
+
         if (data) {
           console.log("Fetched rooms data:", data);
           console.log("First room image URL:", data[0]?.main_image);
@@ -74,19 +74,19 @@ const Roomwrapper = () => {
         marginLeft: "calc(50% - 50vw)",
         marginRight: "calc(50% - 50vw)",
       }}
-      >
-        <EnvironmentCheck />
-        <h2
-          className="
+    >
+      <EnvironmentCheck />
+      <h2
+        className="
             text-[#2D5A27]
             text-[30px] md:text-[48px]
             font-serif
             text-center
             mb-8 md:mb-14
           "
-        >
-          Rooms &amp; Suites
-        </h2>
+      >
+        Rooms &amp; Suites
+      </h2>
       <div
         className="
           w-full md:max-w-[1120px]
@@ -113,7 +113,7 @@ const Roomwrapper = () => {
             {/* Row 1: Superior Garden View */}
             {rooms[0] && (
               <div
-                className="relative rounded-xl overflow-hidden shadow mx-auto superior-garden-image"
+                className="relative overflow-hidden shadow mx-auto superior-garden-image"
                 style={{
                   width: "100%",
                   minWidth: "0",
@@ -121,6 +121,7 @@ const Roomwrapper = () => {
                   height: "250px",
                   minHeight: "250px",
                   maxHeight: "250px",
+                  borderRadius: "0px",
                 }}
               >
                 <Image
@@ -132,6 +133,7 @@ const Roomwrapper = () => {
                   sizes="(max-width: 767px) 100vw, (min-width: 768px) 1120px"
                   style={{
                     objectFit: "cover",
+                    borderRadius: "0px",
                   }}
                   onError={(e) => {
                     console.error("Image failed to load:", rooms[0].main_image);
@@ -148,6 +150,7 @@ const Roomwrapper = () => {
                         height: 540px !important;
                         min-height: 540px !important;
                         max-height: 540px !important;
+                        border-radius: 0px !important;
                       }
                     }
                     @media (max-width: 767px) {
@@ -158,6 +161,7 @@ const Roomwrapper = () => {
                         height: 250px !important;
                         min-height: 250px !important;
                         max-height: 250px !important;
+                        border-radius: 0px !important;
                       }
                     }
                   `}
@@ -188,7 +192,7 @@ const Roomwrapper = () => {
                 {/* Deluxe */}
                 {rooms[1] && (
                   <div
-                    className="relative rounded-xl overflow-hidden shadow room-deluxe-image"
+                    className="relative overflow-hidden shadow room-deluxe-image"
                     style={{
                       width: "100%",
                       minWidth: "0",
@@ -196,6 +200,7 @@ const Roomwrapper = () => {
                       height: "250px",
                       minHeight: "250px",
                       maxHeight: "250px",
+                      borderRadius: "0px",
                     }}
                   >
                     <Image
@@ -207,6 +212,7 @@ const Roomwrapper = () => {
                       sizes="(max-width: 767px) 100vw, (min-width: 768px) 643px"
                       style={{
                         objectFit: "cover",
+                        borderRadius: "0px",
                       }}
                       onError={(e) => {
                         console.error("Image failed to load:", rooms[1].main_image);
@@ -223,6 +229,7 @@ const Roomwrapper = () => {
                             height: 400px !important;
                             min-height: 400px !important;
                             max-height: 400px !important;
+                            border-radius: 0px !important;
                           }
                         }
                         @media (max-width: 767px) {
@@ -233,6 +240,7 @@ const Roomwrapper = () => {
                             height: 250px !important;
                             min-height: 250px !important;
                             max-height: 250px !important;
+                            border-radius: 0px !important;
                           }
                         }
                       `}
@@ -247,12 +255,12 @@ const Roomwrapper = () => {
                         style={{ textDecoration: "none" }}
                       >
                         <a
-                      href="/customer/search-result/2"
-                      className="text-white text-sm"
-                      style={{ textDecoration: "none" }}
-                    >
-                      Explore Room &rarr;
-                    </a>
+                          href="/customer/search-result/2"
+                          className="text-white text-sm"
+                          style={{ textDecoration: "none" }}
+                        >
+                          Explore Room &rarr;
+                        </a>
                       </a>
                     </div>
                   </div>
@@ -260,7 +268,7 @@ const Roomwrapper = () => {
                 {/* Superior */}
                 {rooms[2] && (
                   <div
-                    className="relative rounded-xl overflow-hidden shadow room-superior-image"
+                    className="relative overflow-hidden shadow room-superior-image"
                     style={{
                       width: "100%",
                       minWidth: "0",
@@ -268,6 +276,7 @@ const Roomwrapper = () => {
                       height: "250px",
                       minHeight: "250px",
                       maxHeight: "250px",
+                      borderRadius: "0px",
                     }}
                   >
                     <Image
@@ -279,6 +288,7 @@ const Roomwrapper = () => {
                       sizes="(max-width: 767px) 100vw, (min-width: 768px) 453px"
                       style={{
                         objectFit: "cover",
+                        borderRadius: "0px",
                       }}
                       onError={(e) => {
                         console.error("Image failed to load:", rooms[2].main_image);
@@ -295,6 +305,7 @@ const Roomwrapper = () => {
                             height: 400px !important;
                             min-height: 400px !important;
                             max-height: 400px !important;
+                            border-radius: 0px !important;
                           }
                         }
                         @media (max-width: 767px) {
@@ -305,6 +316,7 @@ const Roomwrapper = () => {
                             height: 250px !important;
                             min-height: 250px !important;
                             max-height: 250px !important;
+                            border-radius: 0px !important;
                           }
                         }
                       `}
@@ -319,12 +331,12 @@ const Roomwrapper = () => {
                         style={{ textDecoration: "none" }}
                       >
                         <a
-                      href="/customer/search-result/3"
-                      className="text-white text-sm"
-                      style={{ textDecoration: "none" }}
-                    >
-                      Explore Room &rarr;
-                    </a>
+                          href="/customer/search-result/3"
+                          className="text-white text-sm"
+                          style={{ textDecoration: "none" }}
+                        >
+                          Explore Room &rarr;
+                        </a>
                       </a>
                     </div>
                   </div>
@@ -337,7 +349,7 @@ const Roomwrapper = () => {
                 {/* Left: Premier Sea View (tall) */}
                 {rooms[3] && (
                   <div
-                    className="relative rounded-xl overflow-hidden shadow room-premiersea-image"
+                    className="relative overflow-hidden shadow room-premiersea-image"
                     style={{
                       width: "100%",
                       minWidth: "0",
@@ -345,6 +357,7 @@ const Roomwrapper = () => {
                       height: "250px",
                       minHeight: "250px",
                       maxHeight: "250px",
+                      borderRadius: "0px",
                     }}
                   >
                     <Image
@@ -356,6 +369,7 @@ const Roomwrapper = () => {
                       sizes="(max-width: 767px) 100vw, (min-width: 768px) 453px"
                       style={{
                         objectFit: "cover",
+                        borderRadius: "0px",
                       }}
                       onError={(e) => {
                         console.error("Image failed to load:", rooms[3].main_image);
@@ -372,6 +386,7 @@ const Roomwrapper = () => {
                             height: 700px !important;
                             min-height: 700px !important;
                             max-height: 700px !important;
+                            border-radius: 0px !important;
                           }
                         }
                         @media (max-width: 767px) {
@@ -382,6 +397,7 @@ const Roomwrapper = () => {
                             height: 250px !important;
                             min-height: 250px !important;
                             max-height: 250px !important;
+                            border-radius: 0px !important;
                           }
                         }
                       `}
@@ -395,20 +411,21 @@ const Roomwrapper = () => {
                         className="text-white text-xs"
                         style={{ textDecoration: "none" }}
                       >
-                      <a
-                      href="/customer/search-result/4"
-                      className="text-white text-sm"
-                      style={{ textDecoration: "none" }}
-                    >
-                      Explore Room &rarr;
-                    </a>
+                        <a
+                          href="/customer/search-result/4"
+                          className="text-white text-sm"
+                          style={{ textDecoration: "none" }}
+                        >
+                          Explore Room &rarr;
+                        </a>
                       </a>
                     </div>
                   </div>
                 )}
                 {/* Right column: Supreme + Suite stacked */}
                 {(rooms[4] || rooms[5]) && (
-                  <div className="flex flex-col gap-4 md:gap-6 room-right-column"
+                  <div
+                    className="flex flex-col gap-4 md:gap-6 room-right-column"
                     style={{
                       width: "100%",
                       minWidth: "0",
@@ -429,7 +446,7 @@ const Roomwrapper = () => {
                     {/* Supreme */}
                     {rooms[4] && (
                       <div
-                        className="relative rounded-xl overflow-hidden shadow room-supreme-image"
+                        className="relative overflow-hidden shadow room-supreme-image"
                         style={{
                           width: "100%",
                           minWidth: "0",
@@ -437,6 +454,7 @@ const Roomwrapper = () => {
                           height: "250px",
                           minHeight: "250px",
                           maxHeight: "250px",
+                          borderRadius: "0px",
                         }}
                       >
                         <Image
@@ -448,6 +466,7 @@ const Roomwrapper = () => {
                           sizes="(max-width: 767px) 100vw, (min-width: 768px) 643px"
                           style={{
                             objectFit: "cover",
+                            borderRadius: "0px",
                           }}
                           onError={(e) => {
                             console.error("Image failed to load:", rooms[4].main_image);
@@ -464,6 +483,7 @@ const Roomwrapper = () => {
                                 height: 338px !important;
                                 min-height: 338px !important;
                                 max-height: 338px !important;
+                                border-radius: 0px !important;
                               }
                             }
                             @media (max-width: 767px) {
@@ -474,6 +494,7 @@ const Roomwrapper = () => {
                                 height: 250px !important;
                                 min-height: 250px !important;
                                 max-height: 250px !important;
+                                border-radius: 0px !important;
                               }
                             }
                           `}
@@ -487,12 +508,12 @@ const Roomwrapper = () => {
                             className="text-white text-xs underline underline-offset-2"
                           >
                             <a
-                      href="/customer/search-result/5"
-                      className="text-white text-sm"
-                      style={{ textDecoration: "none" }}
-                    >
-                      Explore Room &rarr;
-                    </a>
+                              href="/customer/search-result/5"
+                              className="text-white text-sm"
+                              style={{ textDecoration: "none" }}
+                            >
+                              Explore Room &rarr;
+                            </a>
                           </a>
                         </div>
                       </div>
@@ -500,7 +521,7 @@ const Roomwrapper = () => {
                     {/* Suite */}
                     {rooms[5] && (
                       <div
-                        className="relative rounded-xl overflow-hidden shadow room-suite-image"
+                        className="relative overflow-hidden shadow room-suite-image"
                         style={{
                           width: "100%",
                           minWidth: "0",
@@ -508,6 +529,7 @@ const Roomwrapper = () => {
                           height: "250px",
                           minHeight: "250px",
                           maxHeight: "250px",
+                          borderRadius: "0px",
                         }}
                       >
                         <Image
@@ -519,6 +541,7 @@ const Roomwrapper = () => {
                           sizes="(max-width: 767px) 100vw, (min-width: 768px) 643px"
                           style={{
                             objectFit: "cover",
+                            borderRadius: "0px",
                           }}
                           onError={(e) => {
                             console.error("Image failed to load:", rooms[5].main_image);
@@ -535,6 +558,7 @@ const Roomwrapper = () => {
                                 height: 338px !important;
                                 min-height: 338px !important;
                                 max-height: 338px !important;
+                                border-radius: 0px !important;
                               }
                             }
                             @media (max-width: 767px) {
@@ -545,6 +569,7 @@ const Roomwrapper = () => {
                                 height: 250px !important;
                                 min-height: 250px !important;
                                 max-height: 250px !important;
+                                border-radius: 0px !important;
                               }
                             }
                           `}
@@ -559,12 +584,12 @@ const Roomwrapper = () => {
                             style={{ textDecoration: "none" }}
                           >
                             <a
-                      href="/customer/search-result/6"
-                      className="text-white text-sm"
-                      style={{ textDecoration: "none" }}
-                    >
-                      Explore Room &rarr;
-                    </a>
+                              href="/customer/search-result/6"
+                              className="text-white text-sm"
+                              style={{ textDecoration: "none" }}
+                            >
+                              Explore Room &rarr;
+                            </a>
                           </a>
                         </div>
                       </div>

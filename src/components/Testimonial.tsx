@@ -79,7 +79,7 @@ const Testimonial = () => {
         <h2
           className="
             text-[#2D5A27]
-            text-[30px] md:text-[48px]
+            text-[34px] md:text-[50px]
             font-normal
             text-center
             mb-8 md:mb-12
