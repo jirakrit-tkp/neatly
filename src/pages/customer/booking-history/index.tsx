@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Layout from "@/components/Layout";
-import Footer from "@/components/Footer";
 import BookingCard, {
   type Booking,
 } from "@/components/booking-history/BookingCard";
@@ -77,6 +76,18 @@ function fmtDateUTC(d?: string | null) {
   if (Number.isNaN(dt.getTime())) return "-";
   const w = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][dt.getUTCDay()];
   const m = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
     "Jan",
     "Feb",
     "Mar",
@@ -580,7 +591,6 @@ export default function BookingHistoryPage() {
           </div>
         )}
       </main>
-      <Footer />
     </Layout>
   );
 }

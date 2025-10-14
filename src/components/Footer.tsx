@@ -4,14 +4,14 @@ const Footer = () => {
   return (
     <footer
       className="w-full bg-[#384B3F] text-white"
-      style={{ maxWidth: "1440px", margin: "0 auto" }}
+      style={{ margin: "0 auto" }}
     >
       <div
         className="
           flex flex-col md:flex-row
           justify-between
           items-start
-          max-w-[1440px] mx-auto
+          mx-auto
           px-6 md:px-12
           pt-12
           pb-8
@@ -53,7 +53,9 @@ const Footer = () => {
                   style={{ minWidth: 24, minHeight: 24 }}
                 />
               </span>
-              <span className="font-normal text-[#ffffff] text-left">+66 99 999 9999</span>
+              <span className="font-normal text-[#ffffff] text-left">
+                +66 99 999 9999
+              </span>
             </div>
             <div className="flex items-center gap-3 text-base text-[#ffffff] justify-start">
               <span className="inline-block text-[#ffffff]">
@@ -65,7 +67,9 @@ const Footer = () => {
                   style={{ minWidth: 24, minHeight: 24 }}
                 />
               </span>
-              <span className="font-normal text-[#ffffff] text-left">contact@neatlyhotel.com</span>
+              <span className="font-normal text-[#ffffff] text-left">
+                contact@neatlyhotel.com
+              </span>
             </div>
             <div className="flex items-start gap-3 text-base text-[#ffffff] justify-start">
               <span className="inline-block pt-0.5 text-[#ffffff]">
@@ -78,7 +82,8 @@ const Footer = () => {
                 />
               </span>
               <span className="font-normal text-[#ffffff] leading-snug text-left">
-                188 Phaya Thai Rd, Thung Phaya Thai,<br />
+                188 Phaya Thai Rd, Thung Phaya Thai,
+                <br />
                 Ratchathewi, Bangkok 10400
               </span>
             </div>
@@ -93,7 +98,12 @@ const Footer = () => {
         <div className="flex flex-row items-center justify-between w-full md:w-auto">
           <div className="flex items-center space-x-4">
             {/* Social icons */}
-            <a href="https://www.facebook.com/" aria-label="Facebook" target="_blank" rel="noopener noreferrer">
+            <a
+              href="https://www.facebook.com/"
+              aria-label="Facebook"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               <Image
                 src="/icons/facebook.png"
                 alt="Facebook"
@@ -102,7 +112,12 @@ const Footer = () => {
                 style={{ minWidth: 18, minHeight: 18 }}
               />
             </a>
-            <a href="https://www.instagram.com/" aria-label="Instagram" target="_blank" rel="noopener noreferrer">
+            <a
+              href="https://www.instagram.com/"
+              aria-label="Instagram"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               <Image
                 src="/icons/instagram.png"
                 alt="Instagram"
@@ -111,7 +126,12 @@ const Footer = () => {
                 style={{ minWidth: 18, minHeight: 18 }}
               />
             </a>
-            <a href="https://x.com/" aria-label="Twitter" target="_blank" rel="noopener noreferrer">
+            <a
+              href="https://x.com/"
+              aria-label="Twitter"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               <Image
                 src="/icons/twitter.png"
                 alt="Twitter"
