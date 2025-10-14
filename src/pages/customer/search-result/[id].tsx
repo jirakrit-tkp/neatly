@@ -237,13 +237,29 @@ function Roomdetailpage() {
                   </div>
                 )}
                 {images.length > 1 && (
-                  <button onClick={handlePrev} className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-700 rounded-full shadow p-2 z-30" aria-label="Previous image" disabled={isSliding}>
-                    <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6" stroke="#333" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  <button
+                    onClick={handlePrev}
+                    className="absolute left-3 md:left-4 top-1/2 -translate-y-1/2 bg-transparent hover:bg-transparent text-gray-400 rounded-full p-2 z-30"
+                    style={{ border: "1.5px solid #C0C0C0", boxShadow: "none" }}
+                    aria-label="Previous image"
+                    disabled={isSliding}
+                  >
+                    <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
+                      <path d="M15 18l-6-6 6-6" stroke="#C0C0C0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
                   </button>
                 )}
                 {images.length > 1 && (
-                  <button onClick={handleNext} className="absolute right-3 md:right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-700 rounded-full shadow p-2 z-30" aria-label="Next image" disabled={isSliding}>
-                    <svg width="24" height="24" fill="none" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" stroke="#333" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  <button
+                    onClick={handleNext}
+                    className="absolute right-3 md:right-4 top-1/2 -translate-y-1/2 bg-transparent hover:bg-transparent text-gray-400 rounded-full p-2 z-30"
+                    style={{ border: "1.5px solid #C0C0C0", boxShadow: "none" }}
+                    aria-label="Next image"
+                    disabled={isSliding}
+                  >
+                    <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
+                      <path d="M9 6l6 6-6 6" stroke="#C0C0C0" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
                   </button>
                 )}
               </div>

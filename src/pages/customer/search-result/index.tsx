@@ -260,7 +260,7 @@ function SearchResultPage() {
                             ? `THB ${room.base_price.toLocaleString()}`
                             : ""}
                         </span>
-                        <span className="text-xl font-bold text-[#F47A1F] mb-1">
+                        <span className="text-xl font-bold text-black mb-1">
                           {room.promo_price
                             ? `THB ${room.promo_price.toLocaleString()}`
                             : "THB 0"}
@@ -272,7 +272,7 @@ function SearchResultPage() {
                       </div>
                       <div className="flex flex-row gap-2 mt-4">
                         <button
-                          className="text-[#F47A1F] border border-[#F47A1F] bg-white rounded-md font-medium text-xs hover:bg-[#f7e7d7] transition"
+                          className="text-[#F47A1F] border border-white bg-white rounded-md font-medium text-xs hover:bg-[#f7e7d7] transition"
                           style={{
                             width: "143px",
                             height: "48px",
