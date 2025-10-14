@@ -340,7 +340,7 @@ export default function SearchBox({ onSearch, defaultValues }: SearchBoxProps) {
                     </div>
                     {/* Calendar Days Header */}
                     <div className="grid grid-cols-7 gap-0 mb-2">
-                      {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => (
+                      {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map(day => (
                         <div key={day} className="text-center text-xs font-medium text-gray-400 py-1">
                           {day}
                         </div>
@@ -352,10 +352,11 @@ export default function SearchBox({ onSearch, defaultValues }: SearchBoxProps) {
                         const year = currentMonth.getFullYear();
                         const month = currentMonth.getMonth();
                         const firstDay = new Date(year, month, 1);
-                        // Start from Sunday (0) to match the day headers
+                        // Adjust to start from Monday
                         const dayOfWeek = firstDay.getDay();
+                        const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
                         const startDate = new Date(firstDay);
-                        startDate.setDate(startDate.getDate() - dayOfWeek);
+                        startDate.setDate(startDate.getDate() - daysToSubtract);
 
                         const dates = [];
                         for (let i = 0; i < 42; i++) {
@@ -374,7 +375,7 @@ export default function SearchBox({ onSearch, defaultValues }: SearchBoxProps) {
                             <button
                               key={index}
                               type="button"
-                              disabled={!!isDisabled}
+                              disabled={isDisabled}
                               onClick={() => {
                                 if (!isDisabled) {
                                   setCheckIn(formatLocalYmd(date));
@@ -479,10 +480,11 @@ export default function SearchBox({ onSearch, defaultValues }: SearchBoxProps) {
                         const year = currentMonth.getFullYear();
                         const month = currentMonth.getMonth();
                         const firstDay = new Date(year, month, 1);
-                        // Start from Sunday (0) to match the day headers
+                        // Adjust to start from Monday
                         const dayOfWeek = firstDay.getDay();
+                        const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
                         const startDate = new Date(firstDay);
-                        startDate.setDate(startDate.getDate() - dayOfWeek);
+                        startDate.setDate(startDate.getDate() - daysToSubtract);
 
                         const dates = [];
                         for (let i = 0; i < 42; i++) {
@@ -502,7 +504,7 @@ export default function SearchBox({ onSearch, defaultValues }: SearchBoxProps) {
                             <button
                               key={index}
                               type="button"
-                              disabled={!!isDisabled}
+                              disabled={isDisabled}
                               onClick={() => {
                                 if (!isDisabled) {
                                   setCheckOut(formatLocalYmd(date));
