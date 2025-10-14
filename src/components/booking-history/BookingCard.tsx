@@ -11,15 +11,12 @@ export type Booking = {
   id: string;
   roomName: string;
   imageUrl: string;
-
   checkInDate: string;
   checkInNote?: string;
   checkOutDate: string;
   checkOutNote?: string;
-
   bookedAtText: string;
   checkInAtRaw?: string | null;
-
   guests: number;
   nights: number;
   payment: {
@@ -28,7 +25,7 @@ export type Booking = {
     mask?: string;
   };
   items: Array<{ label: string; amount: number }>;
-  currency: string; // "THB" | "USD" | etc.
+  currency: string;
   total: number;
   additionalRequest?: string;
   promoCode?: string;
@@ -37,7 +34,6 @@ export type Booking = {
 
 type Props = {
   booking: Booking;
-  /** ให้ parent ถอดแถวออกเมื่อยกเลิกสำเร็จ */
   onDeleted?: (id: string) => void;
 };
 
@@ -61,19 +57,17 @@ function moneyWithCurrency(n: number, currency: string) {
   }
 }
 
-/** แปลงสตริงวันที่จาก DB ให้ JS parse ได้เสถียร */
 function normalizeToISO(rawInput?: string | null): string | null {
   if (!rawInput) return null;
   let s = rawInput.trim();
   if (!s) return null;
-  if (s.includes(" ")) s = s.replace(" ", "T"); // "YYYY-MM-DD HH:mm:ss" -> "YYYY-MM-DDTHH:mm:ss"
-  s = s.replace(/([+\-]\d{2})(\d{2})$/, "$1:$2"); // +0700 -> +07:00
-  s = s.replace(/\+00(?::?00)?$/, "Z"); // +00 / +0000 -> Z
-  if (!/[zZ]|[+\-]\d{2}:\d{2}$/.test(s)) s = `${s}Z`; // ไม่มี timezone -> ใส่ Z
+  if (s.includes(" ")) s = s.replace(" ", "T");
+  s = s.replace(/([+\-]\d{2})(\d{2})$/, "$1:$2");
+  s = s.replace(/\+00(?::?00)?$/, "Z");
+  if (!/[zZ]|[+\-]\d{2}:\d{2}$/.test(s)) s = `${s}Z`;
   return s;
 }
 
-/** ภายใน 24 ชม.ก่อนเช็คอินถือว่า non-refund */
 function isNonRefundWindow(checkInAtRaw?: string | null): boolean {
   const iso = normalizeToISO(checkInAtRaw);
   if (!iso) return false;
@@ -83,7 +77,6 @@ function isNonRefundWindow(checkInAtRaw?: string | null): boolean {
   return hours <= 24;
 }
 
-/** รูปแบบ error ของ Supabase/Postgrest */
 type PostgrestErrorLite = {
   message?: string;
   details?: string | null;
@@ -97,10 +90,8 @@ export default function BookingCard({ booking, onDeleted }: Props) {
   const [open, setOpen] = useState(false);
   const [showRefundModal, setShowRefundModal] = useState(false);
   const [showNonRefundModal, setShowNonRefundModal] = useState(false);
-
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
-
   const panelId = useId();
 
   const handleCancelClick = () => {
@@ -111,55 +102,39 @@ export default function BookingCard({ booking, onDeleted }: Props) {
     }
   };
 
-  /** ลบที่ Supabase แบบกันแฮง/กดซ้ำ + แสดงข้อผิดพลาด */
   async function deleteBookingRow() {
     if (deleting) return;
     setDeleting(true);
     setDeleteError(null);
-
-    // ปิด modal ให้รู้สึกว่ามี action เกิดขึ้นทันที
     setShowRefundModal(false);
     setShowNonRefundModal(false);
 
     try {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 12000); // 12s timeout
-
+      const timeout = setTimeout(() => controller.abort(), 12000);
       const { error } = await supabase
         .from("bookings")
         .delete()
         .eq("id", booking.id)
         .abortSignal(controller.signal);
-
       clearTimeout(timeout);
       if (error) throw error as PostgrestErrorLite;
-
-      onDeleted?.(booking.id); // แจ้ง parent ให้ถอดการ์ดออก
+      onDeleted?.(booking.id);
     } catch (e: unknown) {
-      // ปลอดภัยกับ type: แปลงเป็นข้อความที่อ่านได้
       let msg = "Failed to cancel booking";
-
       if (e && typeof e === "object") {
         const err = e as PostgrestErrorLite;
-        if (err.name === "AbortError") {
-          msg = "Network timeout. Please try again.";
-        } else if (typeof err.message === "string" && err.message) {
-          msg = err.message;
-        } else if (typeof (err.details ?? "") === "string" && err.details) {
-          msg = err.details as string;
-        } else if (typeof (err.hint ?? "") === "string" && err.hint) {
-          msg = err.hint as string;
-        }
+        if (err.name === "AbortError") msg = "Network timeout. Please try again.";
+        else if (err.message) msg = err.message;
+        else if (err.details) msg = err.details;
+        else if (err.hint) msg = err.hint;
       }
-
-      if (/row level security|RLS/i.test(msg)) {
+      if (/row level security|RLS/i.test(msg))
         msg = "Permission denied. Please sign in again.";
-      }
-
       setDeleteError(msg);
-      setOpen(true); // เปิด panel เพื่อโชว์ error
+      setOpen(true);
     } finally {
-      setTimeout(() => setDeleting(false), 300); // กันค้างที่ Cancelling...
+      setTimeout(() => setDeleting(false), 300);
     }
   }
 
@@ -169,7 +144,6 @@ export default function BookingCard({ booking, onDeleted }: Props) {
   return (
     <article className="bg-white border-b border-gray-200 last:border-b-0 mt-6 md:mt-0">
       <div className="mx-auto max-w-[1120px] p-6">
-        {/* กริดหลัก */}
         <div className="grid grid-cols-1 md:grid-cols-[357px_715px] md:grid-rows-[auto_auto_auto] md:gap-[48px]">
           {/* รูป */}
           <div className="relative w-full h-[220px] sm:h-[260px] md:h-[210px] md:w-[357px] md:[grid-row:1/4] md:[grid-column:1/2] mb-[20px] md:mb-0">
@@ -198,17 +172,14 @@ export default function BookingCard({ booking, onDeleted }: Props) {
             {/* Check-in/out */}
             <div className="mt-[24px] md:mt-[32px] flex flex-col sm:flex-row sm:gap-x-8 gap-y-4">
               <div>
-                <div className="text-[16px] sm:text-[16px] font-semibold font-inter text-gray-800 mb-1">
+                <div className="text-[16px] font-semibold font-inter text-gray-800 mb-1">
                   Check-in
                 </div>
-                <div className="flex items-center text-[16px] sm:text-[16px] font-inter text-gray-800">
+                <div className="flex items-center text-[16px] font-inter text-gray-800">
                   <span>{booking.checkInDate}</span>
                   {booking.checkInNote && (
                     <>
-                      <span
-                        className="mx-2 sm:mx-3 h-4 w-px bg-gray-800"
-                        aria-hidden
-                      />
+                      <span className="mx-2 h-4 w-px bg-gray-800" />
                       <span>{booking.checkInNote}</span>
                     </>
                   )}
@@ -216,17 +187,14 @@ export default function BookingCard({ booking, onDeleted }: Props) {
               </div>
 
               <div>
-                <div className="text-[16px] sm:text-[16px] font-semibold text-gray-800 font-inter mb-1">
+                <div className="text-[16px] font-semibold text-gray-800 font-inter mb-1">
                   Check-out
                 </div>
-                <div className="flex items-center text-[16px] sm:text-[16px] font-inter text-gray-800">
+                <div className="flex items-center text-[16px] font-inter text-gray-800">
                   <span>{booking.checkOutDate}</span>
                   {booking.checkOutNote && (
                     <>
-                      <span
-                        className="mx-2 sm:mx-3 h-4 w-px bg-gray-800"
-                        aria-hidden
-                      />
+                      <span className="mx-2 h-4 w-px bg-gray-800" />
                       <span>{booking.checkOutNote}</span>
                     </>
                   )}
@@ -238,14 +206,16 @@ export default function BookingCard({ booking, onDeleted }: Props) {
             <button
               type="button"
               onClick={() => setOpen((v) => !v)}
-              className="mt-[24px] md:mt-[32px] w-full flex items-center justify-between bg-gray-200 px-4 sm:px-5 py-3 text-[16px] sm:text-[16px] font-inter font-semibold text-gray-900 hover:bg-gray-100"
+              className="mt-[24px] md:mt-[32px] w-full flex items-center justify-between bg-gray-200 px-4 sm:px-5 py-3 text-[16px] font-inter font-semibold text-gray-900 hover:bg-gray-100"
               aria-expanded={open}
               aria-controls={panelId}
             >
               <span>Booking Detail</span>
+
+              {/*  ลูกศร + สีและทิศทางตามสถานะ */}
               <svg
-                className={`h-5 w-5 transition-transform ${
-                  open ? "rotate-180" : "rotate-0"
+                className={`w-6 h-6 transition-transform duration-200 ${
+                  open ? "rotate-0 text-gray-900" : "rotate-180 text-orange-500"
                 }`}
                 viewBox="0 0 20 20"
                 fill="currentColor"
@@ -266,55 +236,41 @@ export default function BookingCard({ booking, onDeleted }: Props) {
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-gray-600 text-[14px] sm:text-[15px]">
                     <div>
                       <span className="text-gray-700 text-[16px] font-inter">
-                        {booking.guests}{" "}
-                        {booking.guests > 1 ? "Guests" : "Guest"}
+                        {booking.guests} {booking.guests > 1 ? "Guests" : "Guest"}
                       </span>
                       <span className="text-gray-700 text-[16px] font-inter">
                         {" "}
-                        ({booking.nights}{" "}
-                        {booking.nights > 1 ? "Nights" : "Night"})
+                        ({booking.nights} {booking.nights > 1 ? "Nights" : "Night"})
                       </span>
                     </div>
                     <div className="sm:text-right">
                       <span className="text-gray-700 text-[16px] font-inter">{`Payment ${booking.payment.status} via `}</span>
                       <span className="text-gray-700 text-[16px] font-inter font-semibold">
                         {booking.payment.method}
-                        {booking.payment.mask
-                          ? ` - ${booking.payment.mask}`
-                          : ""}
+                        {booking.payment.mask ? ` - ${booking.payment.mask}` : ""}
                       </span>
                     </div>
                   </div>
 
                   <div className="mt-6">
                     {booking.items.map((it, idx) => (
-                      <Row
-                        key={idx}
-                        label={it.label}
-                        amount={money(it.amount)}
-                      />
+                      <Row key={idx} label={it.label} amount={money(it.amount)} />
                     ))}
 
                     {booking.promoDiscount && booking.promoDiscount > 0 && (
                       <div className="py-2 flex items-start justify-between">
                         <span className="font-inter text-[16px] text-green-600">
-                          Promo Discount ({booking.promoCode})
+                          Promotion
                         </span>
                         <span className="font-inter text-[16px] text-green-600 font-semibold">
-                          -
-                          {moneyWithCurrency(
-                            booking.promoDiscount,
-                            booking.currency
-                          )}
+                          -{moneyWithCurrency(booking.promoDiscount, booking.currency)}
                         </span>
                       </div>
                     )}
 
-                    <div className="my-4" />
-                    <div className="flex items-center justify-between">
-                      <span className="text-gray-700 text-[16px] font-inter">
-                        Total
-                      </span>
+                    {/* 🔸 เส้นคั่นก่อนบรรทัด Total */}
+                    <div className="mt-4 border-t border-gray-400 pt-3 flex items-center justify-between">
+                      <span className="text-gray-700 text-[16px] font-inter">Total</span>
                       <span className="text-[20px] font-inter font-semibold text-gray-900">
                         {moneyWithCurrency(
                           booking.total - (booking.promoDiscount || 0),
@@ -325,22 +281,9 @@ export default function BookingCard({ booking, onDeleted }: Props) {
                   </div>
 
                   {deleteError && (
-                    <div className="mt-4 text-sm text-red-600">
-                      {deleteError}
-                    </div>
+                    <div className="mt-4 text-sm text-red-600">{deleteError}</div>
                   )}
                 </div>
-
-                {booking.promoCode && (
-                  <div className="bg-gray-300 px-4 sm:px-6 py-4 text-[16px] font-inter text-gray-700">
-                    <div className="font-semibold font-inter text-gray-700 mb-1">
-                      Promo Code Used
-                    </div>
-                    <div className="font-mono text-orange-600 font-semibold">
-                      {booking.promoCode}
-                    </div>
-                  </div>
-                )}
 
                 {booking.additionalRequest && (
                   <div className="bg-gray-300 px-4 sm:px-6 py-4 text-[16px] font-inter text-gray-700">
@@ -354,48 +297,7 @@ export default function BookingCard({ booking, onDeleted }: Props) {
             )}
           </div>
 
-          {/* ปุ่มล่าง — Mobile */}
-          <div className="mt-[24px] md:mt-0 md:[grid-row:3/4] md:[grid-column:1/3] md:hidden">
-            <div className="grid grid-cols-2 gap-4">
-              <Link
-                href={`/customer/bookings/${booking.id}`}
-                className="inline-flex h-11 w-full items-center justify-center text-[16px] font-semibold font-inter text-orange-500 hover:underline"
-              >
-                Room Detail
-              </Link>
-
-              <Link
-                href={`/customer/customer-bookings/change/${booking.id}`}
-                passHref
-              >
-                <button
-                  type="button"
-                  className="inline-flex h-11 w-full items-center justify-center rounded-md bg-orange-600 font-semibold font-inter px-4 text-[16px] text-white hover:brightness-110"
-                >
-                  Change Date
-                </button>
-              </Link>
-            </div>
-
-            <div className="mt-3 flex w-full justify-end">
-              <button
-                type="button"
-                onClick={() =>
-                  router.push(
-                    `/customer/customer-bookings/cancel/${booking.id}`
-                  )
-                }
-                disabled={deleting}
-                className={`text-[16px] font-inter font-semibold text-orange-500 hover:underline ${
-                  deleting ? "opacity-60 cursor-not-allowed" : "cursor-pointer"
-                }`}
-              >
-                {deleting ? "Cancelling..." : "Cancel Booking"}
-              </button>
-            </div>
-          </div>
-
-          {/* ปุ่มล่าง — Desktop */}
+          {/* ปุ่มล่าง Desktop */}
           <div className="hidden md:flex md:[grid-row:3/4] md:[grid-column:1/3] items-center justify-between">
             <button
               type="button"
