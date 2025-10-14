@@ -149,17 +149,13 @@ export default function Otherroompage() {
               opacity: rooms.length <= showCount ? 0.6 : 1,
             }}
           >
-            <svg
-              width="24"
-              height="24"
-              fill="none"
-              stroke="#97a4b6"
-              strokeWidth="2"
-              style={{ display: "block" }}
-            >
-             
-              <path d="M14.5 8l-4 4 4 4" stroke="#97A4B6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
+            <img
+              src="/icons/left.png"
+              alt="Previous"
+              width={68}
+              height={68}
+              style={{ filter: "brightness(0) saturate(100%) invert(70%) sepia(8%) saturate(500%) hue-rotate(200deg) brightness(90%) contrast(85%)" }}
+            />
           </button>
           <button
             className="w-[48px] h-[48px] rounded-full border border-[#B3BBC4] flex items-center justify-center bg-transparent hover:bg-transparent transition"
@@ -171,17 +167,13 @@ export default function Otherroompage() {
               opacity: rooms.length <= showCount ? 0.6 : 1,
             }}
           >
-            <svg
-              width="24"
-              height="24"
-              fill="none"
-              stroke="#97a4b6"
-              strokeWidth="2"
-              style={{ display: "block" }}
-            >
-              {/* Removed <circle .../> */}
-              <path d="M9.5 8l4 4-4 4" stroke="#97A4B6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
+            <img
+              src="/icons/right.png"
+              alt="Next"
+              width={68}
+              height={68}
+              style={{ filter: "brightness(0) saturate(100%) invert(70%) sepia(8%) saturate(500%) hue-rotate(200deg) brightness(90%) contrast(85%)" }}
+            />
           </button>
         </div>
       </div>

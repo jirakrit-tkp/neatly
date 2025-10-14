@@ -330,18 +330,13 @@ export default function Aboutsection() {
                           }}
                           tabIndex={0}
                         >
-                          <span
-                            style={{
-                              fontSize: "16px",
-                              color: "rgba(144, 134, 134, 0.6)",
-                              fontWeight: "bold",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                            }}
-                          >
-                            ‹
-                          </span>
+                          <img
+                            src="/icons/left.png"
+                            alt="Previous"
+                            width={68}
+                            height={68}
+                            style={{ filter: "brightness(0) saturate(100%) invert(70%) sepia(8%) saturate(500%) hue-rotate(200deg) brightness(90%) contrast(85%)" }}
+                          />
                         </button>
                       )}
                     </div>
@@ -447,18 +442,13 @@ export default function Aboutsection() {
                   }}
                   tabIndex={0}
                 >
-                  <span
-                    style={{
-                      fontSize: '20px',
-                      color: '#999',
-                      fontWeight: 'bold',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}
-                  >
-                    ‹
-                  </span>
+                  <img
+                    src="/icons/left.png"
+                    alt="Previous"
+                    width={68}
+                    height={68}
+                    style={{ filter: "brightness(0) saturate(100%) invert(70%) sepia(8%) saturate(500%) hue-rotate(200deg) brightness(90%) contrast(85%)" }}
+                  />
                 </button>
               </div>
               {/* Images */}
@@ -538,18 +528,13 @@ export default function Aboutsection() {
                   }}
                   tabIndex={0}
                 >
-                  <span
-                    style={{
-                      fontSize: '20px',
-                      color: '#999',
-                      fontWeight: 'bold',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}
-                  >
-                    ›
-                  </span>
+                  <img
+                    src="/icons/right.png"
+                    alt="Next"
+                    width={68}
+                    height={68}
+                    style={{ filter: "brightness(0) saturate(100%) invert(70%) sepia(8%) saturate(500%) hue-rotate(200deg) brightness(90%) contrast(85%)" }}
+                  />
                 </button>
               </div>
             </div>
