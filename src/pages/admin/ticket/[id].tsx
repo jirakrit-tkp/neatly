@@ -67,6 +67,7 @@ interface Ticket {
   status: string;
   created_at: string;
   closed_at?: string;
+  agent_id?: string;
 }
 
 interface UserInfo {
@@ -85,6 +86,7 @@ export default function TicketDetail() {
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [adminUserId, setAdminUserId] = useState<string | null>(null);
   
   // Chat states
   const [newMessage, setNewMessage] = useState('');
@@ -137,6 +139,17 @@ export default function TicketDetail() {
       requestAnimationFrame(() => updateScrollState(messageId));
     }
   }, [updateScrollState]);
+
+  // Get admin user ID
+  useEffect(() => {
+    const getAdminUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.id) {
+        setAdminUserId(session.user.id);
+      }
+    };
+    getAdminUser();
+  }, []);
 
   useEffect(() => {
     if (id) {
@@ -325,13 +338,22 @@ export default function TicketDetail() {
 
     setSendingMessage(true);
     try {
+      // Prepare message data with sender_id for admin
+      const messageData: {
+        session_id: string;
+        message: string;
+        is_bot: boolean;
+        sender_id: string;
+      } = {
+        session_id: ticket.session_id,
+        message: newMessage.trim(),
+        is_bot: true, // Admin messages are treated as bot messages
+        sender_id: adminUserId || ''
+      };
+
       const { data, error } = await supabase
         .from('chatbot_messages')
-        .insert({
-          session_id: ticket.session_id,
-          message: newMessage.trim(),
-          is_bot: true // Admin messages are treated as bot messages
-        })
+        .insert(messageData)
         .select()
         .single();
 
@@ -465,11 +487,17 @@ export default function TicketDetail() {
                   ticketId={ticket.id}
                   status={ticket.status}
                   onStatusUpdate={(newStatus) => {
-                    setTicket(prev => prev ? { ...prev, status: newStatus } : null);
+                    setTicket(prev => prev ? { 
+                      ...prev, 
+                      status: newStatus,
+                      // If accepting ticket, set agent_id to current admin
+                      agent_id: newStatus === 'in_progress' ? (adminUserId || undefined) : prev.agent_id
+                    } : null);
                   }}
                   variant="detail"
                   showViewDetail={false}
                   hideDelete={true}
+                  adminUserId={adminUserId}
                 />
               </div>
             </div>
@@ -721,11 +749,17 @@ export default function TicketDetail() {
                       ticketId={ticket.id}
                       status={ticket.status}
                       onStatusUpdate={(newStatus) => {
-                        setTicket(prev => prev ? { ...prev, status: newStatus } : null);
+                        setTicket(prev => prev ? { 
+                          ...prev, 
+                          status: newStatus,
+                          // If accepting ticket, set agent_id to current admin
+                          agent_id: newStatus === 'in_progress' ? (adminUserId || undefined) : prev.agent_id
+                        } : null);
                       }}
                       variant="detail"
                       showViewDetail={false}
                       hideDelete={true}
+                      adminUserId={adminUserId}
                     />
                   </div>
                 </div>
@@ -739,6 +773,20 @@ export default function TicketDetail() {
                       </svg>
                       <span className="text-green-800 text-sm font-medium">
                         Ticket has been solved successfully!
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ) : ticket.agent_id && ticket.agent_id !== adminUserId ? (
+                <div className="space-y-4">
+                  {/* Ticket Assigned to Another Agent */}
+                  <div className="flex items-center justify-center py-4 px-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-center">
+                      <svg className="h-5 w-5 text-blue-400 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                      </svg>
+                      <span className="text-blue-800 text-sm">
+                        This ticket has been assigned to another agent. You cannot send messages.
                       </span>
                     </div>
                   </div>

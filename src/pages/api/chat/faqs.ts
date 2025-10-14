@@ -146,6 +146,7 @@ export default async function handler(
       }
 
       console.log('Creating FAQ entry:', { topic, reply_message, reply_format, reply_payload, aliases, created_by });
+      console.log('🔍 FAQ API Debug: created_by type =', typeof created_by, 'value =', created_by);
 
       // Check if it's a special message (greeting/fallback) that doesn't need embedding
       const isSpecialMessage = topic === '::greeting::' || topic === '::fallback::';
@@ -222,7 +223,8 @@ export default async function handler(
                   .insert({
                     faq_id: createdFAQ.id,
                     alias: alias.trim(),
-                    embedding: alias_embedding
+                    embedding: alias_embedding,
+                    created_by: created_by || null
                   });
 
                 if (aliasError) {
@@ -260,11 +262,11 @@ export default async function handler(
         reply_message, 
         reply_format = 'message', 
         reply_payload = null,
-        created_by,
+        updated_by,
         aliases = [],
         deleted_aliases = [],
         display_order
-      }: FAQPayload = req.body;
+      }: FAQPayload & { updated_by?: string } = req.body;
 
       if (!topic || !reply_message) {
         return res.status(400).json({ error: 'Topic and reply_message are required' });
@@ -274,7 +276,7 @@ export default async function handler(
         return res.status(400).json({ error: 'Invalid reply_format or reply_payload' });
       }
 
-      console.log('Updating FAQ entry:', { id, topic, reply_message, reply_format, reply_payload, aliases, deleted_aliases, created_by });
+      console.log('Updating FAQ entry:', { id, topic, reply_message, reply_format, reply_payload, aliases, deleted_aliases, updated_by });
 
       // Check if it's a special message (greeting/fallback) that doesn't need embedding
       const isSpecialMessage = topic === '::greeting::' || topic === '::fallback::';
@@ -287,6 +289,7 @@ export default async function handler(
           reply_format: 'message' | 'room_type' | 'option_details';
           reply_payload: ReplyPayload;
           updated_at: string;
+          updated_by?: string;
           display_order?: number;
         };
         const updateData: UpdateData = {
@@ -296,6 +299,11 @@ export default async function handler(
           reply_payload,
           updated_at: new Date().toISOString(),
         };
+        
+        // Add updated_by if provided
+        if (updated_by) {
+          updateData.updated_by = updated_by;
+        }
         
         // Only update display_order if provided and not a special message
         if (display_order !== undefined && !isSpecialMessage) {
@@ -326,14 +334,15 @@ export default async function handler(
         console.log('Generated embedding length for update:', topic_embedding.length);
 
         // Use RPC function to update FAQ with embedding
-        const { data: updatedFaq, error } = await supabase.rpc('update_faq_with_embedding_v2', {
+        const { data: updatedFaq, error } = await supabase.rpc('update_faq_with_embedding_v3', {
+          p_display_order: display_order,
           p_id: id as string,
-          p_topic: topic,
-          p_reply_message: reply_message,
-          p_topic_embedding: topic_embedding,
           p_reply_format: reply_format,
+          p_reply_message: reply_message,
           p_reply_payload: reply_payload,
-          p_display_order: display_order
+          p_topic: topic,
+          p_topic_embedding: topic_embedding,
+          p_updated_by: updated_by || null
         });
 
         if (error) {
@@ -391,7 +400,8 @@ export default async function handler(
                 .insert({
                   faq_id: id as string,
                   alias: trimmed,
-                  embedding: alias_embedding
+                  embedding: alias_embedding,
+                  created_by: updated_by || null
                 });
 
               if (aliasError) {

@@ -50,25 +50,33 @@ export default async function handler(
       console.log('🔵 Context API: POST request received');
       
       // Create new context entry
-      const { content } = req.body;
-      console.log('🔵 Context API: Request body:', { content });
+      const { content, created_by } = req.body;
+      console.log('🔵 Context API: Request body:', { content, created_by });
+      console.log('🔍 API Debug: created_by type =', typeof created_by, 'value =', created_by);
 
       if (!content) {
         console.log('❌ Context API: Content is required');
         return res.status(400).json({ error: 'Content is required' });
       }
 
-      console.log('🔵 Context API: Creating context entry:', { content });
+      console.log('🔵 Context API: Creating context entry:', { content, created_by });
 
-      // Admin creates context without created_by
+      // Admin creates context with created_by
       console.log('🔵 Context API: Creating context (admin operation)');
 
-      // Insert context without created_by (admin operation)
+      // Insert context with created_by (admin operation)
+        const insertData: { content: string; created_by?: string } = { content };
+        console.log('🔍 API Debug: insertData before adding created_by:', insertData);
+        if (created_by) {
+          insertData.created_by = created_by;
+          console.log('🔍 API Debug: Added created_by to insertData:', insertData);
+        } else {
+          console.log('🔍 API Debug: created_by is falsy, not adding to insertData');
+        }
+
       const { data: contextEntry, error } = await supabase
         .from('chatbot_contexts')
-        .insert({
-          content
-        })
+        .insert(insertData)
         .select()
         .single();
 
@@ -107,23 +115,28 @@ export default async function handler(
         return res.status(400).json({ error: 'Context ID is required for update' });
       }
 
-      const { content } = req.body;
+      const { content, updated_by } = req.body;
 
       if (!content) {
         return res.status(400).json({ error: 'Content is required' });
       }
 
-      console.log('Updating context entry:', { id, content });
+      console.log('Updating context entry:', { id, content, updated_by });
 
-      // Admin updates context without updated_by
+      // Admin updates context with updated_by
       console.log('🔵 Context API: Updating context (admin operation)');
+
+      const updateData: { content: string; updated_at: string; updated_by?: string } = {
+        content,
+        updated_at: new Date().toISOString()
+      };
+      if (updated_by) {
+        updateData.updated_by = updated_by;
+      }
 
       const { data: updatedContext, error } = await supabase
         .from('chatbot_contexts')
-        .update({
-          content,
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', id as string)
         .select()
         .single();

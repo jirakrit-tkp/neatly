@@ -44,6 +44,7 @@ interface SuggestionMenuProps {
   onClose?: () => void;
   onEdit?: () => void;
   onShowSnackbar?: (message: string, type: 'success' | 'error' | 'delete') => void;
+  adminUserId?: string | null;
 }
 
 export default function SuggestionMenu({ 
@@ -57,7 +58,8 @@ export default function SuggestionMenu({
   faq,
   onClose,
   onEdit,
-  onShowSnackbar
+  onShowSnackbar,
+  adminUserId
 }: SuggestionMenuProps) {
   // Base input styles
   const baseInputStyles = "w-full border !bg-white border-gray-300 rounded-md text-sm px-3 py-2";
@@ -238,6 +240,13 @@ export default function SuggestionMenu({
   const dragControls = useDragControls();
 
   const handleCreateFAQ = async () => {
+    // Check if adminUserId is available
+    if (!adminUserId) {
+      console.log("❌ SuggestionMenu: adminUserId not available yet");
+      setValidationErrors({ question: "Please wait, loading admin information..." });
+      return;
+    }
+
     // Clear previous validation errors
     setValidationErrors({});
     
@@ -319,14 +328,16 @@ export default function SuggestionMenu({
         reply_message = newFAQ.replyTitle;
       }
 
-      console.log("Sending FAQ data:", {
+      console.log("🔍 Debug: Sending FAQ data:", {
         topic: newFAQ.question,
         reply_message,
         reply_format,
         reply_payload,
-        created_by: "admin-user-id",
+        created_by: adminUserId,
         aliases: newAliasesUI.filter(alias => alias.trim())
       });
+      console.log("🔍 Debug: adminUserId in SuggestionMenu =", adminUserId);
+      console.log("🔍 Debug: adminUserId type =", typeof adminUserId);
 
       const isEditing = Boolean(faq?.id);
       const url = isEditing ? `/api/chat/faqs?id=${faq?.id}` : "/api/chat/faqs";
@@ -337,6 +348,7 @@ export default function SuggestionMenu({
             reply_message,
             reply_format,
             reply_payload,
+            updated_by: adminUserId || null, // แปลง undefined เป็น null
             aliases: newAliasesUI.filter(alias => alias.trim()),
             deleted_aliases: deletedAliasesUI, // Send aliases to delete
           }
@@ -345,7 +357,7 @@ export default function SuggestionMenu({
             reply_message,
             reply_format,
             reply_payload,
-            created_by: null,
+            created_by: adminUserId || null, // แปลง undefined เป็น null
             aliases: newAliasesUI.filter(alias => alias.trim()),
           };
 

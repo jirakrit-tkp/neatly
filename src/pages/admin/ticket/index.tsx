@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import TicketActions from "@/components/admin/TicketActions";
 import ChatbotConfirmModal from "@/components/admin/ui/ChatbotConfirmModal";
 import ChatbotSnackbar from "@/components/admin/ui/ChatbotSnackbar";
+import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
 
 interface Ticket {
@@ -15,6 +16,7 @@ interface Ticket {
   status: string;
   created_at: string;
   closed_at?: string;
+  agent_id?: string;
 }
 
 export default function TicketAdmin() {
@@ -25,6 +27,18 @@ export default function TicketAdmin() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [ticketToDelete, setTicketToDelete] = useState<Ticket | null>(null);
   const [snackbar, setSnackbar] = useState<{ show: boolean; message: string; type: 'success' | 'error' | 'delete' }>({ show: false, message: '', type: 'success' });
+  const [adminUserId, setAdminUserId] = useState<string | null>(null);
+
+  // Get admin user ID
+  useEffect(() => {
+    const getAdminUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.id) {
+        setAdminUserId(session.user.id);
+      }
+    };
+    getAdminUser();
+  }, []);
 
   // Load tickets on component mount
   useEffect(() => {
@@ -250,6 +264,7 @@ export default function TicketAdmin() {
                           }}
                           variant="list"
                           showViewDetail={true}
+                          adminUserId={adminUserId}
                         />
                       </div>
                     </div>

@@ -11,6 +11,7 @@ interface TicketActionsProps {
   showViewDetail?: boolean;
   onViewDetail?: () => void;
   hideDelete?: boolean;
+  adminUserId?: string | null;
 }
 
 export default function TicketActions({
@@ -21,21 +22,30 @@ export default function TicketActions({
   variant = 'list',
   showViewDetail = true,
   onViewDetail,
-  hideDelete = false
+  hideDelete = false,
+  adminUserId
 }: TicketActionsProps) {
   const router = useRouter();
 
   const handleUpdateStatus = async (newStatus: string) => {
     try {
+      // Prepare update data
+      const updateData: { status: string; agent_id?: string } = { status: newStatus };
+      
+      // If accepting ticket (changing to in_progress), add agent_id
+      if (newStatus === 'in_progress' && adminUserId) {
+        updateData.agent_id = adminUserId;
+      }
+
       const response = await fetch(`/api/ticket/tickets?id=${ticketId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus })
+        body: JSON.stringify(updateData)
       });
 
       if (response.ok) {
         onStatusUpdate?.(newStatus);
-        console.log(`✅ Ticket ${newStatus}`);
+        console.log(`✅ Ticket ${newStatus}${newStatus === 'in_progress' ? ` by agent ${adminUserId}` : ''}`);
       }
     } catch (error) {
       console.error(`Error updating ticket to ${newStatus}:`, error);

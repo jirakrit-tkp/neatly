@@ -95,14 +95,19 @@ export default async function handler(
           return res.status(400).json({ error: "Ticket ID is required" });
         }
 
-        const { status } = body;
+        const { status, agent_id } = body;
         if (!status) {
           return res.status(400).json({ error: "Status is required" });
         }
 
-        const updateData: { closed_at?: string | null; status: string } = {
+        const updateData: { closed_at?: string | null; status: string; agent_id?: string } = {
           status,
         };
+
+        // Add agent_id if provided (when accepting ticket)
+        if (agent_id) {
+          updateData.agent_id = agent_id;
+        }
 
         // If closing or solving ticket, set closed_at timestamp
         if (status === "closed" || status === "solved") {
