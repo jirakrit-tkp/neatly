@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
 import EnvironmentCheck from "./EnvironmentCheck";
 
@@ -170,19 +171,13 @@ const Roomwrapper = () => {
                   <span className="text-white text-lg md:text-2xl font-serif mb-2 drop-shadow">
                     {rooms[0].name}
                   </span>
-                  <a
-                    href={rooms[0].link || "#"}
+                  <Link
+                    href="/customer/search-result/1"
                     className="text-white text-sm"
                     style={{ textDecoration: "none" }}
                   >
-                    <a
-                      href="/customer/search-result/1"
-                      className="text-white text-sm"
-                      style={{ textDecoration: "none" }}
-                    >
-                      Explore Room &rarr;
-                    </a>
-                  </a>
+                    Explore Room &rarr;
+                  </Link>
                 </div>
               </div>
             )}
@@ -249,19 +244,13 @@ const Roomwrapper = () => {
                       <span className="text-white text-base md:text-xl font-serif mb-2 drop-shadow">
                         {rooms[1].name}
                       </span>
-                      <a
-                        href={rooms[1].link || "#"}
-                        className="text-white text-xs"
+                      <Link
+                        href="/customer/search-result/2"
+                        className="text-white text-sm"
                         style={{ textDecoration: "none" }}
                       >
-                        <a
-                          href="/customer/search-result/2"
-                          className="text-white text-sm"
-                          style={{ textDecoration: "none" }}
-                        >
-                          Explore Room &rarr;
-                        </a>
-                      </a>
+                        Explore Room &rarr;
+                      </Link>
                     </div>
                   </div>
                 )}
@@ -325,19 +314,13 @@ const Roomwrapper = () => {
                       <span className="text-white text-base md:text-xl font-serif mb-2 drop-shadow">
                         {rooms[2].name}
                       </span>
-                      <a
-                        href={rooms[2].link || "#"}
-                        className="text-white text-xs"
+                      <Link
+                        href="/customer/search-result/3"
+                        className="text-white text-sm"
                         style={{ textDecoration: "none" }}
                       >
-                        <a
-                          href="/customer/search-result/3"
-                          className="text-white text-sm"
-                          style={{ textDecoration: "none" }}
-                        >
-                          Explore Room &rarr;
-                        </a>
-                      </a>
+                        Explore Room &rarr;
+                      </Link>
                     </div>
                   </div>
                 )}
@@ -406,19 +389,13 @@ const Roomwrapper = () => {
                       <span className="text-white text-base md:text-xl font-serif mb-2 drop-shadow">
                         {rooms[3].name}
                       </span>
-                      <a
-                        href={rooms[3].link || "#"}
-                        className="text-white text-xs"
+                      <Link
+                        href="/customer/search-result/4"
+                        className="text-white text-sm"
                         style={{ textDecoration: "none" }}
                       >
-                        <a
-                          href="/customer/search-result/4"
-                          className="text-white text-sm"
-                          style={{ textDecoration: "none" }}
-                        >
-                          Explore Room &rarr;
-                        </a>
-                      </a>
+                        Explore Room &rarr;
+                      </Link>
                     </div>
                   </div>
                 )}
@@ -503,18 +480,13 @@ const Roomwrapper = () => {
                           <span className="text-white text-base md:text-xl font-serif mb-2 drop-shadow">
                             {rooms[4].name}
                           </span>
-                          <a
-                            href={rooms[4].link || "#"}
-                            className="text-white text-xs underline underline-offset-2"
+                          <Link
+                            href="/customer/search-result/5"
+                            className="text-white text-sm"
+                            style={{ textDecoration: "none" }}
                           >
-                            <a
-                              href="/customer/search-result/5"
-                              className="text-white text-sm"
-                              style={{ textDecoration: "none" }}
-                            >
-                              Explore Room &rarr;
-                            </a>
-                          </a>
+                            Explore Room &rarr;
+                          </Link>
                         </div>
                       </div>
                     )}
@@ -578,19 +550,13 @@ const Roomwrapper = () => {
                           <span className="text-white text-base md:text-xl font-serif mb-2 drop-shadow">
                             {rooms[5].name}
                           </span>
-                          <a
-                            href={rooms[5].link || "#"}
-                            className="text-white text-xs"
+                          <Link
+                            href="/customer/search-result/6"
+                            className="text-white text-sm"
                             style={{ textDecoration: "none" }}
                           >
-                            <a
-                              href="/customer/search-result/6"
-                              className="text-white text-sm"
-                              style={{ textDecoration: "none" }}
-                            >
-                              Explore Room &rarr;
-                            </a>
-                          </a>
+                            Explore Room &rarr;
+                          </Link>
                         </div>
                       </div>
                     )}

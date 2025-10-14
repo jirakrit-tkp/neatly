@@ -294,9 +294,11 @@ export default function Aboutsection() {
                         flex: "0 0 180px",
                       }}
                     >
-                      <img
+                      <Image
                         src={images[idx].src}
                         alt={images[idx].alt}
+                        width={180}
+                        height={225}
                         style={{
                           width: "100%",
                           height: "100%",
@@ -482,9 +484,11 @@ export default function Aboutsection() {
                       borderRadius: "0px",
                     }}
                   >
-                    <img
+                    <Image
                       src={img.src}
                       alt={img.alt}
+                      width={272}
+                      height={370}
                       className="object-cover w-full h-full"
                       style={{
                         width: "100%",

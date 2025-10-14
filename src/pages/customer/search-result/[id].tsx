@@ -1,7 +1,7 @@
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import Otherroompage from "@/components/customer/room-section/Otherroom";
 
@@ -189,28 +189,28 @@ function Roomdetailpage() {
   // Slider state and handlers
   const [currentImageIdx, setCurrentImageIdx] = useState(0);
   const [isSliding, setIsSliding] = useState(false);
-  const [slideDirection, setSlideDirection] = useState<"left" | "right" | null>(null);
+  // const [slideDirection, setSlideDirection] = useState<"left" | "right" | null>(null);
   // const sliderRef = useRef<HTMLDivElement | null>(null);
 
   const handlePrev = () => {
     if (isSliding || images.length <= 1) return;
-    setSlideDirection("left");
+    // setSlideDirection("left");
     setIsSliding(true);
     setTimeout(() => {
       setCurrentImageIdx((prev) => (prev === 0 ? images.length - 1 : prev - 1));
       setIsSliding(false);
-      setSlideDirection(null);
+      // setSlideDirection(null);
     }, 350);
   };
 
   const handleNext = () => {
     if (isSliding || images.length <= 1) return;
-    setSlideDirection("right");
+    // setSlideDirection("right");
     setIsSliding(true);
     setTimeout(() => {
       setCurrentImageIdx((prev) => (prev === images.length - 1 ? 0 : prev + 1));
       setIsSliding(false);
-      setSlideDirection(null);
+      // setSlideDirection(null);
     }, 350);
   };
 
