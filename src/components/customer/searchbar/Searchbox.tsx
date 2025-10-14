@@ -197,7 +197,7 @@ export default function SearchBox({ onSearch, defaultValues }: SearchBoxProps) {
           width: 100%;
           height: 48px;
         }
-        
+
         @media (min-width: 768px) {
           .searchbox-container {
             width: 1120px !important;
@@ -269,12 +269,12 @@ export default function SearchBox({ onSearch, defaultValues }: SearchBoxProps) {
           }
         }
       `}</style>
-      
+
       <div className="bg-white rounded-xl shadow-lg searchbox-container">
         <form
           className="searchbox-form"
-          onSubmit={e => { 
-            e.preventDefault(); 
+          onSubmit={e => {
+            e.preventDefault();
             if (onSearch) {
               onSearch({ checkIn, checkOut, room: room.toString(), guests: guest.toString() });
             }
@@ -300,112 +300,94 @@ export default function SearchBox({ onSearch, defaultValues }: SearchBoxProps) {
                 }}
               />
               {calendarIcon}
-              
               {/* Calendar Dropdown for Check In */}
               {calendarOpen === 'checkin' && (
-                <div 
+                <div
                   ref={calendarRef}
                   className="absolute left-0 top-full mt-2 bg-white rounded-lg shadow-lg border border-gray-200 z-30"
                   style={{
-                    width: "240px",
-                    height: "280px",
-                    maxHeight: "280px",
+                    width: "280px",
+                    height: "332px",
+                    maxHeight: "332px",
                     overflow: "hidden",
                     boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
                   }}
                 >
-                  <div className="p-2 h-full flex flex-col">
+                  <div className="p-4 h-full flex flex-col">
                     {/* Calendar Header */}
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-1">
-                        <h3 className="text-sm font-semibold text-gray-900">
-                          {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                        </h3>
-                        <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="text-gray-500">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    <div className="flex items-center justify-between mb-3">
+                      <button
+                        type="button"
+                        onClick={() => navigateMonth('prev')}
+                        className="p-2 hover:bg-orange-50 rounded-full transition-colors"
+                      >
+                        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                         </svg>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <button type="button"
-                          onClick={() => navigateMonth('prev')}
-                          className="p-1 hover:bg-gray-100 rounded-full transition-colors"
-                        >
-                          <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                          </svg>
-                        </button>
-                        <button type="button"
-                          onClick={() => navigateMonth('next')}
-                          className="p-1 hover:bg-gray-100 rounded-full transition-colors"
-                        >
-                          <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
-                        </button>
-                      </div>
+                      </button>
+                      <span className="text-base font-semibold text-gray-900">
+                        {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => navigateMonth('next')}
+                        className="p-2 hover:bg-orange-50 rounded-full transition-colors"
+                      >
+                        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
                     </div>
-
-                    {/* Calendar Grid */}
-                    <div className="grid grid-cols-7 gap-0 mb-1">
-                      {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map(day => (
-                        <div key={day} className="text-center text-xs font-medium text-gray-500 py-1">
+                    {/* Calendar Days Header */}
+                    <div className="grid grid-cols-7 gap-0 mb-2">
+                      {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => (
+                        <div key={day} className="text-center text-xs font-medium text-gray-400 py-1">
                           {day}
                         </div>
                       ))}
                     </div>
-                    <div className="grid grid-cols-7 gap-0 flex-1">
+                    {/* Calendar Dates */}
+                    <div className="grid grid-cols-7 gap-1">
                       {(() => {
                         const year = currentMonth.getFullYear();
                         const month = currentMonth.getMonth();
                         const firstDay = new Date(year, month, 1);
-                        const lastDay = new Date(year, month + 1, 0);
-                        const startDate = new Date(firstDay);
-                        // Adjust to start from Monday (0 = Sunday, 1 = Monday)
+                        // Start from Sunday (0) to match the day headers
                         const dayOfWeek = firstDay.getDay();
-                        const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-                        startDate.setDate(startDate.getDate() - daysToSubtract);
-                        
+                        const startDate = new Date(firstDay);
+                        startDate.setDate(startDate.getDate() - dayOfWeek);
+
                         const dates = [];
                         for (let i = 0; i < 42; i++) {
                           const date = new Date(startDate);
                           date.setDate(startDate.getDate() + i);
                           dates.push(date);
                         }
-                        
+
                         return dates.map((date, index) => {
                           const isCurrentMonth = date.getMonth() === month;
-                          const isSelected = selectedDate && isSameDay(date, selectedDate);
-                          const isHovered = hoveredDate && isSameDay(date, hoveredDate);
+                          const isSelected = checkIn && isSameDay(date, parseLocalYmd(checkIn));
                           const isTodayDate = isToday(date);
                           const isDisabled = isPast(date) || !isCurrentMonth;
-                          
+
                           return (
                             <button
                               key={index}
                               type="button"
+                              disabled={!!isDisabled}
                               onClick={() => {
                                 if (!isDisabled) {
                                   setCheckIn(formatLocalYmd(date));
-                                  setSelectedDate(startOfDay(date));
                                   setCalendarOpen(null);
                                 }
                               }}
-                              onMouseEnter={() => setHoveredDate(date)}
-                              onMouseLeave={() => setHoveredDate(null)}
                               className={`
-                                w-6 h-6 text-xs rounded-full transition-colors flex items-center justify-center
-                                ${isDisabled 
-                                  ? 'text-gray-300 bg-gray-100 cursor-not-allowed pointer-events-none' 
-                                  : 'text-gray-700 hover:bg-orange-50 cursor-pointer'
-                                }
-                                ${isSelected 
-                                  ? 'bg-orange-500 text-white hover:bg-orange-600' 
-                                  : isHovered && !isSelected
-                                  ? 'bg-orange-100 text-orange-700'
-                                  : isTodayDate && !isSelected
-                                  ? 'bg-gray-100 text-gray-900'
-                                  : ''
-                                }
+                                w-8 h-8 text-sm rounded-full flex items-center justify-center transition
+                                ${isDisabled
+                                  ? 'text-gray-300 bg-transparent cursor-not-allowed'
+                                  : 'hover:bg-orange-50 text-gray-800'}
+                                ${isSelected ? 'bg-orange-500 text-white hover:bg-orange-600' : ''}
+                                ${isTodayDate && !isSelected ? 'border border-orange-400' : ''}
                               `}
                             >
                               {date.getDate()}
@@ -445,113 +427,95 @@ export default function SearchBox({ onSearch, defaultValues }: SearchBoxProps) {
                 }}
               />
               {calendarIcon}
-              
               {/* Calendar Dropdown for Check Out */}
               {calendarOpen === 'checkout' && (
-                <div 
+                <div
                   ref={calendarRef}
                   className="absolute left-0 top-full mt-2 bg-white rounded-lg shadow-lg border border-gray-200 z-30"
                   style={{
-                    width: "240px",
-                    height: "280px",
-                    maxHeight: "280px",
+                    width: "280px",
+                    height: "332px",
+                    maxHeight: "332px",
                     overflow: "hidden",
                     boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
                   }}
                 >
-                  <div className="p-2 h-full flex flex-col">
+                  <div className="p-4 h-full flex flex-col">
                     {/* Calendar Header */}
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-1">
-                        <h3 className="text-sm font-semibold text-gray-900">
-                          {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                        </h3>
-                        <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="text-gray-500">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    <div className="flex items-center justify-between mb-3">
+                      <button
+                        type="button"
+                        onClick={() => navigateMonth('prev')}
+                        className="p-2 hover:bg-orange-50 rounded-full transition-colors"
+                      >
+                        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                         </svg>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <button type="button"
-                          onClick={() => navigateMonth('prev')}
-                          className="p-1 hover:bg-gray-100 rounded-full transition-colors"
-                        >
-                          <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                          </svg>
-                        </button>
-                        <button type="button"
-                          onClick={() => navigateMonth('next')}
-                          className="p-1 hover:bg-gray-100 rounded-full transition-colors"
-                        >
-                          <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
-                        </button>
-                      </div>
+                      </button>
+                      <span className="text-base font-semibold text-gray-900">
+                        {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => navigateMonth('next')}
+                        className="p-2 hover:bg-orange-50 rounded-full transition-colors"
+                      >
+                        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
                     </div>
-
-                    {/* Calendar Grid */}
-                    <div className="grid grid-cols-7 gap-0 mb-1">
+                    {/* Calendar Days Header */}
+                    <div className="grid grid-cols-7 gap-0 mb-2">
                       {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map(day => (
-                        <div key={day} className="text-center text-xs font-medium text-gray-500 py-1">
+                        <div key={day} className="text-center text-xs font-medium text-gray-400 py-1">
                           {day}
                         </div>
                       ))}
                     </div>
-                    <div className="grid grid-cols-7 gap-0 flex-1">
+                    {/* Calendar Dates */}
+                    <div className="grid grid-cols-7 gap-1">
                       {(() => {
                         const year = currentMonth.getFullYear();
                         const month = currentMonth.getMonth();
                         const firstDay = new Date(year, month, 1);
-                        const lastDay = new Date(year, month + 1, 0);
-                        const startDate = new Date(firstDay);
-                        // Adjust to start from Monday (0 = Sunday, 1 = Monday)
+                        // Start from Sunday (0) to match the day headers
                         const dayOfWeek = firstDay.getDay();
-                        const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-                        startDate.setDate(startDate.getDate() - daysToSubtract);
-                        
+                        const startDate = new Date(firstDay);
+                        startDate.setDate(startDate.getDate() - dayOfWeek);
+
                         const dates = [];
                         for (let i = 0; i < 42; i++) {
                           const date = new Date(startDate);
                           date.setDate(startDate.getDate() + i);
                           dates.push(date);
                         }
-                        
+
                         return dates.map((date, index) => {
                           const isCurrentMonth = date.getMonth() === month;
-                          const isSelected = selectedDate && isSameDay(date, selectedDate);
-                          const isHovered = hoveredDate && isSameDay(date, hoveredDate);
+                          const isSelected = checkOut && isSameDay(date, parseLocalYmd(checkOut));
                           const isTodayDate = isToday(date);
-                          const checkInDate = parseLocalYmd(checkIn);
-                          const isDisabled = isPast(date) || !isCurrentMonth || isBefore(date, checkInDate);
-                          
+                          const isDisabled = isPast(date) || !isCurrentMonth 
+                            || (checkIn && isBefore(date, parseLocalYmd(checkIn)));
+
                           return (
                             <button
                               key={index}
                               type="button"
+                              disabled={!!isDisabled}
                               onClick={() => {
                                 if (!isDisabled) {
                                   setCheckOut(formatLocalYmd(date));
-                                  setSelectedDate(startOfDay(date));
                                   setCalendarOpen(null);
                                 }
                               }}
-                              onMouseEnter={() => setHoveredDate(date)}
-                              onMouseLeave={() => setHoveredDate(null)}
                               className={`
-                                w-6 h-6 text-xs rounded-full transition-colors flex items-center justify-center
-                                ${isDisabled 
-                                  ? 'text-gray-300 bg-gray-100 cursor-not-allowed pointer-events-none' 
-                                  : 'text-gray-700 hover:bg-orange-50 cursor-pointer'
-                                }
-                                ${isSelected 
-                                  ? 'bg-orange-500 text-white hover:bg-orange-600' 
-                                  : isHovered && !isSelected
-                                  ? 'bg-orange-100 text-orange-700'
-                                  : isTodayDate && !isSelected
-                                  ? 'bg-gray-100 text-gray-900'
-                                  : ''
-                                }
+                                w-8 h-8 text-sm rounded-full flex items-center justify-center transition
+                                ${isDisabled
+                                  ? 'text-gray-300 bg-transparent cursor-not-allowed'
+                                  : 'hover:bg-orange-50 text-gray-800'}
+                                ${isSelected ? 'bg-orange-500 text-white hover:bg-orange-600' : ''}
+                                ${isTodayDate && !isSelected ? 'border border-orange-400' : ''}
                               `}
                             >
                               {date.getDate()}

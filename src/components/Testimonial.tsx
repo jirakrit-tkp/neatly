@@ -91,15 +91,16 @@ const Testimonial = () => {
 
         {/* Testimonial Content */}
         <div className="relative w-full flex justify-center items-center">
-          {/* Navigation Buttons */}
+          {/* Navigation Buttons for desktop only */}
           <button
             onClick={prevSlide}
             className={`
-              absolute left-0 md:left-[-60px]
+              hidden md:flex
+              absolute md:left-[-60px]
               w-10 h-10 md:w-12 md:h-12
               bg-transparent
               rounded-full
-              flex items-center justify-center
+              items-center justify-center
               transition-colors duration-200
               z-10
               border-2 border-orange-400
@@ -125,11 +126,12 @@ const Testimonial = () => {
           <button
             onClick={nextSlide}
             className={`
-              absolute right-0 md:right-[-60px]
+              hidden md:flex
+              absolute md:right-[-60px]
               w-10 h-10 md:w-12 md:h-12
               bg-transparent
               rounded-full
-              flex items-center justify-center
+              items-center justify-center
               transition-colors duration-200
               z-10
               border-2 border-orange-400
@@ -213,6 +215,66 @@ const Testimonial = () => {
               aria-label={`Go to testimonial ${index + 1}`}
             />
           ))}
+        </div>
+
+        {/* Navigation Buttons for mobile only - put under the dots */}
+        <div className="flex justify-center md:hidden space-x-4 mt-6">
+          <button
+            onClick={prevSlide}
+            className="
+              w-10 h-10
+              bg-transparent
+              rounded-full
+              flex items-center justify-center
+              transition-colors duration-200
+              z-10
+              border-2 border-orange-400
+              hover:border-orange-500
+            "
+            aria-label="Previous testimonial"
+          >
+            <svg
+              className="w-4 h-4 text-orange-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
+          </button>
+          <button
+            onClick={nextSlide}
+            className="
+              w-10 h-10
+              bg-transparent
+              rounded-full
+              flex items-center justify-center
+              transition-colors duration-200
+              z-10
+              border-2 border-orange-400
+              hover:border-orange-500
+            "
+            aria-label="Next testimonial"
+          >
+            <svg
+              className="w-4 h-4 text-orange-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </button>
         </div>
 
         {/* Auto Slide Indicator */}
