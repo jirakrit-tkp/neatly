@@ -1,26 +1,31 @@
 import { useEffect, useState } from "react";
 
-export const useQuery = <T>(url: string) => {
+export function useQuery<T>(url: string) {
   const [data, setData] = useState<T | null>(null);
-  const [error, setError] = useState<Error | undefined>(undefined);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await fetch(url);
-        const data = await response.json();
-        console.log("Data:", data);
-        setData(data);
-      } catch (err) {
-        setError(err as Error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    // Skip fetch if url is empty
+    if (!url) {
+      setLoading(false);
+      return;
+    }
 
-    fetchData();
+    setLoading(true);
+    setError(null);
+
+    fetch(url)
+      .then((res) => res.json())
+      .then((data) => {
+        setData(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError(err);
+        setLoading(false);
+      });
   }, [url]);
 
-  return { data, error, loading };
-};
+  return { data, loading, error };
+}

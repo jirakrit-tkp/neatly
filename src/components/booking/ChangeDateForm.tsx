@@ -6,6 +6,7 @@ interface ChangeDateFormProps {
   onClick: (e: React.MouseEvent) => void;
   onSubmit: (e: React.FormEvent) => void;
   onCancel: () => void;
+  minDate?: string; // Added minDate prop
 }
 
 export default function ChangeDateForm({
@@ -16,13 +17,13 @@ export default function ChangeDateForm({
   onClick,
   onSubmit,
   onCancel,
+  minDate, // Added minDate parameter
 }: ChangeDateFormProps) {
   return (
     <>
       {/* Change Date Form */}
       <form onSubmit={onSubmit} className="bg-white px-5 pt-5 pb-2 rounded-lg">
         <p className="text-lg font-bold text-gray-800 mb-4">Change Date</p>
-
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
           {/* Check In */}
           <div>
@@ -32,12 +33,12 @@ export default function ChangeDateForm({
                 type="date"
                 value={checkIn}
                 onChange={(e) => onCheckInChange(e.target.value)}
+                min={minDate} // Added min attribute
                 className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                 required
               />
             </div>
           </div>
-
           {/* Check Out */}
           <div>
             <label className="block text-lg text-gray-800 mb-2">
@@ -48,6 +49,7 @@ export default function ChangeDateForm({
                 type="date"
                 value={checkOut}
                 onChange={(e) => onCheckOutChange(e.target.value)}
+                min={minDate} // Added min attribute
                 className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
                 required
               />
@@ -55,7 +57,6 @@ export default function ChangeDateForm({
           </div>
         </div>
       </form>
-
       {/* Confirm Change Date Button */}
       <div className="flex justify-end mt-10">
         <button
@@ -66,7 +67,6 @@ export default function ChangeDateForm({
           Confirm Change Date
         </button>
       </div>
-
       {/* Mobile Cancel Button */}
       <div className="flex h-full justify-center items-center mt-3">
         <button
