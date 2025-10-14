@@ -108,36 +108,64 @@ export default async function handler(
     }
 
     if (req.method === "PUT") {
-      let { check_in_date, check_out_date } = req.body;
+      const { check_in_date, check_out_date, status, cancellation_date } =
+        req.body;
 
-      if (!check_in_date || !check_out_date) {
-        return res.status(400).json({
-          success: false,
-          message: "Check-in and Check-out dates are required",
-        });
+      // Build the update object dynamically
+      const updateData: {
+        check_in_date?: string;
+        check_out_date?: string;
+        status?: string;
+        cancellation_date?: string;
+      } = {};
+
+      // Handle date changes (for change booking page)
+      if (check_in_date && check_out_date) {
+        try {
+          updateData.check_in_date = new Date(check_in_date).toISOString();
+          updateData.check_out_date = new Date(check_out_date).toISOString();
+        } catch (e) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid date format",
+            error: e instanceof Error ? e.message : "Invalid date",
+          });
+        }
       }
 
-      // Convert date strings to ISO 8601 for timestamptz
-      try {
-        check_in_date = new Date(check_in_date).toISOString();
-        check_out_date = new Date(check_out_date).toISOString();
-      } catch (e) {
+      // Handle cancellation (for cancel booking page)
+      if (status) {
+        updateData.status = status;
+      }
+
+      if (cancellation_date) {
+        try {
+          updateData.cancellation_date = new Date(
+            cancellation_date
+          ).toISOString();
+        } catch (e) {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid cancellation date format",
+            error: e instanceof Error ? e.message : "Invalid date",
+          });
+        }
+      }
+
+      // Check if there's anything to update
+      if (Object.keys(updateData).length === 0) {
         return res.status(400).json({
           success: false,
-          message: "Invalid date format",
-          error: e instanceof Error ? e.message : "Invalid date",
+          message: "No valid fields provided to update",
         });
       }
 
       // Update booking
-
       const { data, error } = await supabase
         .from("bookings")
-        .update({ check_in_date, check_out_date })
+        .update(updateData)
         .eq("id", id)
         .select();
-
-      // console.log("Booking Data", data);
 
       if (error) {
         return res.status(400).json({
@@ -161,10 +189,28 @@ export default async function handler(
       });
     }
 
+    // 🗑️ DELETE booking by ID
+    if (req.method === "DELETE") {
+      const { error } = await supabase.from("bookings").delete().eq("id", id);
+
+      if (error) {
+        return res.status(400).json({
+          success: false,
+          message: "Failed to delete booking",
+          error: error.message,
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Booking deleted successfully",
+      });
+    }
+
     // Method not allowed
     return res.status(405).json({
       success: false,
-      message: "Method not allowed. Use GET or PUT.",
+      message: "Method not allowed. Use GET, PUT, or DELETE.",
     });
   } catch (err) {
     return res.status(500).json({

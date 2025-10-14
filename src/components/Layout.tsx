@@ -20,7 +20,7 @@ export default function Layout({ children }: LayoutProps) {
         }}
       />
       <Navbar />
-      <main className="flex-grow">{children}</main>
+      <main className="flex-grow bg-[#F7F7FB]">{children}</main>
       <Footer />
     </div>
   );

@@ -4,8 +4,10 @@ import Layout from "@/components/Layout";
 import Image from "next/image";
 import { useQuery } from "@/hooks/useQuery";
 import LoadingScreen from "@/components/admin/LoadingScreen";
+import ConfirmModal from "@/components/ui/ConfirmModal";
 import { formatDate } from "@/utils/formatDate";
 import { Button } from "@/components/admin/ui/Button";
+import { toast } from "sonner";
 
 interface RoomforBookings {
   guests: number;
@@ -39,19 +41,43 @@ type BookingApiResponse = {
   error?: string;
 };
 
-export default function ChangeBookingPage() {
+export default function RefundBookingPage() {
   const router = useRouter();
   const { bookingId } = router.query;
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
   const [error, setError] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isRefunding, setIsRefunding] = useState(false);
+
+  // Only fetch when bookingId is available
+  const shouldFetch =
+    router.isReady && bookingId && typeof bookingId === "string";
 
   // Fetch booking data using useQuery
-  const { data: bookingResponse, loading } = useQuery<BookingApiResponse>(
-    `/api/bookings/${bookingId}`
+  const {
+    data: bookingResponse,
+    loading,
+    error: queryError,
+  } = useQuery<BookingApiResponse>(
+    shouldFetch ? `/api/bookings/${bookingId}` : ""
   );
 
   const booking = bookingResponse?.data;
+
+  // Handle query errors
+  useEffect(() => {
+    if (queryError) {
+      setError("Failed to load booking data");
+    }
+  }, [queryError]);
+
+  // Handle case where booking wasn't found
+  useEffect(() => {
+    if (!loading && shouldFetch && bookingResponse && !booking) {
+      setError("Booking not found");
+    }
+  }, [loading, shouldFetch, bookingResponse, booking]);
 
   // Update form fields when booking data is loaded
   useEffect(() => {
@@ -61,11 +87,56 @@ export default function ChangeBookingPage() {
     }
   }, [booking]);
 
+  const handleRefundBooking = async () => {
+    if (!booking) return;
+
+    setIsRefunding(true);
+
+    try {
+      const response = await fetch(`/api/bookings/${booking.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          status: "refunded",
+          cancellation_date: new Date().toISOString(),
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to process refund");
+      }
+
+      toast.success("Refund request submitted successfully!");
+      setIsModalOpen(false);
+
+      // Delay redirect to show success message
+      setTimeout(() => {
+        router.push(
+          `/customer/customer-bookings/cancel/${bookingId}/refund-submitted`
+        );
+      }, 1000);
+    } catch (error) {
+      console.error("Error processing refund:", error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to process refund. Please try again."
+      );
+      setIsModalOpen(false);
+    } finally {
+      setIsRefunding(false);
+    }
+  };
+
   const handleCancel = () => {
     router.push("/customer/booking-history");
   };
 
-  if (!booking) {
+  // Show loading while router is initializing OR data is loading
+  if (!router.isReady || loading || !shouldFetch) {
     return (
       <Layout>
         <LoadingScreen />
@@ -73,13 +144,41 @@ export default function ChangeBookingPage() {
     );
   }
 
-  if (error) {
+  // Show error state properly
+  if (error || queryError) {
     return (
       <Layout>
         <div className="min-h-screen bg-[#F7F7FB] flex items-center justify-center">
-          <p className="text-red-500">
-            {error ? "Error loading booking." : "Booking not found."}
-          </p>
+          <div className="text-center">
+            <p className="text-red-500 text-xl mb-4">
+              {error || "Error loading booking."}
+            </p>
+            <button
+              onClick={() => router.push("/customer/booking-history")}
+              className="px-6 py-2 bg-orange-600 text-white rounded hover:bg-orange-700"
+            >
+              Back to Booking History
+            </button>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  // Show not found state
+  if (!booking) {
+    return (
+      <Layout>
+        <div className="min-h-screen bg-[#F7F7FB] flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-gray-600 text-xl mb-4">Booking not found.</p>
+            <button
+              onClick={() => router.push("/customer/booking-history")}
+              className="px-6 py-2 bg-orange-600 text-white rounded hover:bg-orange-700"
+            >
+              Back to Booking History
+            </button>
+          </div>
         </div>
       </Layout>
     );
@@ -123,8 +222,8 @@ export default function ChangeBookingPage() {
                     </h2>
                     <p className="text-md text-gray-600 mt-3 md:mt-0">
                       Booking date:{" "}
-                      {booking.booking_date
-                        ? formatDate(booking.booking_date)
+                      {booking.created_at
+                        ? formatDate(booking.created_at)
                         : "N/A"}
                     </p>
                   </div>
@@ -155,13 +254,9 @@ export default function ChangeBookingPage() {
               <div className="md:hidden flex flex-col mx-5">
                 {/* Mobile Refund Booking Button */}
                 <Button
-                  loading={false}
+                  loading={isRefunding}
                   text="Cancel and Refund this Booking"
-                  onClick={() =>
-                    router.push(
-                      `/customer/customer-bookings/cancel/${bookingId}/refund-submitted`
-                    )
-                  }
+                  onClick={() => setIsModalOpen(true)}
                   className="bg-orange-600 py-3 text-white w-full md:w-50 font-semibold font-inter md:hidden"
                 />
 
@@ -169,11 +264,25 @@ export default function ChangeBookingPage() {
                 <button
                   type="button"
                   onClick={handleCancel}
-                  className="md:hidden px-6 py-3 text-orange-600 hover:text-orange-700 font-medium transition-colors cursor-pointer"
+                  disabled={isRefunding}
+                  className="md:hidden px-6 py-3 text-orange-600 hover:text-orange-700 font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cancel
                 </button>
               </div>
+
+              {/* Confirm Modal */}
+              {isModalOpen && (
+                <ConfirmModal
+                  open={isModalOpen}
+                  title="Request Refund"
+                  message={`Are you sure you want to cancel this booking and request a refund of THB ${booking?.total_amount}?`}
+                  confirmText="Yes, Request Refund"
+                  cancelText="No, Keep Booking"
+                  onConfirm={handleRefundBooking}
+                  onClose={() => setIsModalOpen(false)}
+                />
+              )}
             </div>
 
             {/* Desktop Cancel Button */}
@@ -181,20 +290,17 @@ export default function ChangeBookingPage() {
               <button
                 type="button"
                 onClick={handleCancel}
-                className="hidden md:block px-6 py-3 text-orange-600 hover:text-orange-700 font-medium transition-colors cursor-pointer"
+                disabled={isRefunding}
+                className="hidden md:block px-6 py-3 text-orange-600 hover:text-orange-700 font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancel
               </button>
 
               {/* Desktop Cancel Booking Button */}
               <Button
-                loading={false}
+                loading={isRefunding}
                 text="Cancel and Refund this Booking"
-                onClick={() =>
-                  router.push(
-                    `/customer/customer-bookings/cancel/${bookingId}/refund-submitted`
-                  )
-                }
+                onClick={() => setIsModalOpen(true)}
                 className="bg-orange-600 text-white w-80 font-semibold font-inter md:block hidden"
               />
             </div>

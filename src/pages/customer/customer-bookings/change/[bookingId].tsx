@@ -272,7 +272,7 @@ export default function ChangeBookingPage() {
                 {/* Original Booking Detail Component */}
                 <OriginalBookingDetail
                   roomType={booking?.rooms?.room_type}
-                  bookingDate={booking?.booking_date}
+                  bookingDate={booking?.created_at}
                   checkInDate={booking?.check_in_date}
                   checkOutDate={booking?.check_out_date}
                 />
