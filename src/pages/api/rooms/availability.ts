@@ -20,6 +20,7 @@ interface AvailabilityResponse {
       id: string;
       room_type: string;
       price: number;
+      promotion_price?: number;
       guests: number;
       amenities: string[];
       main_image_url: string[];
@@ -92,6 +93,7 @@ export default async function handler(
         room_type_id,
         room_type,
         price,
+        promotion_price,
         guests,
         amenities,
         main_image_url,
@@ -160,6 +162,7 @@ export default async function handler(
         id: room.id,
         room_type: room.room_type,
         price: room.price,
+        promotion_price: room.promotion_price,
         guests: room.guests,
         amenities: room.amenities || [],
         main_image_url: room.main_image_url || [],

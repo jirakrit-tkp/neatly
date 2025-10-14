@@ -79,7 +79,20 @@ export class BookingService {
 
       // 3. Calculate total amount
       const nights = calculateNights(bookingData.checkIn, bookingData.checkOut);
-      const basePrice = bookingData.roomInfo?.price || 0;
+      const basePrice = (() => {
+        const roomInfo = bookingData.roomInfo;
+        if (!roomInfo) return 0;
+
+        // ถ้ามี promotion_price และ > 0 → ใช้ promotion_price
+        if (roomInfo.promotion_price && roomInfo.promotion_price > 0) {
+          console.log("Using promotion_price:", roomInfo.promotion_price);
+          return roomInfo.promotion_price;
+        }
+
+        // ถ้าไม่มี → ใช้ price
+        console.log("Using regular price:", roomInfo.price);
+        return roomInfo.price || 0;
+      })();
       console.log("Calculation inputs:", {
         nights,
         basePrice,

@@ -40,6 +40,7 @@ interface RoomDetails {
   id: string;
   room_type: string;
   price: number;
+  promotion_price?: number; // เพิ่ม field นี้
   guests: number;
   amenities: string[];
   main_image_url: string[];
@@ -297,7 +298,24 @@ export default function BookingPage() {
         roomId: selectedRoom.id,
         roomInfo: {
           room_type: selectedRoom.room_type, // ประเภทห้อง
-          price: selectedRoom.price, // ราคาห้อง (สำคัญ!)
+          price: (() => {
+            // ถ้ามี promotion_price และ > 0 → ใช้ promotion_price
+            if (
+              selectedRoom.promotion_price &&
+              selectedRoom.promotion_price > 0
+            ) {
+              console.log(
+                "Room has promotion price:",
+                selectedRoom.promotion_price
+              );
+              return selectedRoom.promotion_price;
+            }
+
+            // ถ้าไม่มี → ใช้ price
+            console.log("Room using regular price:", selectedRoom.price);
+            return selectedRoom.price;
+          })(),
+          promotion_price: selectedRoom.promotion_price,
           main_image_url: selectedRoom.main_image_url, // รูปภาพ
           amenities: selectedRoom.amenities, // สิ่งอำนวยความสะดวก
         } as Partial<RoomInfo>,
@@ -435,8 +453,18 @@ export default function BookingPage() {
   // Calculations
   const nights = calculateNights(checkIn as string, checkOut as string);
   const selectedSpecialRequests = specialRequests.filter((req) => req.selected);
+  const roomPrice = (() => {
+    // ถ้ามี promotion_price และ > 0 → ใช้ promotion_price
+    if (selectedRoom?.promotion_price && selectedRoom.promotion_price > 0) {
+      return selectedRoom.promotion_price;
+    }
+
+    // ถ้าไม่มี → ใช้ price
+    return selectedRoom?.price || 0;
+  })();
+
   const calculation = calculateBookingTotal(
-    selectedRoom?.price || 0,
+    roomPrice,
     nights,
     selectedSpecialRequests,
     promoDiscount
@@ -538,7 +566,18 @@ export default function BookingPage() {
             <BookingSummary
               roomInfo={{
                 name: selectedRoom.room_type,
-                price: selectedRoom.price,
+                price: (() => {
+                  // ถ้ามี promotion_price และ > 0 → ใช้ promotion_price
+                  if (
+                    selectedRoom.promotion_price &&
+                    selectedRoom.promotion_price > 0
+                  ) {
+                    return selectedRoom.promotion_price;
+                  }
+
+                  // ถ้าไม่มี → ใช้ price
+                  return selectedRoom.price;
+                })(),
                 image: selectedRoom.main_image_url[0] || "/image/deluxe.jpg",
               }}
               checkIn={checkIn as string}
