@@ -52,19 +52,7 @@ const Servicesection = () => {
         position: "relative",
       }}
     >
-      {/* White bar at the top */}
-      <div
-        style={{
-          width: "1440px",
-          height: "50px",
-          background: "#fff",
-          position: "absolute",
-          top: 0,
-          left: "50%",
-          transform: "translateX(-50%)",
-          zIndex: 10,
-        }}
-      />
+      
       {/* Title */}
       <h2
         className="

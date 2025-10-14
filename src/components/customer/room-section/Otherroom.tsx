@@ -14,6 +14,7 @@ export default function Otherroompage() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [current, setCurrent] = useState(0);
 
   useEffect(() => {
     const fetchRooms = async () => {
@@ -42,12 +43,30 @@ export default function Otherroompage() {
     fetchRooms();
   }, []);
 
-  // Show only 3 rooms (like original)
-  const displayRooms = rooms.slice(0, 3);
-  // console.log("Display Rooms", displayRooms);
+  // Show only 3 rooms as "carousel"
+  const showCount = 3;
+  let displayRooms: Room[] = [];
+  if (rooms.length <= showCount) {
+    displayRooms = rooms;
+  } else {
+    // Carousel logic: slice out showCount rooms starting from current (wrap around if at the end)
+    for (let i = 0; i < showCount; i++) {
+      displayRooms.push(rooms[(current + i) % rooms.length]);
+    }
+  }
+
+  const handlePrev = () => {
+    if (!rooms.length) return;
+    setCurrent((prev) => (prev - 1 + rooms.length) % rooms.length);
+  };
+
+  const handleNext = () => {
+    if (!rooms.length) return;
+    setCurrent((prev) => (prev + 1) % rooms.length);
+  };
 
   return (
-    <section className="w-full bg-[#F7F7FA] py-10 md:py-16">
+    <section className="w-full bg-green-300 py-10 md:py-16">
       <div className="max-w-[1200px] mx-auto px-4">
         <h2 className="text-center font-serif text-[#2F3E35] text-[28px] md:text-[32px] font-semibold mb-10">
           Other Rooms
@@ -118,37 +137,43 @@ export default function Otherroompage() {
             )}
           </div>
         )}
-        {/* Pagination Dots */}
-        <div className="flex justify-center gap-4 mt-10">
+        {/* Carousel Navigation Buttons */}
+        <div className="flex justify-center gap-6 mt-10">
           <button
-            className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center bg-white hover:bg-gray-100 transition"
+            className="w-[48px] h-[48px] rounded-full border border-[#B3BBC4] flex items-center justify-center bg-transparent hover:bg-transparent transition"
             aria-label="Previous"
-            disabled
+            onClick={handlePrev}
+            disabled={rooms.length <= showCount}
+            style={{
+              cursor: rooms.length <= showCount ? "not-allowed" : "pointer",
+              opacity: rooms.length <= showCount ? 0.6 : 1,
+            }}
           >
-            <svg
-              width="16"
-              height="16"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M10 4l-4 4 4 4" />
-            </svg>
+            <Image
+              src="/icons/left.png"
+              alt="Previous"
+              width={68}
+              height={68}
+              style={{ filter: "brightness(0) saturate(100%) invert(70%) sepia(8%) saturate(500%) hue-rotate(200deg) brightness(90%) contrast(85%)" }}
+            />
           </button>
           <button
-            className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center bg-white hover:bg-gray-100 transition"
+            className="w-[48px] h-[48px] rounded-full border border-[#B3BBC4] flex items-center justify-center bg-transparent hover:bg-transparent transition"
             aria-label="Next"
-            disabled
+            onClick={handleNext}
+            disabled={rooms.length <= showCount}
+            style={{
+              cursor: rooms.length <= showCount ? "not-allowed" : "pointer",
+              opacity: rooms.length <= showCount ? 0.6 : 1,
+            }}
           >
-            <svg
-              width="16"
-              height="16"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M6 12l4-4-4-4" />
-            </svg>
+            <Image
+              src="/icons/right.png"
+              alt="Next"
+              width={68}
+              height={68}
+              style={{ filter: "brightness(0) saturate(100%) invert(70%) sepia(8%) saturate(500%) hue-rotate(200deg) brightness(90%) contrast(85%)" }}
+            />
           </button>
         </div>
       </div>
