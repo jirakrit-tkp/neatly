@@ -7,6 +7,7 @@ import LoadingScreen from "@/components/admin/LoadingScreen";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import { formatDate } from "@/utils/formatDate";
 import { Button } from "@/components/admin/ui/Button";
+import { toast } from "sonner";
 
 interface RoomforBookings {
   guests: number;
@@ -47,13 +48,36 @@ export default function ChangeBookingPage() {
   const [checkOut, setCheckOut] = useState("");
   const [error, setError] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
+
+  // Only fetch when bookingId is available
+  const shouldFetch =
+    router.isReady && bookingId && typeof bookingId === "string";
 
   // Fetch booking data using useQuery
-  const { data: bookingResponse, loading } = useQuery<BookingApiResponse>(
-    `/api/bookings/${bookingId}`
+  const {
+    data: bookingResponse,
+    loading,
+    error: queryError,
+  } = useQuery<BookingApiResponse>(
+    shouldFetch ? `/api/bookings/${bookingId}` : ""
   );
 
   const booking = bookingResponse?.data;
+
+  // Handle query errors
+  useEffect(() => {
+    if (queryError) {
+      setError("Failed to load booking data");
+    }
+  }, [queryError]);
+
+  // Handle case where booking wasn't found
+  useEffect(() => {
+    if (!loading && shouldFetch && bookingResponse && !booking) {
+      setError("Booking not found");
+    }
+  }, [loading, shouldFetch, bookingResponse, booking]);
 
   // Update form fields when booking data is loaded
   useEffect(() => {
@@ -62,6 +86,50 @@ export default function ChangeBookingPage() {
       setCheckOut(booking.check_out_date);
     }
   }, [booking]);
+
+  const handleCancelBooking = async () => {
+    if (!booking) return;
+
+    setIsCancelling(true);
+
+    try {
+      const response = await fetch(`/api/bookings/${booking.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          status: "cancelled",
+          cancellation_date: new Date().toISOString(),
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to cancel booking");
+      }
+
+      toast.success("Booking cancelled successfully!");
+      setIsModalOpen(false);
+
+      // Delay redirect to show success message
+      setTimeout(() => {
+        router.push(
+          `/customer/customer-bookings/cancel/${bookingId}/cancel-completed`
+        );
+      }, 1000);
+    } catch (error) {
+      console.error("Error cancelling booking:", error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to cancel booking. Please try again."
+      );
+      setIsModalOpen(false);
+    } finally {
+      setIsCancelling(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,7 +140,8 @@ export default function ChangeBookingPage() {
     router.push("/customer/booking-history");
   };
 
-  if (loading || !booking) {
+  // Show loading while router is initializing OR data is loading
+  if (!router.isReady || loading || !shouldFetch) {
     return (
       <Layout>
         <LoadingScreen />
@@ -80,13 +149,41 @@ export default function ChangeBookingPage() {
     );
   }
 
-  if (error) {
+  // Show error state properly
+  if (error || queryError) {
     return (
       <Layout>
         <div className="min-h-screen bg-[#F7F7FB] flex items-center justify-center">
-          <p className="text-red-500">
-            {error ? "Error loading booking." : "Booking not found."}
-          </p>
+          <div className="text-center">
+            <p className="text-red-500 text-xl mb-4">
+              {error || "Error loading booking."}
+            </p>
+            <button
+              onClick={() => router.push("/customer/booking-history")}
+              className="px-6 py-2 bg-orange-600 text-white rounded hover:bg-orange-700"
+            >
+              Back to Booking History
+            </button>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
+
+  // Show not found state
+  if (!booking) {
+    return (
+      <Layout>
+        <div className="min-h-screen bg-[#F7F7FB] flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-gray-600 text-xl mb-4">Booking not found.</p>
+            <button
+              onClick={() => router.push("/customer/booking-history")}
+              className="px-6 py-2 bg-orange-600 text-white rounded hover:bg-orange-700"
+            >
+              Back to Booking History
+            </button>
+          </div>
         </div>
       </Layout>
     );
@@ -130,8 +227,8 @@ export default function ChangeBookingPage() {
                     </h2>
                     <p className="text-md text-gray-600 mt-3 md:mt-0">
                       Booking date:{" "}
-                      {booking.booking_date
-                        ? formatDate(booking.booking_date)
+                      {booking.created_at
+                        ? formatDate(booking.created_at)
                         : "N/A"}
                     </p>
                   </div>
@@ -157,7 +254,7 @@ export default function ChangeBookingPage() {
               <div className="md:hidden flex flex-col mx-5">
                 {/* Mobile Cancel Booking Button */}
                 <Button
-                  loading={false}
+                  loading={isCancelling}
                   text="Cancel this Booking"
                   onClick={() => setIsModalOpen(true)}
                   className="bg-orange-600 py-3 text-white w-full md:w-50 font-semibold font-inter md:hidden"
@@ -167,7 +264,8 @@ export default function ChangeBookingPage() {
                 <button
                   type="button"
                   onClick={handleCancel}
-                  className="md:hidden px-6 py-3 text-orange-600 hover:text-orange-700 font-medium transition-colors cursor-pointer"
+                  disabled={isCancelling}
+                  className="md:hidden px-6 py-3 text-orange-600 hover:text-orange-700 font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cancel
                 </button>
@@ -176,15 +274,11 @@ export default function ChangeBookingPage() {
               {isModalOpen && (
                 <ConfirmModal
                   open={isModalOpen}
-                  title="Change Date"
+                  title="Cancel Booking"
                   message="Are you sure you want to cancel this booking?"
                   confirmText="Yes, I want to cancel"
                   cancelText="No, I don't"
-                  onConfirm={() =>
-                    router.push(
-                      `/customer/customer-bookings/cancel/${bookingId}/cancel-completed`
-                    )
-                  }
+                  onConfirm={handleCancelBooking}
                   onClose={() => setIsModalOpen(false)}
                 />
               )}
@@ -195,14 +289,15 @@ export default function ChangeBookingPage() {
               <button
                 type="button"
                 onClick={handleCancel}
-                className="hidden md:block px-6 py-3 text-orange-600 hover:text-orange-700 font-medium transition-colors cursor-pointer"
+                disabled={isCancelling}
+                className="hidden md:block px-6 py-3 text-orange-600 hover:text-orange-700 font-medium transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancel
               </button>
 
               {/* Desktop Cancel Booking Button */}
               <Button
-                loading={false}
+                loading={isCancelling}
                 text="Cancel this Booking"
                 onClick={() => setIsModalOpen(true)}
                 className="bg-orange-600 text-white w-50 font-semibold font-inter md:block hidden"

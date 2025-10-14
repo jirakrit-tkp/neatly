@@ -92,7 +92,7 @@ export default function ChangeBookingPage() {
             </p>
           </div>
 
-          <div className="flex flex-col bg-green-600 m-5 md:m-10 p-5 rounded-md">
+          <div className="flex flex-col bg-green-600 m-5 md:m-10 p-5 md:rounded-md">
             <p className="text-white font-bold text-3xl md:text-xl">
               {booking?.rooms?.room_type}
             </p>
