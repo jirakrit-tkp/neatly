@@ -8,7 +8,7 @@ export type LayoutProps = {
 
 export default function Layout({ children }: LayoutProps) {
   return (
-    <div>
+    <div className="flex flex-col min-h-screen">
       <Toaster
         position="top-right"
         richColors
@@ -20,7 +20,7 @@ export default function Layout({ children }: LayoutProps) {
         }}
       />
       <Navbar />
-      {children}
+      <main className="flex-grow">{children}</main>
       <Footer />
     </div>
   );
