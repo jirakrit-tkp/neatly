@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import Head from "next/head";
 import { supabase } from "../../lib/supabaseClient";
-import Layout from "../../components/admin/Layout";
 import { User } from "@supabase/supabase-js";
 
 export default function AdminDashboard() {
