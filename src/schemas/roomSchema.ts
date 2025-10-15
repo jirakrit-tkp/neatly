@@ -33,15 +33,17 @@ export const roomSchema = z
       .min(10, "Description must be at least 10 characters long"),
 
     mainImgUrl: z
-      .string()
-      .url("Main image is required")
-      .nullable()
-      .refine((val) => val !== null && val.trim() !== "", {
+      .union([
+        z.instanceof(File),
+        z.string().min(1, "Main image is required"),
+        z.null(),
+      ])
+      .refine((val) => val !== null && val !== "", {
         message: "Main image is required",
       }),
 
     galleryImageUrls: z
-      .array(z.string().url())
+      .array(z.union([z.instanceof(File), z.string().url()]))
       .min(4, "Please upload at least 4 images")
       .max(10, "You can upload at most 10 images"),
 
