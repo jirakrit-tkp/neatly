@@ -103,7 +103,6 @@ const SilverArrowButton = ({
 
 function Roomdetailpage() {
   const router = useRouter();
-  // const roomId = router.query.id as string;
   const [room, setRoom] = useState<RoomDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -381,8 +380,11 @@ function Roomdetailpage() {
             {/* Desktop Layout */}
             <div className="hidden md:block w-full">
               {/* Desktop Gallery with arrows (same as mobile functionality) */}
-              <div className="w-full flex flex-col items-center p-2 md:p-4">
-                <div className="relative w-full max-w-[1200px] h-[400px] mx-auto flex items-center justify-center gap-4">
+              <div className="w-full flex flex-col items-center p-0 ">
+                <div
+                  className="relative flex items-center justify-center"
+                  style={{ width: "1440px", height: "581px" }}
+                >
                   {/* Left Arrow for slider */}
                   {images.length > 1 && (
                     <SilverArrowButton
@@ -394,47 +396,88 @@ function Roomdetailpage() {
                     />
                   )}
 
-                  {/* Three images for slider */}
-                  <div className="flex w-full h-full gap-4 px-14">
-                    <div className="relative w-1/3 h-full">
-                      {images.length > 0 && (
-                        <Image
-                          src={getImageByOffset(-1)}
-                          alt="Room view prev"
-                          fill
-                          sizes="400px"
-                          style={{ objectFit: "cover", borderRadius: "12px", opacity: images.length > 1 ? 0.9 : 1 }}
-                          className={`transition-all duration-300`}
-                          draggable={false}
-                        />
-                      )}
-                    </div>
-                    <div className="relative w-1/3 h-full">
-                      {images.length > 0 && (
+                  {/* Custom Desktop Triple Image Slider:
+                      Center image is fully visible, side images are only partially visible with visible "peek" effect.
+                      {/* No rounded corners on images. */}
+                  <div
+                    className="relative flex items-center justify-center gap-6"
+                    style={{ width: "1440px", height: "581px" }}
+                  >
+                    {/* Previous (peek) */}
+                    {images.length > 0 && (
+                      <div
+                        className="absolute left-0 overflow-hidden pointer-events-none select-none z-0"
+                        style={{
+                          top: 0,
+                          height: "581px",
+                          width: "288px" /* 20% of 1440px */,
+                        }}
+                      >
+                        <div
+                          className="relative h-full w-full"
+                          style={{ transform: "translateX(-18%)" }}
+                        >
+                          <Image
+                            src={getImageByOffset(-1)}
+                            alt="Room view prev"
+                            fill
+                            sizes="288px"
+                            style={{ objectFit: "cover" }}
+                            className="transition-all duration-300"
+                            draggable={false}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Center */}
+                    {images.length > 0 && (
+                      <div
+                        className="mx-auto relative z-10"
+                        style={{
+                          height: "581px",
+                          width: "864px", // 60% of 1440px
+                          boxShadow: "0 2px 16px rgba(0,0,0,0.08)",
+                        }}
+                      >
                         <Image
                           src={getImageByOffset(0)}
                           alt={room.name || "Room"}
                           fill
-                          sizes="400px"
-                          style={{ objectFit: "cover", borderRadius: "12px" }}
-                          className={`transition-all duration-300`}
+                          sizes="864px"
+                          style={{ objectFit: "cover" }}
+                          className="transition-all duration-300"
                           draggable={false}
                         />
-                      )}
-                    </div>
-                    <div className="relative w-1/3 h-full">
-                      {images.length > 0 && (
-                        <Image
-                          src={getImageByOffset(1)}
-                          alt="Room view next"
-                          fill
-                          sizes="400px"
-                          style={{ objectFit: "cover", borderRadius: "12px", opacity: images.length > 1 ? 0.9 : 1 }}
-                          className={`transition-all duration-300`}
-                          draggable={false}
-                        />
-                      )}
-                    </div>
+                      </div>
+                    )}
+
+                    {/* Next (peek) */}
+                    {images.length > 0 && (
+                      <div
+                        className="absolute right-0 overflow-hidden pointer-events-none select-none z-0"
+                        style={{
+                          top: 0,
+                          height: "581px",
+                          width: "288px" /* 20% of 1440px */,
+                        }}
+                      >
+                        <div
+                          className="relative h-full w-full"
+                          style={{ transform: "translateX(18%)" }}
+                        >
+                          <Image
+                            src={getImageByOffset(1)}
+                            alt="Room view next"
+                            fill
+                            sizes="288px"
+                            style={{ objectFit: "cover" }}
+                            className="transition-all duration-300"
+                            draggable={false}
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Right Arrow for slider */}
@@ -453,7 +496,8 @@ function Roomdetailpage() {
               {/* Desktop Room Details Content */}
               <div className="w-full max-w-[1200px] mx-auto px-6 md:px-12 pb-10">
                 {/* Room Title */}
-                <div className="mb-6">
+
+                <div className="mb-6 mt-8">
                   <h1 className="font-serif text-[#2F3E35] text-[32px] md:text-[48px] leading-tight mb-4 text-center">
                     {room.name}
                   </h1>
