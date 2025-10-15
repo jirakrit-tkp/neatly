@@ -611,6 +611,8 @@ export default function TicketDetail() {
                                            src={roomData.main_image} 
                                            alt={roomName}
                                            className="w-full h-full object-cover"
+                                           loading="lazy"
+                                           decoding="async"
                                          />
                                        </div>
                                      )}

@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { supabase } from '@/lib/supabaseClient';
 import { chatWithGemini, historyType } from '@/lib/chat';
 import { createEmbedding } from '@/lib/embedding';
+// Removed chatbotOptimization import - not needed
 
 export default async function handler(
   req: NextApiRequest,
@@ -110,7 +111,8 @@ export default async function handler(
       roomTypes?.forEach(room => {
         roomDetails[room.name] = {
           id: room.id,
-          main_image: room.main_image || '',
+          // Use base64 API endpoint instead of direct Supabase Storage URL to avoid CDN cache
+          main_image: `/api/images/base64-room-image?roomName=${encodeURIComponent(room.name)}&width=200&height=150&t=${Date.now()}`,
           base_price: room.base_price || 0,
           promo_price: room.promo_price,
           description: room.description || ''
@@ -129,7 +131,7 @@ export default async function handler(
         .from('chatbot_faqs')
         .select('topic, reply_message, reply_format, reply_payload')
         .neq('topic', '::greeting::')
-        // .neq('topic', '::fallback::');
+        .neq('topic', '::fallback::');
 
       if (!faqError && faqMatches) {
         for (const faq of faqMatches) {

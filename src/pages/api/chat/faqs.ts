@@ -334,7 +334,7 @@ export default async function handler(
         console.log('Generated embedding length for update:', topic_embedding.length);
 
         // Use RPC function to update FAQ with embedding
-        const { data: updatedFaq, error } = await supabase.rpc('update_faq_with_embedding_v3', {
+        const { data: updatedFaq, error } = await supabase.rpc('update_faq_with_embedding_v4', {
           p_display_order: display_order,
           p_id: id as string,
           p_reply_format: reply_format,
