@@ -60,10 +60,10 @@ export default function ImageUploadTester() {
     setResult(null);
 
     const formData = new FormData();
-    formData.append("mainImage", file);
+    formData.append("galleryImages", file);
 
     try {
-      const response = await fetch("/api/upload-room-image", {
+      const response = await fetch("/api/upload-multiple-images", {
         method: "POST",
         body: formData,
       });

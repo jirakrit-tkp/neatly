@@ -62,8 +62,6 @@ export function CreateRoomForm({ room }: { room?: Room }) {
 
   // Updated onSubmit function in CreateRoomForm component
 
-  // Updated onSubmit function in CreateRoomForm component
-
   const uploadImage = async (file: File): Promise<string> => {
     const formData = new FormData();
     formData.append("mainImage", file);
