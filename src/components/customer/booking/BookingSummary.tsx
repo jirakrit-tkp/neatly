@@ -12,6 +12,7 @@ interface BookingSummaryProps {
   checkIn: string;
   checkOut: string;
   guests: number;
+  roomCount: number;
   calculation: BookingCalculation;
   specialRequests?: Array<{
     name: string;
@@ -32,6 +33,7 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
   checkIn,
   checkOut,
   guests,
+  roomCount,
   calculation,
   specialRequests = [],
   promotionCode,
@@ -83,12 +85,15 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
           </div>
         </div>
 
-        {/* Dates and Guests */}
+        {/* Dates, Rooms and Guests */}
         <div className="mb-6">
           <p className="mb-1 text-base font-[var(--font-inter)]">
             {formatDate(checkIn)} - {formatDate(checkOut)}
           </p>
-          <p className="text-base font-[var(--font-inter)]">{guests} Guests</p>
+          <p className="text-base font-[var(--font-inter)]">
+            {roomCount} Room{roomCount > 1 ? "s" : ""}, {guests} Guest
+            {guests > 1 ? "s" : ""}
+          </p>
         </div>
 
         {/* Price Breakdown */}
@@ -96,7 +101,7 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
           {/* Room Price */}
           <div className="flex justify-between mb-2">
             <div className="text-base tracking-tight text-[var(--color-green-300)] font-[var(--font-inter)]">
-              {roomInfo.name}
+              {roomInfo.name} {roomCount > 1 && `(${roomCount} rooms)`}
             </div>
             <div className="text-base tracking-tight text-[var(--color-white)] font-[var(--font-inter)]">
               {formatPrice(calculation.basePrice)}

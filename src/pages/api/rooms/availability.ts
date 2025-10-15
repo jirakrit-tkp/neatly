@@ -7,6 +7,7 @@ interface AvailabilityRequest {
   check_in: string;
   check_out: string;
   guests: number;
+  room_count: number;
 }
 
 interface AvailabilityResponse {
@@ -33,7 +34,10 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<AvailabilityResponse>
 ) {
+  console.log("Availability API - Starting handler");
+
   if (req.method !== "POST") {
+    console.log("Availability API - Method not allowed:", req.method);
     return res.status(405).json({
       success: false,
       message: "Method not allowed",
@@ -42,15 +46,31 @@ export default async function handler(
   }
 
   try {
-    const { room_type_id, check_in, check_out, guests }: AvailabilityRequest =
-      req.body;
+    console.log("Availability API - Request body:", req.body);
+
+    const {
+      room_type_id,
+      check_in,
+      check_out,
+      guests,
+      room_count,
+    }: AvailabilityRequest = req.body;
+
+    console.log("Availability API - Parsed values:", {
+      room_type_id,
+      check_in,
+      check_out,
+      guests,
+      room_count,
+    });
 
     // Validate required fields
-    if (!room_type_id || !check_in || !check_out || !guests) {
+    if (!room_type_id || !check_in || !check_out || !guests || !room_count) {
       return res.status(400).json({
         success: false,
         message: "Missing required fields",
-        error: "room_type_id, check_in, check_out, and guests are required",
+        error:
+          "room_type_id, check_in, check_out, guests, and room_count are required",
       });
     }
 
@@ -84,7 +104,49 @@ export default async function handler(
       });
     }
 
-    // 1. Get all rooms of the specified room type
+    if (room_count < 1) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid room count",
+        error: "Room count must be at least 1",
+      });
+    }
+
+    // Validate guest capacity for multi-room booking
+    const maxGuestsPerRoom = 2; // Each room can accommodate up to 2 guests
+    const totalCapacity = room_count * maxGuestsPerRoom;
+
+    console.log(
+      `Validation: room_count=${room_count}, guests=${guests}, totalCapacity=${totalCapacity}, maxGuestsPerRoom=${maxGuestsPerRoom}`
+    );
+
+    if (guests > totalCapacity) {
+      console.log(
+        `Validation failed: guests (${guests}) > totalCapacity (${totalCapacity})`
+      );
+      return res.status(400).json({
+        success: false,
+        message: "Guest count exceeds room capacity",
+        error: `Maximum ${totalCapacity} guests for ${room_count} room(s). Each room accommodates up to ${maxGuestsPerRoom} guests.`,
+      });
+    }
+
+    console.log(
+      `Validation passed: guests (${guests}) <= totalCapacity (${totalCapacity})`
+    );
+
+    // Calculate guests per room needed for multi-room booking
+    const guestsPerRoom = Math.ceil(guests / room_count);
+
+    console.log(
+      `Multi-room availability check: ${room_count} rooms for ${guests} guests (${guestsPerRoom} guests per room)`
+    );
+
+    // 1. Get all rooms of the specified room type that can accommodate the guests per room
+    console.log(
+      `Database query: room_type_id=${room_type_id}, guestsPerRoom=${guestsPerRoom}`
+    );
+
     const { data: rooms, error: roomsError } = await supabase
       .from("rooms")
       .select(
@@ -103,7 +165,13 @@ export default async function handler(
       )
       .eq("room_type_id", room_type_id)
       .eq("is_active", true)
-      .gte("guests", guests);
+      .gte("guests", guestsPerRoom);
+
+    console.log(
+      `Database query result: rooms=${rooms?.length || 0}, error=${
+        roomsError?.message || "none"
+      }`
+    );
 
     if (roomsError) {
       console.error("Error fetching rooms:", roomsError);
@@ -114,7 +182,13 @@ export default async function handler(
       });
     }
 
-    if (!rooms || rooms.length === 0) {
+    // Ensure rooms is an array and filter out any null/undefined elements before processing
+    const validRooms = (rooms || []).filter(Boolean); // Filter out null/undefined elements
+    console.log(
+      `Valid rooms after filtering null/undefined: ${validRooms.length}`
+    );
+
+    if (validRooms.length === 0) {
       return res.status(200).json({
         success: true,
         message: "No rooms available for this room type",
@@ -126,15 +200,28 @@ export default async function handler(
       });
     }
 
+    // Check if we have enough total rooms of this type
+    if (validRooms.length < room_count) {
+      return res.status(200).json({
+        success: true,
+        message: "Not enough rooms available for this room type",
+        data: {
+          available: false,
+          availableRooms: validRooms.length,
+          totalRooms: validRooms.length,
+        },
+      });
+    }
+
     // 2. Check for conflicting bookings
     // แก้ไข query ให้ใช้ชื่อคอลัมน์ที่ถูกต้องตาม schema
+    const roomIds = validRooms.map((room) => room.id);
+    console.log(`Room IDs for booking check: ${roomIds.length} rooms`);
+
     const { data: conflictingBookings, error: bookingsError } = await supabase
       .from("bookings")
       .select("room_id")
-      .in(
-        "room_id",
-        rooms.map((room) => room.id)
-      )
+      .in("room_id", roomIds)
       .eq("status", BOOKING_STATUSES.CONFIRMED)
       .or(`and(check_in_date.lt.${check_out},check_out_date.gt.${check_in})`); // ใช้ check_in_date, check_out_date
 
@@ -151,14 +238,20 @@ export default async function handler(
     const bookedRoomIds = new Set(
       conflictingBookings?.map((b) => b.room_id) || []
     );
-    const availableRooms = rooms.filter((room) => !bookedRoomIds.has(room.id));
+    const availableRooms = validRooms.filter(
+      (room) => !bookedRoomIds.has(room.id)
+    );
+    console.log(`Available rooms after filtering: ${availableRooms.length}`);
 
-    // 4. Prepare response
+    // 4. Check if we have enough available rooms for the requested room count
+    const hasEnoughRooms = availableRooms.length >= room_count;
+
+    // 5. Prepare response
     const response = {
-      available: availableRooms.length > 0,
+      available: hasEnoughRooms,
       availableRooms: availableRooms.length,
-      totalRooms: rooms.length,
-      roomDetails: availableRooms.map((room) => ({
+      totalRooms: validRooms.length,
+      roomDetails: availableRooms.slice(0, room_count).map((room) => ({
         id: room.id,
         room_type: room.room_type,
         price: room.price,
@@ -171,14 +264,20 @@ export default async function handler(
 
     return res.status(200).json({
       success: true,
-      message:
-        availableRooms.length > 0
-          ? `Found ${availableRooms.length} available room(s)`
-          : "No rooms available for the selected dates",
+      message: hasEnoughRooms
+        ? `Found ${availableRooms.length} available room(s), ${room_count} needed`
+        : availableRooms.length > 0
+        ? `Only ${availableRooms.length} room(s) available, ${room_count} needed`
+        : "No rooms available for the selected dates",
       data: response,
     });
   } catch (error) {
     console.error("Room availability API error:", error);
+    console.error(
+      "Error stack:",
+      error instanceof Error ? error.stack : "No stack"
+    );
+    console.error("Request body that caused error:", req.body);
     return res.status(500).json({
       success: false,
       message: "Internal server error",

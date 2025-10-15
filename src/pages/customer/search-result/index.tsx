@@ -73,10 +73,36 @@ function SearchResultPage() {
     try {
       setLoading(true);
 
-      // แก้ไข: ใช้ชื่อที่ตรงกับ router.query (checkIn, checkOut)
-      const { checkIn, checkOut, guests } = router.query;
+      // ใช้ localStorage เป็น fallback ถ้า router.query ว่าง
+      const { checkIn, checkOut, guests, room } = router.query;
 
-      if (!checkIn || !checkOut || !guests) {
+      // ถ้า router.query ว่าง ให้ลองอ่านจาก localStorage
+      const fallbackCheckIn = checkIn || localStorage.getItem("searchCheckIn");
+      const fallbackCheckOut =
+        checkOut || localStorage.getItem("searchCheckOut");
+      const fallbackGuests = guests || localStorage.getItem("searchGuests");
+      const fallbackRoom = room || localStorage.getItem("searchRoom");
+
+      console.log("handleBookNow - router.query:", router.query);
+      console.log("handleBookNow - localStorage fallback:", {
+        checkIn: fallbackCheckIn,
+        checkOut: fallbackCheckOut,
+        guests: fallbackGuests,
+        room: fallbackRoom,
+      });
+
+      if (
+        !fallbackCheckIn ||
+        !fallbackCheckOut ||
+        !fallbackGuests ||
+        !fallbackRoom
+      ) {
+        console.error("Missing parameters:", {
+          checkIn: fallbackCheckIn,
+          checkOut: fallbackCheckOut,
+          guests: fallbackGuests,
+          room: fallbackRoom,
+        });
         alert("Missing search parameters. Please search again.");
         return;
       }
@@ -86,9 +112,10 @@ function SearchResultPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           room_type_id: roomTypeId,
-          check_in: checkIn, // ใช้ checkIn (ตัวใหญ่)
-          check_out: checkOut, // ใช้ checkOut (ตัวใหญ่)
-          guests: parseInt(guests as string),
+          check_in: fallbackCheckIn,
+          check_out: fallbackCheckOut,
+          guests: parseInt(fallbackGuests as string),
+          room_count: parseInt(fallbackRoom as string), // ส่ง room_count ให้ API
         }),
       });
 
@@ -96,7 +123,7 @@ function SearchResultPage() {
 
       if (result.success && result.data.available) {
         router.push(
-          `/customer/booking?room_type_id=${roomTypeId}&checkIn=${checkIn}&checkOut=${checkOut}&guests=${guests}`
+          `/customer/booking?room_type_id=${roomTypeId}&checkIn=${fallbackCheckIn}&checkOut=${fallbackCheckOut}&guests=${fallbackGuests}&rooms=${fallbackRoom}`
         );
       } else {
         alert(
@@ -127,13 +154,23 @@ function SearchResultPage() {
               guests: (router.query.guests as string) || undefined,
             }}
             onSearch={(params: SearchParams) => {
+              // บันทึก parameters ใน localStorage
+              localStorage.setItem("searchCheckIn", params.checkIn);
+              localStorage.setItem("searchCheckOut", params.checkOut);
+              localStorage.setItem("searchRoom", params.room);
+              localStorage.setItem("searchGuests", params.guests);
+
+              // Don't navigate to the same page, just update the current search
               const q = new URLSearchParams({
                 checkIn: params.checkIn,
                 checkOut: params.checkOut,
                 room: params.room,
                 guests: params.guests,
               }).toString();
-              router.push(`/customer/search-result?${q}`);
+              // Use router.replace to update URL without triggering navigation
+              router.replace(`/customer/search-result?${q}`, undefined, {
+                shallow: true,
+              });
             }}
           />
         </div>

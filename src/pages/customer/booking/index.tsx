@@ -48,7 +48,8 @@ interface RoomDetails {
 
 export default function BookingPage() {
   const router = useRouter();
-  const { room_type_id, checkIn, checkOut, guests } = router.query;
+  const { room_type_id, checkIn, checkOut, guests, rooms } = router.query;
+  const roomCount = parseInt(rooms as string) || 1;
   const { profile, isLoading: profileLoading } = useProfile();
 
   // Step management
@@ -130,6 +131,7 @@ export default function BookingPage() {
             check_in: checkIn,
             check_out: checkOut,
             guests: parseInt(guests as string),
+            room_count: roomCount, // เพิ่ม room_count
           }),
         });
 
@@ -583,6 +585,7 @@ export default function BookingPage() {
               checkIn={checkIn as string}
               checkOut={checkOut as string}
               guests={parseInt(guests as string)}
+              roomCount={roomCount}
               calculation={calculation}
               specialRequests={selectedSpecialRequests.map((req) => ({
                 name: req.name,

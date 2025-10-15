@@ -14,7 +14,12 @@ function getTodayDateString(): string {
 export default function Herosection() {
   const router = useRouter();
 
-  const handleSearch = (params: { checkIn: string; checkOut: string; room: string }) => {
+  const handleSearch = (params: {
+    checkIn: string;
+    checkOut: string;
+    room: string;
+    guests: string;
+  }) => {
     const query = new URLSearchParams(params).toString();
     router.push(`/customer/search-result?${query}`);
   };
@@ -77,11 +82,15 @@ export default function Herosection() {
             }}
           >
             <span className="hidden sm:inline">
-              A Best Place for Your<br />Neatly Experience
+              A Best Place for Your
+              <br />
+              Neatly Experience
             </span>
             <span className="inline sm:hidden">
-              A Best Place<br />
-              for Your<br />
+              A Best Place
+              <br />
+              for Your
+              <br />
               Neatly Experience
             </span>
           </h1>
