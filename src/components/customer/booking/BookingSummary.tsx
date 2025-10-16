@@ -19,6 +19,10 @@ interface BookingSummaryProps {
     price: number;
     calculated_price?: number;
   }>;
+  standardRequests?: Array<{
+    name: string;
+    selected: boolean;
+  }>;
   promotionCode?: {
     code: string;
     discount: number;
@@ -37,9 +41,22 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
   roomCount,
   calculation,
   specialRequests = [],
+  standardRequests = [],
   promotionCode,
   timeLeft,
 }) => {
+  // ตรวจสอบ standard requests
+  const hasEarlyCheckIn = standardRequests.some(
+    (req) => req.name.toLowerCase().includes("early check-in") && req.selected
+  );
+  const hasLateCheckOut = standardRequests.some(
+    (req) => req.name.toLowerCase().includes("late check-out") && req.selected
+  );
+
+  // กำหนดเวลาตรวจสอบเข้า-ออก
+  const checkInTime = hasEarlyCheckIn ? "12:00 PM" : "2:00 PM";
+  const checkOutTime = hasLateCheckOut ? "4:00 PM" : "12:00 PM";
+
   return (
     <div className="w-full md:w-[358px] h-fit rounded-md overflow-hidden">
       {/* ส่วนบน - Header (เขียวเข้ม green-800) */}
@@ -71,7 +88,7 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
               Check-in
             </div>
             <div className="text-base font-normal tracking-tight text-[var(--color-white)] font-[var(--font-inter)]">
-              After 2:00 PM
+              {hasEarlyCheckIn ? "After" : "After"} {checkInTime}
             </div>
           </div>
 
@@ -81,7 +98,7 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
               Check-out
             </div>
             <div className="text-base font-normal text-[var(--color-white)] font-[var(--font-inter)]">
-              Before 12:00 PM
+              Before {checkOutTime}
             </div>
           </div>
         </div>

@@ -612,6 +612,12 @@ export default function BookingPage() {
                 price: req.price || 0,
                 calculated_price: req.calculated_price || 0,
               }))}
+              standardRequests={specialRequests
+                .filter((req) => req.type === "standard")
+                .map((req) => ({
+                  name: req.name,
+                  selected: req.selected,
+                }))}
               promotionCode={
                 promoDiscount > 0
                   ? { code: promoCode, discount: promoDiscount }
