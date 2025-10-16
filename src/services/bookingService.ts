@@ -79,6 +79,7 @@ export class BookingService {
 
       // 3. Calculate total amount
       const nights = calculateNights(bookingData.checkIn, bookingData.checkOut);
+      const roomCount = bookingData.roomCount || 1;
       const basePrice = (() => {
         const roomInfo = bookingData.roomInfo;
         if (!roomInfo) return 0;
@@ -141,6 +142,7 @@ export class BookingService {
         basePrice,
         nights,
         bookingData.specialRequests,
+        roomCount,
         promoDiscount // ← เพิ่มเครื่องหมายลบ
       );
 

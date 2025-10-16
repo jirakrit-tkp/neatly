@@ -298,6 +298,7 @@ export default function BookingPage() {
       const bookingData: BookingFormData = {
         guestInfo,
         roomId: selectedRoom.id,
+        roomCount,
         roomInfo: {
           room_type: selectedRoom.room_type, // ประเภทห้อง
           price: (() => {
@@ -469,6 +470,7 @@ export default function BookingPage() {
     roomPrice,
     nights,
     selectedSpecialRequests,
+    roomCount,
     promoDiscount
   );
 

@@ -100,27 +100,59 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
         <div className="space-y-2 mb-4">
           {/* Room Price */}
           <div className="flex justify-between mb-2">
-            <div className="text-base tracking-tight text-[var(--color-green-300)] font-[var(--font-inter)]">
-              {roomInfo.name} {roomCount > 1 && `(${roomCount} rooms)`}
+            <div className="flex flex-col">
+              <div className="text-base tracking-tight text-[var(--color-green-300)] font-[var(--font-inter)]">
+                {roomInfo.name}
+              </div>
+              <div className="text-xs text-[var(--color-green-200)] font-[var(--font-inter)] ml-0">
+                ({roomCount} room{roomCount > 1 ? "s" : ""}
+                {calculation.nights > 1
+                  ? `, ${calculation.nights} nights`
+                  : `, ${calculation.nights} night`}
+                )
+              </div>
             </div>
             <div className="text-base tracking-tight text-[var(--color-white)] font-[var(--font-inter)]">
-              {formatPrice(calculation.basePrice)}
+              {formatPrice(calculation.subtotal)}
             </div>
           </div>
 
           {/* Special Requests */}
           {specialRequests && specialRequests.length > 0 && (
             <>
-              {specialRequests.map((request, index) => (
-                <div key={index} className="flex justify-between mb-2">
-                  <div className="text-base tracking-tight text-[var(--color-green-300)] font-[var(--font-inter)]">
-                    {request.name}
+              {specialRequests.map((request, index) => {
+                // ตรวจสอบว่าเป็น Breakfast หรือไม่ (คิดตามจำนวนคืน)
+                const isBreakfast = request.name
+                  .toLowerCase()
+                  .includes("breakfast");
+                const nightsText =
+                  calculation.nights > 1
+                    ? `, ${calculation.nights} nights`
+                    : `, ${calculation.nights} night`;
+                const roomsText = roomCount > 1 ? "rooms" : "room";
+
+                // คำนวณราคารวมของ special request
+                const totalRequestPrice = isBreakfast
+                  ? (request.price || 0) * roomCount * calculation.nights
+                  : (request.price || 0) * roomCount;
+
+                return (
+                  <div key={index} className="flex justify-between mb-2">
+                    <div className="flex flex-col">
+                      <div className="text-base tracking-tight text-[var(--color-green-300)] font-[var(--font-inter)]">
+                        {request.name}
+                      </div>
+                      <div className="text-xs text-[var(--color-green-200)] font-[var(--font-inter)] ml-0">
+                        ({roomCount} {roomsText}
+                        {isBreakfast ? nightsText : ""})
+                      </div>
+                    </div>
+                    <div className="text-base tracking-tight text-[var(--color-white)] font-[var(--font-inter)]">
+                      {formatPrice(totalRequestPrice)}
+                    </div>
                   </div>
-                  <div className="text-base tracking-tight text-[var(--color-white)] font-[var(--font-inter)]">
-                    {formatPrice(request.price || 0)}
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </>
           )}
 

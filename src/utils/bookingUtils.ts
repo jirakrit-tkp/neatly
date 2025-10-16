@@ -6,12 +6,26 @@ export const calculateBookingTotal = (
   basePrice: number,
   nights: number,
   specialRequests: SpecialRequest[],
+  roomCount: number = 1,
   promoDiscount: number = 0
 ): BookingCalculation => {
-  const subtotal = basePrice * nights;
+  // ราคาห้อง = (price หรือ promotion_price) * จำนวนห้อง * จำนวนคืน
+  const subtotal = basePrice * roomCount * nights;
+
+  // คำนวณ special requests ตามแนวทางใหม่
   const specialRequestsTotal = specialRequests
     .filter((req) => req.selected && req.price)
-    .reduce((sum, req) => sum + (req.price || 0), 0);
+    .reduce((sum, req) => {
+      const isBreakfast = req.name.toLowerCase().includes("breakfast");
+
+      if (isBreakfast) {
+        // Breakfast: ราคา * จำนวนห้อง * จำนวนคืน
+        return sum + (req.price || 0) * roomCount * nights;
+      } else {
+        // อื่นๆ (Baby cot, Extra bed, Extra pillows, Phone chargers, Airport transfer): ราคา * จำนวนห้อง
+        return sum + (req.price || 0) * roomCount;
+      }
+    }, 0);
 
   // ตรวจสอบไม่ให้ total ติดลบ
   const total = Math.max(0, subtotal + specialRequestsTotal - promoDiscount);
