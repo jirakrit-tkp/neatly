@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Layout from "@/components/Layout";
-import Footer from "@/components/Footer";
 import BookingCard, { type Booking } from "@/components/booking-history/BookingCard";
 import { supabase } from "@/lib/supabaseClient";
 
-/* ---------- Types ---------- */
+/* ---------- Types from DB ---------- */
 type RoomFields = {
   room_type: string | null;
   main_image_url: string | string[] | null;
@@ -12,18 +11,15 @@ type RoomFields = {
   guests: number | null;
   promotion_price: number | null;
 };
-
 type PaymentLite = {
   card_last_three: string | null;
   amount: number | null;
 };
-
 type PromoCodeLite = {
   code?: string | null;
   discount_amount: number | null;
   discount_percent: number | null;
 };
-
 type BookingRowRaw = {
   id: string;
   room_id: string | null;
@@ -31,10 +27,11 @@ type BookingRowRaw = {
   booking_date: string | null;
   check_in_date: string | null;
   check_out_date: string | null;
+  cancellation_date: string | null;
   total_amount: number | null;
   additional_request: string | null;
   promo_code: string | null;
-  special_requests: unknown;        
+  special_requests: unknown;
   standard_request: string[] | null;
   status: string | null;
   payment_method: string | null;
@@ -46,12 +43,8 @@ type BookingRowRaw = {
 /* ---------- Utils ---------- */
 function calculatePromoDiscount(promo: PromoCodeLite | null, totalAmount: number): number {
   if (!promo) return 0;
-  if (promo.discount_amount && promo.discount_amount > 0) {
-    return Math.min(promo.discount_amount, totalAmount);
-  }
-  if (promo.discount_percent && promo.discount_percent > 0) {
-    return (totalAmount * promo.discount_percent) / 100;
-  }
+  if (promo.discount_amount && promo.discount_amount > 0) return Math.min(promo.discount_amount, totalAmount);
+  if (promo.discount_percent && promo.discount_percent > 0) return (totalAmount * promo.discount_percent) / 100;
   return 0;
 }
 
@@ -60,8 +53,8 @@ function fmtDateUTC(d?: string | null) {
   const safe = typeof d === "string" ? d.replace(" ", "T") : d;
   const dt = new Date(safe);
   if (Number.isNaN(dt.getTime())) return "-";
-  const w = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][dt.getUTCDay()];
-  const m = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][dt.getUTCMonth()];
+  const w = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][dt.getUTCDay()];
+  const m = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][dt.getUTCMonth()];
   return `${w}, ${m} ${dt.getUTCDate()}, ${dt.getUTCFullYear()}`;
 }
 
@@ -105,7 +98,6 @@ function last3Mask(v?: string | null) {
   return undefined;
 }
 
-/** ล้างคำว่า "Standard:" ออก (ไม่สนตัวพิมพ์เล็ก/ใหญ่) */
 function cleanLabel(label: string): string {
   return String(label || "").replace(/^standard:\s*/i, "").trim();
 }
@@ -123,6 +115,22 @@ export default function BookingHistoryPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const requestSeqRef = useRef(0);
+
+  // ใช้สำหรับเลื่อนขึ้นบนสุด
+  const mainRef = useRef<HTMLDivElement>(null);
+
+  const scrollTop = () => {
+    if (mainRef.current) {
+      mainRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    } else if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
+  const goToPage = (p: number) => {
+    setPage(p);
+    scrollTop();
+  };
 
   /* ---------- Auth ---------- */
   useEffect(() => {
@@ -173,6 +181,7 @@ export default function BookingHistoryPage() {
               booking_date,
               check_in_date,
               check_out_date,
+              cancellation_date,
               total_amount,
               additional_request,
               promo_code,
@@ -209,7 +218,7 @@ export default function BookingHistoryPage() {
         setTotal(count ?? 0);
         const rows = (data ?? []) as BookingRowRaw[];
 
-        // โหลดรายละเอียด promo code ที่พบในชุดนี้
+        // โหลดรายละเอียด promo code ของชุดนี้
         const promoCodeMap = new Map<string, PromoCodeLite>();
         const uniquePromoCodes = [...new Set(rows.map((r) => r.promo_code).filter(Boolean))] as string[];
         if (uniquePromoCodes.length > 0) {
@@ -227,10 +236,8 @@ export default function BookingHistoryPage() {
         }
 
         const mapped: Booking[] = rows.map((row) => {
-          // --- rooms normalize
-          const roomsObj: RoomFields | null = Array.isArray(row.rooms)
-            ? row.rooms[0] ?? null
-            : row.rooms;
+          // rooms normalize
+          const roomsObj: RoomFields | null = Array.isArray(row.rooms) ? row.rooms[0] ?? null : row.rooms;
 
           const roomName = roomsObj?.room_type?.trim() || "Room";
           const imageUrl = safeImageUrl(roomsObj?.main_image_url);
@@ -238,27 +245,28 @@ export default function BookingHistoryPage() {
           const guests: number =
             typeof roomsObj?.guests === "number" && roomsObj?.guests > 0 ? roomsObj.guests : 1;
 
-          // 👉 จำนวนคืน
+          // คืนที่พัก
           const nights = calcNights(row.check_in_date, row.check_out_date);
 
-          // --- แปลง special_requests -> ชื่อ + ราคา (ล้าง "Standard:")
+          // special_requests -> ชื่อ+ราคา
           type SRItem = { name?: unknown; price?: unknown } | string | number | null;
           let specialReqItems: Array<{ label: string; amount: number }> = [];
 
           const buildItemsFromArray = (arr: unknown[]) => {
             const items: Array<{ label: string; amount: number }> = [];
-            arr.forEach((it: SRItem) => {
+            arr.forEach((raw: unknown) => {
+              const it = raw as SRItem;
               if (typeof it === "object" && it !== null && "name" in it) {
-                const raw = String((it as { name: unknown }).name ?? "");
-                const name = cleanLabel(raw);
+                const rawName = String((it as { name: unknown }).name ?? "");
+                const name = cleanLabel(rawName);
                 const priceRaw = (it as { price?: unknown }).price;
                 const amount = typeof priceRaw === "number" ? priceRaw : 0;
                 if (name && name !== "0" && name.toLowerCase() !== "null") {
                   items.push({ label: name, amount });
                 }
               } else {
-                const raw = String(it ?? "");
-                const name = cleanLabel(raw);
+                const rawStr = String(it ?? "");
+                const name = cleanLabel(rawStr);
                 if (name && name !== "0" && name.toLowerCase() !== "null") {
                   items.push({ label: name, amount: 0 });
                 }
@@ -272,11 +280,8 @@ export default function BookingHistoryPage() {
           } else if (typeof row.special_requests === "string" && row.special_requests.trim()) {
             try {
               const parsed = JSON.parse(row.special_requests);
-              if (Array.isArray(parsed)) {
-                specialReqItems = buildItemsFromArray(parsed);
-              } else if (parsed) {
-                specialReqItems = buildItemsFromArray([parsed]);
-              }
+              if (Array.isArray(parsed)) specialReqItems = buildItemsFromArray(parsed as unknown[]);
+              else if (parsed) specialReqItems = buildItemsFromArray([parsed] as unknown[]);
             } catch {
               const name = cleanLabel(row.special_requests.trim());
               if (name && name !== "0" && name.toLowerCase() !== "null") {
@@ -285,7 +290,7 @@ export default function BookingHistoryPage() {
             }
           }
 
-          // --- standard_request -> แค่ข้อความ (ไม่มี "Standard:")
+          // standard_request -> แค่ข้อความ
           let standardReqItems: Array<{ label: string; amount: number }> = [];
           if (Array.isArray(row.standard_request)) {
             standardReqItems = row.standard_request
@@ -294,35 +299,26 @@ export default function BookingHistoryPage() {
               .map((s) => ({ label: s, amount: 0 }));
           }
 
-          // --- รวมรายการ (เติมห้องไว้บรรทัดแรก) + ราคาห้อง * จำนวนคืน
-          let items = [...specialReqItems, ...standardReqItems];
+          // รวมรายการ + ราคาห้อง * คืน
+          const items = [...specialReqItems, ...standardReqItems];
           const nightly = typeof roomsObj?.promotion_price === "number" ? roomsObj.promotion_price : 0;
-          items.unshift({
-            label: `${roomName} Room`,
-            amount: nightly * nights,
-          });
+          items.unshift({ label: `${roomName} Room`, amount: nightly * nights });
 
-          // --- payment / total
+          // payment / total
           const paymentObj = Array.isArray(row.payments) ? row.payments[0] ?? null : row.payments;
           const mask = last3Mask(paymentObj?.card_last_three);
           const totalAmount =
             typeof paymentObj?.amount === "number" ? paymentObj.amount : Number(row.total_amount) || 0;
 
-          // --- promo (แสดงเป็น "Promotion" เฉย ๆ)
+          // promo แสดงเป็นบรรทัด "Promotion"
           if (row.promo_code) {
-            const promoDiscount = calculatePromoDiscount(
-              promoCodeMap.get(row.promo_code) ?? null,
-              totalAmount
-            );
+            const promoDiscount = calculatePromoDiscount(promoCodeMap.get(row.promo_code) ?? null, totalAmount);
             if (promoDiscount > 0) {
-              items.push({
-                label: "Promotion",
-                amount: -promoDiscount,
-              });
+              items.push({ label: "Promotion", amount: -promoDiscount });
             }
           }
 
-          // ✅ หมายเหตุเวลา Check-in/Check-out ตาม Early/Late
+          // เวลา Check-in/Check-out ตาม Early/Late
           const labelsLower = items.map((it) => it.label.toLowerCase());
           const hasEarlyCheckIn = labelsLower.some((l) => /early\s*check[- ]?in/i.test(l));
           const hasLateCheckOut = labelsLower.some((l) => /late\s*check[- ]?out/i.test(l));
@@ -331,6 +327,9 @@ export default function BookingHistoryPage() {
           let checkOutNote = "Before 12:00 PM";
           if (hasEarlyCheckIn) checkInNote = "After 12:00 PM";
           if (hasLateCheckOut) checkOutNote = "Before 16:00 PM";
+
+          const cancelled = !!row.cancellation_date;
+          const cancelledAtText = cancelled ? fmtDateUTC(row.cancellation_date) : undefined;
 
           return {
             id: row.id,
@@ -341,6 +340,8 @@ export default function BookingHistoryPage() {
             checkOutDate: fmtDateUTC(row.check_out_date),
             checkOutNote,
             bookedAtText: fmtDateUTC(row.created_at ?? row.booking_date),
+            cancelled,
+            cancelledAtText,
             checkInAtRaw: row.check_in_date ?? undefined,
             guests,
             nights,
@@ -358,7 +359,6 @@ export default function BookingHistoryPage() {
             currency,
             total: totalAmount,
             additionalRequest: row.additional_request || undefined,
-            // ไม่ส่ง promoCode เพื่อไม่ให้ BookingCard แสดงรหัส
           };
         });
 
@@ -382,17 +382,6 @@ export default function BookingHistoryPage() {
     };
   }, [authLoading, userId, page]);
 
-  /* ---------- Handle Delete ---------- */
-  const handleDeleted = (id: string) => {
-    setBookings((prev) => prev.filter((b) => b.id !== id));
-    setTotal((t) => Math.max(0, t - 1));
-    setTimeout(() => {
-      if (bookings.length === 1 && page > 1) {
-        setPage((p) => Math.max(1, p - 1));
-      }
-    }, 0);
-  };
-
   const totalPages = useMemo(() => Math.max(1, Math.ceil(total / PAGE_SIZE)), [total]);
 
   const visiblePages = useMemo(() => {
@@ -413,25 +402,24 @@ export default function BookingHistoryPage() {
   /* ---------- Render ---------- */
   return (
     <Layout>
-      <main className="max-w-[1120px] mx-auto md:px-6 pb-5 pt-[80px] sm:pt-[96px] md:pt-12">
+      <main
+        ref={mainRef}
+        className="max-w-[1120px] mx-auto md:px-6 pb-5 pt-[80px] sm:pt-[96px] md:pt-12"
+      >
         <h1 className="text-[44px] sm:text-[52px] md:text-[68px] px-5 font-noto font-medium text-green-700 leading-[125%] tracking-[-0.02em] mb-6">
           Booking History
         </h1>
 
         {(authLoading || loading) && <div className="px-5 text-gray-600">Loading...</div>}
 
-        {!authLoading && !loading && !error && userId && bookings.length === 0 && (
+        {!authLoading && !loading && !error && bookings.length === 0 && (
           <div className="px-5 text-gray-600">No bookings found.</div>
-        )}
-
-        {!authLoading && !userId && (
-          <div className="px-5 text-gray-600">Please sign in to view your bookings.</div>
         )}
 
         {error && !loading && (
           <div className="px-5 text-red-600">
             Error: {error}{" "}
-            <button className="ml-3 underline text-orange-600" onClick={() => setPage((p) => p)}>
+            <button className="ml-3 underline text-orange-600" onClick={() => goToPage(page)}>
               Retry
             </button>
           </div>
@@ -439,7 +427,7 @@ export default function BookingHistoryPage() {
 
         <div className="space-y-8">
           {bookings.map((b) => (
-            <BookingCard key={b.id} booking={b} onDeleted={handleDeleted} />
+            <BookingCard key={b.id} booking={b} />
           ))}
         </div>
 
@@ -447,7 +435,7 @@ export default function BookingHistoryPage() {
           <div className="mt-8 flex items-center justify-center gap-2 px-5">
             <button
               type="button"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              onClick={() => goToPage(Math.max(1, page - 1))}
               disabled={page === 1}
               className={`h-8 w-8 grid place-items-center rounded-md text-gray-400 hover:text-gray-700 ${
                 page === 1 ? "opacity-40 cursor-not-allowed" : "cursor-pointer"
@@ -461,7 +449,7 @@ export default function BookingHistoryPage() {
               <button
                 key={p}
                 type="button"
-                onClick={() => setPage(p)}
+                onClick={() => goToPage(p)}
                 className={`h-8 min-w-8 px-3 rounded-md text-sm transition cursor-pointer ${
                   p === page
                     ? "bg-white border border-green-600 text-green-700"
@@ -474,7 +462,7 @@ export default function BookingHistoryPage() {
 
             <button
               type="button"
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              onClick={() => goToPage(Math.min(totalPages, page + 1))}
               disabled={page === totalPages}
               className={`h-8 w-8 grid place-items-center rounded-md text-gray-400 hover:text-gray-700 ${
                 page === totalPages ? "opacity-40 cursor-not-allowed" : "cursor-pointer"
