@@ -17,6 +17,7 @@ interface BookingSummaryProps {
   specialRequests?: Array<{
     name: string;
     price: number;
+    calculated_price?: number;
   }>;
   promotionCode?: {
     code: string;
@@ -131,10 +132,8 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
                     : `, ${calculation.nights} night`;
                 const roomsText = roomCount > 1 ? "rooms" : "room";
 
-                // คำนวณราคารวมของ special request
-                const totalRequestPrice = isBreakfast
-                  ? (request.price || 0) * roomCount * calculation.nights
-                  : (request.price || 0) * roomCount;
+                // ใช้ calculated_price ที่คำนวณแล้วจาก database
+                const totalRequestPrice = request.calculated_price || 0;
 
                 return (
                   <div key={index} className="flex justify-between mb-2">

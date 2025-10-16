@@ -160,9 +160,14 @@ export class BookingService {
         total_amount: calculation.total,
         status: BOOKING_STATUSES.PENDING,
         promo_code: bookingData.promoCode,
-        special_requests: bookingData.specialRequests.filter(
-          (req) => req.type === "special" && req.selected
-        ), // ← เฉพาะ special requests
+        room_count: roomCount, // เพิ่มจำนวนห้อง
+        guest_count: bookingData.guests, // เพิ่มจำนวนแขก
+        special_requests: bookingData.specialRequests
+          .filter((req) => req.type === "special" && req.selected)
+          .map((req) => ({
+            ...req,
+            calculated_price: req.calculated_price || 0, // เพิ่ม calculated_price
+          })), // ← เฉพาะ special requests พร้อม calculated_price
         standard_request: bookingData.specialRequests
           .filter((req) => req.type === "standard" && req.selected) // ← เฉพาะ standard ที่เลือก
           .map((req) => req.name), // ← ส่งเป็น array ตรงๆ

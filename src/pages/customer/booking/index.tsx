@@ -455,7 +455,25 @@ export default function BookingPage() {
 
   // Calculations
   const nights = calculateNights(checkIn as string, checkOut as string);
-  const selectedSpecialRequests = specialRequests.filter((req) => req.selected);
+  const selectedSpecialRequests = specialRequests
+    .filter((req) => req.selected)
+    .map((req) => {
+      const isBreakfast = req.name.toLowerCase().includes("breakfast");
+      let calculatedPrice: number;
+
+      if (isBreakfast) {
+        // Breakfast: ราคา * จำนวนห้อง * จำนวนคืน
+        calculatedPrice = (req.price || 0) * roomCount * nights;
+      } else {
+        // อื่นๆ: ราคา * จำนวนห้อง
+        calculatedPrice = (req.price || 0) * roomCount;
+      }
+
+      return {
+        ...req,
+        calculated_price: calculatedPrice,
+      };
+    });
   const roomPrice = (() => {
     // ถ้ามี promotion_price และ > 0 → ใช้ promotion_price
     if (selectedRoom?.promotion_price && selectedRoom.promotion_price > 0) {
@@ -592,6 +610,7 @@ export default function BookingPage() {
               specialRequests={selectedSpecialRequests.map((req) => ({
                 name: req.name,
                 price: req.price || 0,
+                calculated_price: req.calculated_price || 0,
               }))}
               promotionCode={
                 promoDiscount > 0

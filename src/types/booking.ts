@@ -23,6 +23,8 @@ export interface Booking {
   additional_request?: string; // แก้ไขจาก additional_requests
   payment_method: PaymentMethod;
   booking_date?: string;
+  room_count: number; // จำนวนห้องที่จอง
+  guest_count: number; // จำนวนแขก
   created_at: string;
   updated_at: string;
 }
@@ -115,7 +117,8 @@ export interface SpecialRequest {
   id: string;
   type: SpecialRequestType;
   name: string;
-  price?: number;
+  price?: number; // ราคาต่อหน่วย
+  calculated_price?: number; // ราคาที่คำนวณแล้ว (price * room_count * nights สำหรับ breakfast, price * room_count สำหรับอื่นๆ)
   selected: boolean;
   description?: string;
 }
