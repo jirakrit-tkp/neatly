@@ -10,14 +10,12 @@ export default async function handler(
     return res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 
-  // Prevent any caching to ensure fresh images
-  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-  res.setHeader('Pragma', 'no-cache');
-  res.setHeader('Expires', '0');
+  // Allow browser caching to reduce repeated requests
+  res.setHeader('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400');
   res.setHeader('Last-Modified', new Date().toUTCString());
 
   try {
-    const { roomName, width = '200', height = '150', t } = req.query;
+    const { roomName, width = '400', height = '300' } = req.query;
 
     if (!roomName || typeof roomName !== 'string') {
       return res.status(400).json({ error: 'Room name is required' });
@@ -34,12 +32,19 @@ export default async function handler(
       return res.status(404).json({ error: 'Room or image not found' });
     }
 
-    // Fetch image from Supabase Storage as buffer
+    // Extract path from full URL
+    const imagePath = room.main_image.split('/').pop();
+    if (!imagePath) {
+      return res.status(404).json({ error: 'Invalid image path' });
+    }
+
+    // Fetch image from Supabase Storage as buffer (uses Storage Egress, NOT cachedEgress)
     const { data: imageBuffer, error: imageError } = await supabase.storage
-      .from('neatly') // or whatever bucket contains room images
-      .download(room.main_image.split('/').pop() || '');
+      .from('neatly')
+      .download(imagePath);
 
     if (imageError || !imageBuffer) {
+      console.error('Image download error:', imageError);
       return res.status(404).json({ error: 'Image not found in storage' });
     }
 
@@ -49,17 +54,17 @@ export default async function handler(
     const base64 = buffer.toString('base64');
     const mimeType = imageBuffer.type || 'image/jpeg';
 
-    // Add timestamp to ensure fresh data
+    // Add timestamp to ensure cache busting when needed
     const timestamp = Date.now();
     
-    // Return base64 image with fresh timestamp
+    // Return base64 image - browser can cache this
     res.status(200).json({
       image: `data:${mimeType};base64,${base64}`,
       roomName,
       size: `${width}x${height}`,
-      cached: false, // This bypasses CDN cache
+      cached: true, // Browser can cache this
       timestamp: timestamp,
-      lastModified: new Date().toISOString()
+      note: 'Using Storage Egress (not cachedEgress) to preserve CDN quota'
     });
 
   } catch (error) {
@@ -70,3 +75,4 @@ export default async function handler(
     });
   }
 }
+
