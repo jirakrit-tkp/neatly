@@ -19,6 +19,12 @@ async function verifySessionAccess(
     throw new Error("Session not found");
   }
 
+  // Check if session is active
+  if (session.status !== 'active') {
+    console.error("❌ Session is not active:", { sessionId, status: session.status });
+    throw new Error("Session is not active");
+  }
+
   // Check access permissions
   if (session.customer_id) {
     // Session belongs to a user

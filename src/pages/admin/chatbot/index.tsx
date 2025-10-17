@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { FileQuestionMark } from "lucide-react";
 import SuggestionMenu from "@/components/admin/SuggestionMenu";
 import { Reorder } from "motion/react";
+import { supabase } from "@/lib/supabaseClient";
 
 type RoomTypePayload = {
   rooms: string[];
@@ -41,6 +42,7 @@ interface Context {
 export default function ChatbotAdmin() {
   const [faqs, setFaqs] = useState<FAQ[]>([]);
   const [loading, setLoading] = useState(false);
+  const [adminUserId, setAdminUserId] = useState<string | null>(null);
 
   const [editingFAQ, setEditingFAQ] = useState<FAQ | null>(null);
   const [showCreateFAQ, setShowCreateFAQ] = useState<boolean>(false);
@@ -80,6 +82,37 @@ export default function ChatbotAdmin() {
 
   // Separate validation for editing contexts
   const [editingContextErrors, setEditingContextErrors] = useState<{ [id: string]: string | undefined }>({});
+
+  // Get admin user ID
+  useEffect(() => {
+    const getAdminUser = async () => {
+      console.log("🔍 Debug: Getting admin user session...");
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        console.log("🔍 Debug: getSession response:", { data, error });
+        
+        if (error) {
+          console.log("❌ Debug: getSession error:", error);
+          return;
+        }
+        
+        const session = data?.session;
+        console.log("🔍 Debug: Session data:", session);
+        
+        if (session?.user?.id) {
+          console.log("🔍 Debug: Setting adminUserId to:", session.user.id);
+          setAdminUserId(session.user.id);
+        } else {
+          console.log("❌ Debug: No session or user ID found");
+          console.log("❌ Debug: session:", session);
+          console.log("❌ Debug: session?.user:", session?.user);
+        }
+      } catch (err) {
+        console.log("❌ Debug: getSession exception:", err);
+      }
+    };
+    getAdminUser();
+  }, []);
 
   // Load FAQs and Contexts on component mount
   useEffect(() => {
@@ -330,6 +363,13 @@ export default function ChatbotAdmin() {
   const handleCreateContext = async () => {
     console.log("🟡 Admin: handleCreateContext called");
 
+    // Check if adminUserId is available
+    if (!adminUserId) {
+      console.log("❌ Admin: adminUserId not available yet");
+      setValidationErrors(prev => ({ ...prev, context: "Please wait, loading admin information..." }));
+      return;
+    }
+
     // Clear previous validation errors
     setValidationErrors(prev => ({ ...prev, context: undefined }));
 
@@ -375,14 +415,25 @@ export default function ChatbotAdmin() {
     );
     setLoading(true);
     try {
-      // Create multiple contexts
-      const promises = details.map(detail => 
-        fetch("/api/chat/contexts", {
+      // Create multiple contexts with created_by
+      console.log("🔍 Debug: adminUserId =", adminUserId);
+      console.log("🔍 Debug: adminUserId type =", typeof adminUserId);
+      console.log("🔍 Debug: adminUserId is null?", adminUserId === null);
+      console.log("🔍 Debug: adminUserId is undefined?", adminUserId === undefined);
+      
+      const promises = details.map(detail => {
+        const payload = { 
+          content: detail,
+          created_by: adminUserId 
+        };
+        console.log("🔍 Debug: Sending payload:", payload);
+        console.log("🔍 Debug: Payload created_by type =", typeof payload.created_by);
+        return fetch("/api/chat/contexts", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ content: detail }),
-        })
-      );
+          body: JSON.stringify(payload),
+        });
+      });
 
       const responses = await Promise.all(promises);
       const allSuccessful = responses.every(response => response.ok);
@@ -441,6 +492,7 @@ export default function ChatbotAdmin() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             content: editingContext.content,
+            updated_by: adminUserId,
           }),
         }
       );
@@ -852,6 +904,7 @@ export default function ChatbotAdmin() {
                           }}
                           onClose={() => setEditingFAQ(null)}
                           onShowSnackbar={showSnackbar}
+                          adminUserId={adminUserId}
                         />
                       </Reorder.Item>
                     ))}
@@ -877,6 +930,7 @@ export default function ChatbotAdmin() {
                   onDeleteAlias={handleDeleteAlias}
                   onClose={() => setShowCreateFAQ(false)}
                   onShowSnackbar={showSnackbar}
+                  adminUserId={adminUserId}
                 />
               )}
 

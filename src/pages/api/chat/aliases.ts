@@ -21,8 +21,8 @@ export default async function handler(
     }
 
     if (req.method === 'POST') {
-      const { faq_id, aliases } = req.body as { faq_id?: string; aliases?: string[] };
-      console.log('POST /api/chat/aliases - received:', { faq_id, aliases, body: req.body });
+      const { faq_id, aliases, created_by } = req.body as { faq_id?: string; aliases?: string[]; created_by?: string };
+      console.log('POST /api/chat/aliases - received:', { faq_id, aliases, created_by, body: req.body });
       if (!faq_id || !Array.isArray(aliases)) {
         console.log('POST /api/chat/aliases - validation failed:', { faq_id, aliases, isArray: Array.isArray(aliases) });
         return res.status(400).json({ error: 'faq_id and aliases[] are required' });
@@ -43,10 +43,12 @@ export default async function handler(
         console.log('Generated embedding length for alias:', embedding.length);
 
         // Use RPC function to insert alias with embedding
+        console.log('🔍 Debug: Calling RPC with created_by =', created_by);
         const { data: aliasEntry, error } = await supabase.rpc('insert_faq_alias_with_embedding', {
           p_faq_id: faq_id,
           p_alias: alias,
-          p_embedding: embedding
+          p_embedding: embedding,
+          p_created_by: created_by || null
         });
 
         if (error) {

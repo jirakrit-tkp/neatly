@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { FileQuestionMark } from "lucide-react";
 import { ChatbotDropdown } from "@/components/admin/ui/ChatbotDropdown";
 import { Reorder, useDragControls } from "motion/react";
+import ChatbotConfirmModal from "@/components/admin/ui/ChatbotConfirmModal";
 
 // Types for reply payloads
 type RoomTypePayload = {
@@ -43,6 +44,7 @@ interface SuggestionMenuProps {
   onClose?: () => void;
   onEdit?: () => void;
   onShowSnackbar?: (message: string, type: 'success' | 'error' | 'delete') => void;
+  adminUserId?: string | null;
 }
 
 export default function SuggestionMenu({ 
@@ -56,7 +58,8 @@ export default function SuggestionMenu({
   faq,
   onClose,
   onEdit,
-  onShowSnackbar
+  onShowSnackbar,
+  adminUserId
 }: SuggestionMenuProps) {
   // Base input styles
   const baseInputStyles = "w-full border !bg-white border-gray-300 rounded-md text-sm px-3 py-2";
@@ -237,6 +240,13 @@ export default function SuggestionMenu({
   const dragControls = useDragControls();
 
   const handleCreateFAQ = async () => {
+    // Check if adminUserId is available
+    if (!adminUserId) {
+      console.log("❌ SuggestionMenu: adminUserId not available yet");
+      setValidationErrors({ question: "Please wait, loading admin information..." });
+      return;
+    }
+
     // Clear previous validation errors
     setValidationErrors({});
     
@@ -318,14 +328,16 @@ export default function SuggestionMenu({
         reply_message = newFAQ.replyTitle;
       }
 
-      console.log("Sending FAQ data:", {
+      console.log("🔍 Debug: Sending FAQ data:", {
         topic: newFAQ.question,
         reply_message,
         reply_format,
         reply_payload,
-        created_by: "admin-user-id",
+        created_by: adminUserId,
         aliases: newAliasesUI.filter(alias => alias.trim())
       });
+      console.log("🔍 Debug: adminUserId in SuggestionMenu =", adminUserId);
+      console.log("🔍 Debug: adminUserId type =", typeof adminUserId);
 
       const isEditing = Boolean(faq?.id);
       const url = isEditing ? `/api/chat/faqs?id=${faq?.id}` : "/api/chat/faqs";
@@ -336,6 +348,7 @@ export default function SuggestionMenu({
             reply_message,
             reply_format,
             reply_payload,
+            updated_by: adminUserId || null, // แปลง undefined เป็น null
             aliases: newAliasesUI.filter(alias => alias.trim()),
             deleted_aliases: deletedAliasesUI, // Send aliases to delete
           }
@@ -344,7 +357,7 @@ export default function SuggestionMenu({
             reply_message,
             reply_format,
             reply_payload,
-            created_by: null,
+            created_by: adminUserId || null, // แปลง undefined เป็น null
             aliases: newAliasesUI.filter(alias => alias.trim()),
           };
 
@@ -1005,43 +1018,24 @@ export default function SuggestionMenu({
     </div>
 
     {/* Delete Confirmation Modal */}
-    {showDeleteModal && faqToDelete && (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999]">
-        <div className="bg-white p-6 rounded-lg shadow-lg w-[631px] max-w-full mx-4">
-          <h2 className="text-xl font-semibold mb-4 text-gray-800">
-            Delete Suggestion menu?
-          </h2>
-          <hr className="border-gray-300 mb-4" />
-          <p className="text-gray-600 mb-6">
-            {`Are you sure you want to delete "${faqToDelete.topic}" ?`}
-          </p>
-           <div className="flex gap-2 justify-end">
-             <Button
-               onClick={() => {
-                 if (onDeleteFAQ) {
-                   onDeleteFAQ(faqToDelete.id);
-                 }
-                 setShowDeleteModal(false);
-                 setFaqToDelete(null);
-               }}
-               variant="outline"
-               className="cursor-pointer border-orange-500 text-orange-500 hover:bg-orange-50"
-             >
-               Yes, I want to delete
-             </Button>
-             <Button
-               onClick={() => {
-                 setShowDeleteModal(false);
-                 setFaqToDelete(null);
-               }}
-               className="bg-orange-600 text-white hover:bg-orange-700 cursor-pointer"
-             >
-               {`No, I don't`}
-             </Button>
-           </div>
-        </div>
-      </div>
-    )}
+    <ChatbotConfirmModal
+      open={showDeleteModal && Boolean(faqToDelete)}
+      title="Delete Suggestion menu?"
+      message={faqToDelete ? `Are you sure you want to delete "${faqToDelete.topic}" ?` : ""}
+      confirmText="Yes, I want to delete"
+      cancelText={"No, I don't"}
+      onConfirm={() => {
+        if (faqToDelete && onDeleteFAQ) {
+          onDeleteFAQ(faqToDelete.id);
+        }
+        setShowDeleteModal(false);
+        setFaqToDelete(null);
+      }}
+      onClose={() => {
+        setShowDeleteModal(false);
+        setFaqToDelete(null);
+      }}
+    />
     </>
   );
 }
