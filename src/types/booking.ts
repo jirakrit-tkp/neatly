@@ -23,6 +23,8 @@ export interface Booking {
   additional_request?: string; // แก้ไขจาก additional_requests
   payment_method: PaymentMethod;
   booking_date?: string;
+  room_count: number; // จำนวนห้องที่จอง
+  guest_count: number; // จำนวนแขก
   created_at: string;
   updated_at: string;
 }
@@ -89,6 +91,7 @@ export interface BookingFormData {
   checkIn: string;
   checkOut: string;
   guests: number;
+  roomCount: number;
 
   // Special Requests
   specialRequests: SpecialRequest[];
@@ -114,7 +117,8 @@ export interface SpecialRequest {
   id: string;
   type: SpecialRequestType;
   name: string;
-  price?: number;
+  price?: number; // ราคาต่อหน่วย
+  calculated_price?: number; // ราคาที่คำนวณแล้ว (price * room_count * nights สำหรับ breakfast, price * room_count สำหรับอื่นๆ)
   selected: boolean;
   description?: string;
 }
@@ -155,12 +159,12 @@ export interface PromotionCode {
   applicableRooms: string[];
   isValid: boolean;
   errorMessage?: string;
-  discount_amount?: number;  
-  discount_percent?: number; 
-  max_uses?: number;         
-  used_count?: number;       
-  is_active?: boolean;       
-  description?: string; 
+  discount_amount?: number;
+  discount_percent?: number;
+  max_uses?: number;
+  used_count?: number;
+  is_active?: boolean;
+  description?: string;
 }
 
 // ===== BOOKING POLICIES =====

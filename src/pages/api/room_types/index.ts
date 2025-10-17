@@ -18,9 +18,58 @@ export default async function handler(
   res: NextApiResponse<Data>
 ) {
   if (req.method === "GET") {
-    // ✅ Fetch all room types
+    // ✅ Fetch room types with filtering
     try {
-      const { data, error } = await supabase.from("room_types").select("*");
+      // Get query parameters
+      const { checkIn, checkOut, room, guests } = req.query;
+
+      // Build query with filters
+      let query = supabase.from("room_types").select("*");
+
+      // Filter by guest capacity with multi-room support
+      if (guests && room) {
+        const guestCount = parseInt(guests as string);
+        const roomCount = parseInt(room as string);
+
+        if (!isNaN(guestCount) && !isNaN(roomCount)) {
+          // Calculate guests per room needed
+          const guestsPerRoom = Math.ceil(guestCount / roomCount);
+
+          // Validate that total capacity is sufficient
+          const maxGuestsPerRoom = 2; // Each room can accommodate up to 2 guests
+          const totalCapacity = roomCount * maxGuestsPerRoom;
+
+          if (guestCount > totalCapacity) {
+            // If guests exceed total capacity, return empty result
+            console.log(
+              `Guest count ${guestCount} exceeds total capacity ${totalCapacity} for ${roomCount} rooms`
+            );
+            return res.status(200).json({
+              success: true,
+              message: "No rooms available - guest count exceeds capacity",
+              data: [],
+            });
+          }
+
+          // Filter room types that can accommodate the required guests per room
+          query = query.gte("guests", guestsPerRoom);
+          console.log(
+            `Multi-room booking: ${roomCount} rooms for ${guestCount} guests (${guestsPerRoom} guests per room, max capacity: ${totalCapacity})`
+          );
+        }
+      } else if (guests) {
+        // Single room booking - filter by guest capacity
+        const guestCount = parseInt(guests as string);
+        if (!isNaN(guestCount)) {
+          query = query.gte("guests", guestCount);
+          console.log(`Single room booking: ${guestCount} guests`);
+        }
+      }
+
+      // TODO: Add checkIn/checkOut and room count filtering logic
+      // This would require checking room availability in the rooms table
+
+      const { data, error } = await query;
 
       if (error) {
         console.error("❌ Error:", error.message);
@@ -34,7 +83,7 @@ export default async function handler(
       return res.status(200).json({
         success: true,
         message: "Room types fetched successfully",
-        data,
+        data: data || [],
       });
     } catch (error) {
       return res.status(500).json({

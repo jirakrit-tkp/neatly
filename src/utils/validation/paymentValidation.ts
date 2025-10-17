@@ -1,73 +1,190 @@
-import { PaymentMethod } from "@/types/booking";
-import { PAYMENT_STATUSES, PAYMENT_METHODS } from "@/constants/booking";
+import { z } from "zod";
 
-export const validatePaymentData = (data: {
-  bookingId: string;
-  amount: number;
-  paymentMethod: PaymentMethod;
-  cardDetails?: {
-    cardNumber: string;
-    cardOwner: string;
-    expiryDate: string;
-    cvc: string;
-  };
-}) => {
-  const errors: string[] = [];
-
-  // Validate required fields
-  if (!data.bookingId) errors.push("Booking ID is required");
-  if (!data.amount) errors.push("Amount is required");
-  if (!data.paymentMethod) errors.push("Payment method is required");
-
-  // Validate amount
-  if (data.amount <= 0) errors.push("Amount must be greater than 0");
-
-  // Validate payment method
-  const validPaymentMethods: PaymentMethod[] = [
-    PAYMENT_METHODS.CREDIT_CARD,
-    PAYMENT_METHODS.CASH,
-  ];
-  if (!validPaymentMethods.includes(data.paymentMethod)) {
-    errors.push("Invalid payment method");
-  }
-
-  // Validate card details for credit card
-  if (data.paymentMethod === PAYMENT_METHODS.CREDIT_CARD) {
-    if (!data.cardDetails) {
-      errors.push("Card details are required for credit card payment");
-    } else {
-      const { cardNumber, cardOwner, expiryDate, cvc } = data.cardDetails;
-      if (!cardNumber) errors.push("Card number is required");
-      if (!cardOwner) errors.push("Card owner is required");
-      if (!expiryDate) errors.push("Expiry date is required");
-      if (!cvc) errors.push("CVC is required");
-
-      // Additional card validation
-      if (cardNumber && cardNumber.length < 13)
-        errors.push("Invalid card number");
-      if (cardOwner && cardOwner.trim().length < 2)
-        errors.push("Invalid card owner name");
-      if (expiryDate && !/^\d{2}\/\d{2}$/.test(expiryDate))
-        errors.push("Invalid expiry date format (MM/YY)");
-      if (cvc && !/^\d{3,4}$/.test(cvc)) errors.push("Invalid CVC");
+// Credit Card Number validation
+export const cardNumberValidation = z
+  .string()
+  .min(1, { message: "Card number is required" })
+  .regex(/^[0-9\s]+$/, {
+    message: "Card number must contain only digits and spaces",
+  })
+  .refine(
+    (val) => {
+      // Remove spaces and check length
+      const digits = val.replace(/\s/g, "");
+      return digits.length >= 13 && digits.length <= 19;
+    },
+    {
+      message: "Card number must be between 13-19 digits",
     }
+  )
+  .refine(
+    (val) => {
+      // Basic Luhn algorithm check
+      const digits = val.replace(/\s/g, "");
+      let sum = 0;
+      let isEven = false;
+
+      for (let i = digits.length - 1; i >= 0; i--) {
+        let digit = parseInt(digits[i]);
+
+        if (isEven) {
+          digit *= 2;
+          if (digit > 9) {
+            digit -= 9;
+          }
+        }
+
+        sum += digit;
+        isEven = !isEven;
+      }
+
+      return sum % 10 === 0;
+    },
+    {
+      message: "Invalid card number",
+    }
+  );
+
+// Cardholder Name validation
+export const cardholderNameValidation = z
+  .string()
+  .min(1, { message: "Cardholder name is required" })
+  .min(2, { message: "Cardholder name must be at least 2 characters" })
+  .max(50, { message: "Cardholder name must not exceed 50 characters" })
+  .regex(/^[a-zA-Zก-๙\s]+$/, {
+    message: "Cardholder name can only contain letters and spaces",
+  });
+
+// Expiry Date validation
+export const expiryDateValidation = z
+  .string()
+  .min(1, { message: "Expiry date is required" })
+  .regex(/^(0[1-9]|1[0-2])\/\d{2}$/, {
+    message: "Expiry date must be in MM/YY format",
+  })
+  .refine(
+    (val) => {
+      const [month, year] = val.split("/");
+      const expiryDate = new Date(2000 + parseInt(year), parseInt(month) - 1);
+      const today = new Date();
+
+      return expiryDate > today;
+    },
+    {
+      message: "Card has expired",
+    }
+  );
+
+// CVV validation
+export const cvvValidation = z
+  .string()
+  .min(1, { message: "CVV is required" })
+  .regex(/^[0-9]+$/, {
+    message: "CVV must contain only digits",
+  })
+  .refine((val) => val.length >= 3 && val.length <= 4, {
+    message: "CVV must be 3-4 digits",
+  });
+
+// Promotion Code validation (optional)
+export const promoCodeValidation = z
+  .string()
+  .optional()
+  .refine(
+    (val) => {
+      if (!val || val.trim() === "") return true;
+      return val.trim().length >= 3;
+    },
+    {
+      message: "Promotion code must be at least 3 characters",
+    }
+  );
+
+// Credit Card Details Schema
+export const creditCardSchema = z.object({
+  cardNumber: cardNumberValidation,
+  cardOwner: cardholderNameValidation,
+  expiryDate: expiryDateValidation,
+  cvc: cvvValidation,
+});
+
+// Payment Method Form Schema
+export const paymentMethodSchema = z.object({
+  paymentMethod: z.enum(["credit_card", "cash"], {
+    required_error: "Please select a payment method",
+  }),
+  creditCard: creditCardSchema.optional(),
+  promoCode: promoCodeValidation,
+});
+
+// Payment Data validation
+export const validatePaymentData = (data: unknown) => {
+  if (!data || typeof data !== "object") {
+    return {
+      isValid: false,
+      error: "Payment data is required",
+    };
+  }
+
+  const { amount, currency, paymentMethod } = data as {
+    amount?: unknown;
+    currency?: unknown;
+    paymentMethod?: unknown;
+  };
+
+  if (!amount || typeof amount !== "number" || amount <= 0) {
+    return {
+      isValid: false,
+      error: "Valid amount is required",
+    };
+  }
+
+  if (!currency || typeof currency !== "string") {
+    return {
+      isValid: false,
+      error: "Currency is required",
+    };
+  }
+
+  if (!paymentMethod || typeof paymentMethod !== "string") {
+    return {
+      isValid: false,
+      error: "Payment method is required",
+    };
   }
 
   return {
-    isValid: errors.length === 0,
-    errors,
+    isValid: true,
+    error: null,
   };
 };
 
+// Payment Status validation
 export const validatePaymentStatus = (status: string) => {
-  const validStatuses: string[] = [
-    PAYMENT_STATUSES.PENDING,
-    PAYMENT_STATUSES.COMPLETED,
-    PAYMENT_STATUSES.FAILED,
-    PAYMENT_STATUSES.REFUNDED,
-  ];
+  const validStatuses = ["pending", "completed", "failed", "cancelled"];
+
+  if (!status || typeof status !== "string") {
+    return {
+      isValid: false,
+      error: "Payment status is required",
+    };
+  }
+
+  if (!validStatuses.includes(status.toLowerCase())) {
+    return {
+      isValid: false,
+      error: `Invalid payment status. Must be one of: ${validStatuses.join(
+        ", "
+      )}`,
+    };
+  }
+
   return {
-    isValid: validStatuses.includes(status),
-    error: validStatuses.includes(status) ? null : "Invalid status",
+    isValid: true,
+    error: null,
   };
 };
+
+// Types
+export type CreditCardFormData = z.infer<typeof creditCardSchema>;
+export type PaymentMethodFormData = z.infer<typeof paymentMethodSchema>;

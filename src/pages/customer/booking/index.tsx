@@ -40,6 +40,7 @@ interface RoomDetails {
   id: string;
   room_type: string;
   price: number;
+  promotion_price?: number; // เพิ่ม field นี้
   guests: number;
   amenities: string[];
   main_image_url: string[];
@@ -47,7 +48,8 @@ interface RoomDetails {
 
 export default function BookingPage() {
   const router = useRouter();
-  const { room_type_id, checkIn, checkOut, guests } = router.query;
+  const { room_type_id, checkIn, checkOut, guests, rooms } = router.query;
+  const roomCount = parseInt(rooms as string) || 1;
   const { profile, isLoading: profileLoading } = useProfile();
 
   // Step management
@@ -89,6 +91,13 @@ export default function BookingPage() {
   const [promoCodeApplied, setPromoCodeApplied] = useState(false);
   const [promoDiscount, setPromoDiscount] = useState(0);
 
+  // Sync promoCodeApplied with promoDiscount
+  useEffect(() => {
+    setPromoCodeApplied(promoDiscount > 0);
+    console.log("🔍 PromoDiscount changed:", promoDiscount);
+    console.log("🔍 PromoCodeApplied updated:", promoDiscount > 0);
+  }, [promoDiscount]);
+
   // Modals
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [showFailedModal, setShowFailedModal] = useState(false);
@@ -122,6 +131,7 @@ export default function BookingPage() {
             check_in: checkIn,
             check_out: checkOut,
             guests: parseInt(guests as string),
+            room_count: roomCount, // เพิ่ม room_count
           }),
         });
 
@@ -288,11 +298,29 @@ export default function BookingPage() {
       const bookingData: BookingFormData = {
         guestInfo,
         roomId: selectedRoom.id,
+        roomCount,
         roomInfo: {
-          room_type: selectedRoom.room_type,      // ประเภทห้อง
-          price: selectedRoom.price,              // ราคาห้อง (สำคัญ!)
-          main_image_url: selectedRoom.main_image_url,  // รูปภาพ
-          amenities: selectedRoom.amenities,      // สิ่งอำนวยความสะดวก
+          room_type: selectedRoom.room_type, // ประเภทห้อง
+          price: (() => {
+            // ถ้ามี promotion_price และ > 0 → ใช้ promotion_price
+            if (
+              selectedRoom.promotion_price &&
+              selectedRoom.promotion_price > 0
+            ) {
+              console.log(
+                "Room has promotion price:",
+                selectedRoom.promotion_price
+              );
+              return selectedRoom.promotion_price;
+            }
+
+            // ถ้าไม่มี → ใช้ price
+            console.log("Room using regular price:", selectedRoom.price);
+            return selectedRoom.price;
+          })(),
+          promotion_price: selectedRoom.promotion_price,
+          main_image_url: selectedRoom.main_image_url, // รูปภาพ
+          amenities: selectedRoom.amenities, // สิ่งอำนวยความสะดวก
         } as Partial<RoomInfo>,
         checkIn: checkIn as string,
         checkOut: checkOut as string,
@@ -314,6 +342,10 @@ export default function BookingPage() {
       console.log("guestInfo:", guestInfo);
       console.log("paymentMethod:", paymentMethod);
       console.log("creditCardDetails:", creditCardDetails);
+      console.log("promoCodeApplied:", promoCodeApplied);
+      console.log("promoCode:", promoCode);
+      console.log("promoDiscount:", promoDiscount);
+      console.log("promoCode in bookingData:", bookingData.promoCode);
 
       // Create booking
       const bookingResponse = await BookingService.createBooking(bookingData);
@@ -423,11 +455,40 @@ export default function BookingPage() {
 
   // Calculations
   const nights = calculateNights(checkIn as string, checkOut as string);
-  const selectedSpecialRequests = specialRequests.filter((req) => req.selected);
+  const selectedSpecialRequests = specialRequests
+    .filter((req) => req.selected)
+    .map((req) => {
+      const isBreakfast = req.name.toLowerCase().includes("breakfast");
+      let calculatedPrice: number;
+
+      if (isBreakfast) {
+        // Breakfast: ราคา * จำนวนห้อง * จำนวนคืน
+        calculatedPrice = (req.price || 0) * roomCount * nights;
+      } else {
+        // อื่นๆ: ราคา * จำนวนห้อง
+        calculatedPrice = (req.price || 0) * roomCount;
+      }
+
+      return {
+        ...req,
+        calculated_price: calculatedPrice,
+      };
+    });
+  const roomPrice = (() => {
+    // ถ้ามี promotion_price และ > 0 → ใช้ promotion_price
+    if (selectedRoom?.promotion_price && selectedRoom.promotion_price > 0) {
+      return selectedRoom.promotion_price;
+    }
+
+    // ถ้าไม่มี → ใช้ price
+    return selectedRoom?.price || 0;
+  })();
+
   const calculation = calculateBookingTotal(
-    selectedRoom?.price || 0,
+    roomPrice,
     nights,
     selectedSpecialRequests,
+    roomCount,
     promoDiscount
   );
 
@@ -469,6 +530,7 @@ export default function BookingPage() {
             onPromoCodeApply={handlePromoCodeApply}
             promoCodeApplied={promoCodeApplied}
             promoDiscount={promoDiscount}
+            onPromoDiscountUpdate={setPromoDiscount}
             onBack={handleBack}
             onConfirm={handleConfirmBooking}
             disabled={loading}
@@ -526,19 +588,38 @@ export default function BookingPage() {
             <BookingSummary
               roomInfo={{
                 name: selectedRoom.room_type,
-                price: selectedRoom.price,
+                price: (() => {
+                  // ถ้ามี promotion_price และ > 0 → ใช้ promotion_price
+                  if (
+                    selectedRoom.promotion_price &&
+                    selectedRoom.promotion_price > 0
+                  ) {
+                    return selectedRoom.promotion_price;
+                  }
+
+                  // ถ้าไม่มี → ใช้ price
+                  return selectedRoom.price;
+                })(),
                 image: selectedRoom.main_image_url[0] || "/image/deluxe.jpg",
               }}
               checkIn={checkIn as string}
               checkOut={checkOut as string}
               guests={parseInt(guests as string)}
+              roomCount={roomCount}
               calculation={calculation}
               specialRequests={selectedSpecialRequests.map((req) => ({
                 name: req.name,
                 price: req.price || 0,
+                calculated_price: req.calculated_price || 0,
               }))}
+              standardRequests={specialRequests
+                .filter((req) => req.type === "standard")
+                .map((req) => ({
+                  name: req.name,
+                  selected: req.selected,
+                }))}
               promotionCode={
-                promoCodeApplied
+                promoDiscount > 0
                   ? { code: promoCode, discount: promoDiscount }
                   : undefined
               }

@@ -6,12 +6,38 @@ export const calculateBookingTotal = (
   basePrice: number,
   nights: number,
   specialRequests: SpecialRequest[],
+  roomCount: number = 1,
   promoDiscount: number = 0
 ): BookingCalculation => {
-  const subtotal = basePrice * nights;
-  const specialRequestsTotal = specialRequests
-    .filter((req) => req.selected && req.price)
-    .reduce((sum, req) => sum + (req.price || 0), 0);
+  // ราคาห้อง = (price หรือ promotion_price) * จำนวนห้อง * จำนวนคืน
+  const subtotal = basePrice * roomCount * nights;
+
+  // คำนวณ special requests ตามแนวทางใหม่ และเพิ่ม calculated_price
+  const specialRequestsWithCalculatedPrice = specialRequests.map((req) => {
+    if (!req.selected || !req.price) {
+      return req;
+    }
+
+    const isBreakfast = req.name.toLowerCase().includes("breakfast");
+    let calculatedPrice: number;
+
+    if (isBreakfast) {
+      // Breakfast: ราคา * จำนวนห้อง * จำนวนคืน
+      calculatedPrice = (req.price || 0) * roomCount * nights;
+    } else {
+      // อื่นๆ (Baby cot, Extra bed, Extra pillows, Phone chargers, Airport transfer): ราคา * จำนวนห้อง
+      calculatedPrice = (req.price || 0) * roomCount;
+    }
+
+    return {
+      ...req,
+      calculated_price: calculatedPrice,
+    };
+  });
+
+  const specialRequestsTotal = specialRequestsWithCalculatedPrice
+    .filter((req) => req.selected && req.calculated_price)
+    .reduce((sum, req) => sum + (req.calculated_price || 0), 0);
 
   // ตรวจสอบไม่ให้ total ติดลบ
   const total = Math.max(0, subtotal + specialRequestsTotal - promoDiscount);
