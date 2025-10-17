@@ -1,8 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { PaymentService } from "@/services/paymentService";
-import {
-  PAYMENT_METHODS,
-} from "@/constants/booking";
+import { PAYMENT_METHODS } from "@/constants/booking";
 
 export default async function handler(
   req: NextApiRequest,
@@ -44,7 +42,10 @@ export default async function handler(
     ) {
       result = await PaymentService.processStripePayment(
         id,
-        stripePaymentIntentId
+        "", // cardNumber - will be retrieved from database
+        "", // cardOwner - will be retrieved from database
+        "", // expiryDate - will be retrieved from database
+        "" // cvc - will be retrieved from database
       );
     } else if (paymentMethod === PAYMENT_METHODS.CASH) {
       result = await PaymentService.processCashPayment(id);
