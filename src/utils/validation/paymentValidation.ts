@@ -117,6 +117,74 @@ export const paymentMethodSchema = z.object({
   promoCode: promoCodeValidation,
 });
 
+// Payment Data validation
+export const validatePaymentData = (data: unknown) => {
+  if (!data || typeof data !== "object") {
+    return {
+      isValid: false,
+      error: "Payment data is required",
+    };
+  }
+
+  const { amount, currency, paymentMethod } = data as {
+    amount?: unknown;
+    currency?: unknown;
+    paymentMethod?: unknown;
+  };
+
+  if (!amount || typeof amount !== "number" || amount <= 0) {
+    return {
+      isValid: false,
+      error: "Valid amount is required",
+    };
+  }
+
+  if (!currency || typeof currency !== "string") {
+    return {
+      isValid: false,
+      error: "Currency is required",
+    };
+  }
+
+  if (!paymentMethod || typeof paymentMethod !== "string") {
+    return {
+      isValid: false,
+      error: "Payment method is required",
+    };
+  }
+
+  return {
+    isValid: true,
+    error: null,
+  };
+};
+
+// Payment Status validation
+export const validatePaymentStatus = (status: string) => {
+  const validStatuses = ["pending", "completed", "failed", "cancelled"];
+
+  if (!status || typeof status !== "string") {
+    return {
+      isValid: false,
+      error: "Payment status is required",
+    };
+  }
+
+  if (!validStatuses.includes(status.toLowerCase())) {
+    return {
+      isValid: false,
+      error: `Invalid payment status. Must be one of: ${validStatuses.join(
+        ", "
+      )}`,
+    };
+  }
+
+  return {
+    isValid: true,
+    error: null,
+  };
+};
+
 // Types
 export type CreditCardFormData = z.infer<typeof creditCardSchema>;
 export type PaymentMethodFormData = z.infer<typeof paymentMethodSchema>;

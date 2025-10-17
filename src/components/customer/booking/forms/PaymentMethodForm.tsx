@@ -9,6 +9,7 @@ import { Input } from "@/components/customer/forms/form-fields/Input";
 import { FormField } from "@/components/customer/forms/form-fields/FormField";
 import { usePaymentValidation } from "@/hooks/usePaymentValidation";
 import { Controller } from "react-hook-form";
+import { PaymentMethodFormData } from "@/utils/validation/paymentValidation";
 
 interface PaymentMethodFormProps {
   paymentMethod: PaymentMethod;
@@ -105,7 +106,7 @@ export const PaymentMethodForm: React.FC<PaymentMethodFormProps> = ({
       [field]: value,
     });
     // Update form value
-    setValue(`creditCard.${field}` as any, value);
+    setValue(`creditCard.${field}` as keyof PaymentMethodFormData, value);
     // Clear field error when user starts typing
     clearFieldError(`creditCard.${field}`);
   };

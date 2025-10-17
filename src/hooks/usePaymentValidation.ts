@@ -39,12 +39,12 @@ export const usePaymentValidation = () => {
 
   // Clear specific field error when user starts typing
   const clearFieldError = (fieldPath: string) => {
-    clearErrors(fieldPath as any);
+    clearErrors(fieldPath as keyof PaymentMethodFormData);
   };
 
   // Set manual error for a specific field
   const setFieldError = (fieldPath: string, message: string) => {
-    setFormError(fieldPath as any, {
+    setFormError(fieldPath as keyof PaymentMethodFormData, {
       type: "manual",
       message,
     });
