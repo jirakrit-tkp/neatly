@@ -42,8 +42,8 @@ export function EditRoomForm({ room }: EditRoomFormProps) {
       pricePerNight: room.price,
       promotionPrice: room.promotion_price || null,
       hasPromotion: !!room.promotion_price,
-      description: room.description,
-      mainImgUrl: room.main_image_url[0],
+      description: room.description || "",
+      mainImgUrl: room.main_image_url[0] || null,
       galleryImageUrls: room.gallery_images || [],
       amenities:
         room?.amenities && room.amenities.length > 0 ? room.amenities : [],
@@ -60,26 +60,81 @@ export function EditRoomForm({ room }: EditRoomFormProps) {
 
   const hasPromotion = watch("hasPromotion");
 
-  // console.log("Gallery Image:", room.gallery_images);
+  console.log("Main Image", room.main_image_url);
+  console.log("Gallery Images", room.gallery_images);
+
+  const uploadImage = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append("mainImage", file);
+
+    const response = await fetch("/api/upload-room-image", {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await response.json();
+
+    if (!data.success) {
+      throw new Error(data.message || "Failed to upload image");
+    }
+
+    return data.url;
+  };
 
   const onSubmit = async (formData: RoomFormData) => {
     setIsLoading(true);
     try {
-      await updateRoom(roomId, formData, hasPromotion);
-      toast.success(`Room "${formData.roomType}" updated successfully!`);
+      // Upload main image if it's a File object
+      let mainImageUrl = formData.mainImgUrl;
+      if (formData.mainImgUrl instanceof File) {
+        toast.info("Uploading main image...");
+        mainImageUrl = await uploadImage(formData.mainImgUrl);
+        console.log("Main image uploaded:", mainImageUrl);
+      }
+
+      // Upload gallery images if they are File objects
+      const galleryUrls: string[] = [];
+      if (formData.galleryImageUrls && formData.galleryImageUrls.length > 0) {
+        toast.info("Uploading gallery images...");
+
+        for (const item of formData.galleryImageUrls) {
+          if (item instanceof File) {
+            const url = await uploadImage(item);
+            galleryUrls.push(url);
+          } else if (typeof item === "string") {
+            // If it's already a URL (editing existing room)
+            galleryUrls.push(item);
+          }
+        }
+      }
+
+      // Prepare the final data with uploaded URLs
+      const roomData = {
+        ...formData,
+        mainImgUrl: mainImageUrl,
+        galleryImageUrls: galleryUrls,
+      };
+
+      console.log("Updating room with data:", roomData);
+
+      // Update the room with the uploaded image URLs
+      await updateRoom(roomId, roomData, hasPromotion);
+
+      toast.success(`Room "${formData.roomType}" created successfully!`);
+
       setTimeout(() => {
         router.push("/admin/room-types");
       }, 1000);
     } catch (err) {
       if (err instanceof Error) {
-        toast.error(`Failed to update room: ${err.message}`);
+        toast.error(`Failed to create room: ${err.message}`);
       } else {
+        toast.error("An unknown error occurred.");
         console.error("An unknown error occurred.");
       }
     } finally {
       setIsLoading(false);
     }
-    console.log("Form Data:", formData);
   };
 
   // Handle Delete Room
