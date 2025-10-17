@@ -4,6 +4,7 @@ import { PAYMENT_METHODS } from "@/constants/booking";
 import { BookingButtons } from "../BookingButtons";
 import { CreditCardIcon } from "@/components/customer/icons/CreditCardIcon";
 import { CashIcon } from "@/components/customer/icons/CashIcon";
+import { WalletIcon } from "@/components/customer/icons/WalletIcon";
 import { Input } from "@/components/customer/forms/form-fields/Input";
 import { FormField } from "@/components/customer/forms/form-fields/FormField";
 import { usePaymentValidation } from "@/hooks/usePaymentValidation";
@@ -61,10 +62,10 @@ export const PaymentMethodForm: React.FC<PaymentMethodFormProps> = ({
     const formMethod =
       paymentMethod === PAYMENT_METHODS.CREDIT_CARD ? "credit_card" : "cash";
 
-    console.log("🔍 PaymentMethodForm: Syncing form values with props");
-    console.log("🔍 paymentMethod:", paymentMethod);
-    console.log("🔍 creditCardDetails:", creditCardDetails);
-    console.log("🔍 promoCode:", promoCode);
+    console.log("PaymentMethodForm: Syncing form values with props");
+    console.log("paymentMethod:", paymentMethod);
+    console.log("creditCardDetails:", creditCardDetails);
+    console.log("promoCode:", promoCode);
 
     setValue("paymentMethod", formMethod);
     setValue("creditCard.cardNumber", creditCardDetails.cardNumber);
@@ -73,13 +74,13 @@ export const PaymentMethodForm: React.FC<PaymentMethodFormProps> = ({
     setValue("creditCard.cvc", creditCardDetails.cvc);
     setValue("promoCode", promoCode || "");
 
-    console.log("✅ PaymentMethodForm: Form values synced");
+    console.log("PaymentMethodForm: Form values synced");
   }, [paymentMethod, creditCardDetails, promoCode, setValue]);
 
   // Debug validation errors
   useEffect(() => {
     console.log(
-      "🔍 PaymentMethodForm: validationErrors changed:",
+      "PaymentMethodForm: validationErrors changed:",
       validationErrors
     );
   }, [validationErrors]);
@@ -136,12 +137,12 @@ export const PaymentMethodForm: React.FC<PaymentMethodFormProps> = ({
       // Check if validation passed (returned data) or failed (returned false)
       if (validatedData === false) {
         console.log(
-          "❌ PaymentMethodForm: Validation failed - not calling onConfirm"
+          "PaymentMethodForm: Validation failed - not calling onConfirm"
         );
         return;
       }
 
-      console.log("✅ PaymentMethodForm: Validation passed, calling onConfirm");
+      console.log("PaymentMethodForm: Validation passed, calling onConfirm");
 
       // If validation passes, call the original onConfirm
       if (onConfirm) {
@@ -149,7 +150,7 @@ export const PaymentMethodForm: React.FC<PaymentMethodFormProps> = ({
       }
     } catch (error) {
       // This should not happen anymore since we don't throw errors
-      console.error("❌ PaymentMethodForm: Unexpected error:", error);
+      console.error("PaymentMethodForm: Unexpected error:", error);
       return;
     }
   };
@@ -233,6 +234,30 @@ export const PaymentMethodForm: React.FC<PaymentMethodFormProps> = ({
           </p>
         )}
       </div>
+
+      {/* Cash Payment Info */}
+      {paymentMethod === PAYMENT_METHODS.CASH && (
+        <div className="pt-6 mb-6 border-gray-200">
+          <h3 className="mb-4 text-lg text-gray-900 font-semibold font-inter">
+            Cash
+          </h3>
+
+          <div className="flex items-center p-4 bg-gray-100 rounded border border-gray-200">
+            <div className="flex items-center justify-center w-10 h-10 mr-4">
+              <WalletIcon size={50} className="text-orange-500" />
+            </div>
+            <div>
+              <p className="text-base text-gray-900 font-normal font-inter">
+                Pay at the hotel with cash or cheque No payment is required
+                until you
+              </p>
+              <p className="text-base text-gray-900 font-normal font-inter">
+                check in
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Credit Card Form */}
       {paymentMethod === PAYMENT_METHODS.CREDIT_CARD && (
