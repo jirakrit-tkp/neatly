@@ -176,9 +176,9 @@ export default function LoginForm() {
             Register
           </Link>
 
-          <a href="#" className="w-full sm:w-auto ml-0 sm:ml-auto text-left sm:text-right mt-1 sm:mt-0 font-semibold text-orange-500 text-[15px] md:text-[16px] hover:underline">
+          <Link href="/customer/forgot-password" className="w-full sm:w-auto ml-0 sm:ml-auto text-left sm:text-right mt-1 sm:mt-0 font-semibold text-orange-500 text-[15px] md:text-[16px] hover:underline">
             Forgot Password?
-          </a>
+          </Link>
         </div>
       </div>
     </form>
