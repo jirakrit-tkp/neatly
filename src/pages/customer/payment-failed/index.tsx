@@ -5,13 +5,31 @@ import Layout from "@/components/Layout";
 import Navbar from "@/components/Navbar";
 import ExclamationIcon from "@/components/customer/icons/ExclamationIcon";
 
+interface BookingData {
+  roomInfo?: {
+    id?: string;
+    name?: string;
+    price?: number;
+  };
+  checkInDate?: string;
+  checkOutDate?: string;
+  guests?: number;
+  roomCount?: number;
+  guestInfo?: unknown;
+  standardRequests?: unknown[];
+  specialRequests?: unknown[];
+  paymentMethod?: string;
+  creditCardDetails?: unknown;
+  calculation?: unknown;
+}
+
 interface PaymentFailedData {
   error: {
     field: string;
     code: string;
     message: string;
   };
-  bookingData?: unknown;
+  bookingData?: BookingData;
   paymentMethod?: string;
 }
 
@@ -42,7 +60,7 @@ const PaymentFailedPage: React.FC = () => {
 
   const handleRetryPayment = () => {
     // Get complete booking data from paymentFailedData
-    const bookingData = paymentFailedData?.bookingData as any;
+    const bookingData = paymentFailedData?.bookingData;
 
     console.log("🔍 Retry payment - booking data:", bookingData);
 
@@ -89,7 +107,7 @@ const PaymentFailedPage: React.FC = () => {
 
   const handleBackToPayment = () => {
     // Get complete booking data from paymentFailedData
-    const bookingData = paymentFailedData?.bookingData as any;
+    const bookingData = paymentFailedData?.bookingData;
 
     // Clear payment failed data
     localStorage.removeItem("paymentFailedData");
