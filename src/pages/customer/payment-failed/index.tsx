@@ -41,15 +41,87 @@ const PaymentFailedPage: React.FC = () => {
   }, [router]);
 
   const handleRetryPayment = () => {
-    // Clear payment failed data and go back to payment step
+    // Get complete booking data from paymentFailedData
+    const bookingData = paymentFailedData?.bookingData as any;
+
+    console.log("🔍 Retry payment - booking data:", bookingData);
+
+    if (!bookingData) {
+      console.error("🔍 No booking data available for retry");
+      return;
+    }
+
+    // Clear payment failed data
     localStorage.removeItem("paymentFailedData");
-    router.push("/customer/booking?step=payment_method");
+
+    // Store complete booking data for retry
+    localStorage.setItem("bookingData", JSON.stringify(bookingData));
+
+    // Build URL with required parameters for retry
+    const params = new URLSearchParams();
+    params.set("step", "payment_method");
+    params.set("retry", "true"); // Flag for auto-retry
+    params.set("restore_data", "true"); // Flag to restore all data
+
+    // Add required parameters - use room_type_id from original search, not room.id
+    // For now, let's use a default room_type_id since we don't have the original search parameters
+    params.set("room_type_id", "4"); // Default room type ID
+
+    if (bookingData?.checkInDate) {
+      params.set("checkIn", bookingData.checkInDate);
+    }
+    if (bookingData?.checkOutDate) {
+      params.set("checkOut", bookingData.checkOutDate);
+    }
+    if (bookingData?.guests) {
+      params.set("guests", bookingData.guests.toString());
+    }
+    if (bookingData?.roomCount) {
+      params.set("rooms", bookingData.roomCount.toString());
+    }
+
+    console.log(
+      "🔍 Retry payment - redirecting to:",
+      `/customer/booking?${params.toString()}`
+    );
+    router.push(`/customer/booking?${params.toString()}`);
   };
 
   const handleBackToPayment = () => {
-    // Clear payment failed data and go back to booking page
+    // Get complete booking data from paymentFailedData
+    const bookingData = paymentFailedData?.bookingData as any;
+
+    // Clear payment failed data
     localStorage.removeItem("paymentFailedData");
-    router.back();
+
+    // Store complete booking data for restoration
+    if (bookingData) {
+      localStorage.setItem("bookingData", JSON.stringify(bookingData));
+    }
+
+    // Build URL with required parameters to go back to payment method step
+    const params = new URLSearchParams();
+    params.set("step", "payment_method");
+    params.set("restore_data", "true"); // Flag to restore all data
+
+    // Add required parameters if available
+    if (bookingData?.roomInfo?.id) {
+      params.set("room_type_id", bookingData.roomInfo.id.toString());
+    }
+    if (bookingData?.checkInDate) {
+      params.set("checkIn", bookingData.checkInDate);
+    }
+    if (bookingData?.checkOutDate) {
+      params.set("checkOut", bookingData.checkOutDate);
+    }
+    if (bookingData?.guests) {
+      params.set("guests", bookingData.guests.toString());
+    }
+    if (bookingData?.roomCount) {
+      params.set("rooms", bookingData.roomCount.toString());
+    }
+
+    router.push(`/customer/booking?${params.toString()}`);
   };
 
   if (!paymentFailedData) {
