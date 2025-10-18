@@ -184,197 +184,168 @@ export default function SearchBox({ onSearch, defaultValues }: SearchBoxProps) {
 
   return (
     <div className="flex items-center justify-center px-4 md:px-0 relative z-10">
-      <style jsx>{`
-        .searchbox-container {
-          width: 343px;
-          height: 396px;
-          padding: 24px;
-        }
-        @media (min-width: 768px) {
-          .searchbox-container {
-            width: 1120px !important;
-            height: 196px !important;
-            padding: 20px !important;
+        <style jsx>{`
+         .searchbox-container { 
+           width: 343px; 
+           height: 396px;
+           padding: 24px;
+         }
+         @media (min-width:768px) { 
+           .searchbox-container { 
+              width: 1120px !important;
+              height: 196px !important;
+             padding: 20px !important;
+            }
           }
-        }
-        @media (max-width: 767px) {
-          html,
-          body {
-            overflow: visible !important;
-            height: auto !important;
-          }
-          * {
-            overflow: visible !important;
-          }
-          .calendar-mobile {
-            position: fixed !important;
-            top: 50% !important;
-            left: 50% !important;
-            transform: translate(-50%, -50%) !important;
-            z-index: 99999 !important;
-            width: 360px !important;
-            height: 480px !important;
-            max-height: 480px !important;
-            overflow: visible !important;
-            border-radius: 12px !important;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2) !important;
-          }
-          .calendar-mobile .calendar-content {
-            overflow: visible !important;
-            max-height: none !important;
-            height: auto !important;
-            min-height: 480px !important;
-            padding: 24px !important;
-          }
-          .calendar-mobile .calendar-dates {
-            overflow: visible !important;
-            max-height: none !important;
-            display: grid !important;
-            grid-template-columns: repeat(7, 1fr) !important;
-            gap: 6px !important;
-            margin-top: 8px !important;
-          }
-          .calendar-mobile .calendar-dates button {
-            width: 36px !important;
-            height: 36px !important;
-            font-size: 14px !important;
-            border-radius: 6px !important;
-          }
-          .calendar-mobile * {
-            overflow: visible !important;
-            position: relative !important;
-          }
-        }
-      `}</style>
+          @media (max-width: 767px) {
+           html, body {
+             overflow: visible !important;
+             height: auto !important;
+           }
+           * {
+             overflow: visible !important;
+           }
+           .calendar-mobile {
+             position: fixed !important;
+             top: 50% !important;
+             left: 50% !important;
+             transform: translate(-50%, -50%) !important;
+             z-index: 99999 !important;
+             width: 360px !important;
+             height: 420px !important;
+             max-height: 420px !important;
+             overflow: visible !important;
+             border-radius: 12px !important;
+             box-shadow: 0 20px 40px rgba(0,0,0,0.2) !important;
+           }
+           .calendar-mobile .calendar-content {
+             overflow: visible !important;
+             max-height: none !important;
+             height: auto !important;
+             min-height: 380px !important;
+             padding: 20px !important;
+           }
+           .calendar-mobile .calendar-dates {
+             overflow: visible !important;
+             max-height: none !important;
+             display: grid !important;
+             grid-template-columns: repeat(7, 1fr) !important;
+             gap: 0px !important;
+             margin-top: 4px !important;
+           }
+           .calendar-mobile .calendar-dates button {
+             width: 32px !important;
+             height: 32px !important;
+             font-size: 12px !important;
+             border-radius: 6px !important;
+           }
+           .calendar-mobile * {
+             overflow: visible !important;
+             position: relative !important;
+           }
+         }
+        `}</style>
       <div className="bg-white shadow-lg searchbox-container">
         <form
           className="flex flex-col gap-4 md:flex-row md:gap-6 items-center justify-center h-full"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (onSearch) {
-              onSearch({
-                checkIn,
-                checkOut,
-                room: room.toString(),
-                guests: guest.toString(),
-              });
-            }
-          }}
-        >
-          {/* Check In */}
-          <div className="flex flex-col w-full md:w-[240px]">
-            <label
-              className="text-sm text-gray-700 mb-2 font-medium"
-              htmlFor="checkin"
-            >
-              Check In
-            </label>
-            <div className="relative">
-              <input
-                id="checkin"
-                type="text"
-                className="w-full h-12 border border-gray-300 rounded-lg px-3 pr-10 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400 cursor-pointer bg-white"
-                value={formatDateString(checkIn)}
-                readOnly
-                onClick={() => {
-                  setCalendarOpen("checkin");
-                  const ci = checkIn ? parseLocalYmd(checkIn) : new Date();
-                  setCurrentMonth(new Date(ci.getFullYear(), ci.getMonth(), 1));
-                }}
-              />
-              {calendarIcon}
-              {calendarOpen === "checkin" && (
-                <CalendarPopup
-                  calendarRef={calendarRef}
-                  currentMonth={currentMonth}
-                  setCurrentMonth={setCurrentMonth}
-                  selectDate={(date) => {
-                    setCheckIn(formatLocalYmd(date));
-                    setCalendarOpen(null);
-                  }}
-                  selectedDate={checkIn}
-                  disabledDay={(date) => isPast(date)}
-                />
-              )}
-            </div>
-          </div>
-
-          {/* Separator */}
-          <div className="hidden md:flex items-center justify-center w-4 h-12">
-            <div className="w-2 h-px bg-black"></div>
-          </div>
-
-          {/* Check Out */}
-          <div className="flex flex-col w-full md:w-[240px]">
-            <label
-              className="text-sm text-gray-700 mb-2 font-medium"
-              htmlFor="checkout"
-            >
-              Check Out
-            </label>
-            <div className="relative">
-              <input
-                id="checkout"
-                type="text"
-                className="w-full h-12 border border-gray-300 rounded-lg px-3 pr-10 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400 cursor-pointer bg-white"
-                value={formatDateString(checkOut)}
-                readOnly
-                onClick={() => {
-                  setCalendarOpen("checkout");
-                  const co = checkOut ? parseLocalYmd(checkOut) : new Date();
-                  setCurrentMonth(new Date(co.getFullYear(), co.getMonth(), 1));
-                }}
-              />
-              {calendarIcon}
-              {calendarOpen === "checkout" && (
-                <CalendarPopup
-                  calendarRef={calendarRef}
-                  currentMonth={currentMonth}
-                  setCurrentMonth={setCurrentMonth}
-                  selectDate={(date) => {
-                    setCheckOut(formatLocalYmd(date));
-                    setCalendarOpen(null);
-                  }}
-                  selectedDate={checkOut}
-                  disabledDay={(date) =>
-                    isPast(date) ||
-                    (checkIn
-                      ? isBefore(date, parseLocalYmd(checkIn)) ||
-                        isSameDay(date, parseLocalYmd(checkIn))
-                      : false)
-                  }
-                />
-              )}
-            </div>
-          </div>
-          {/* ห้อง / คน */}
-          <div
-            className="flex flex-col w-full md:w-[240px] relative"
-            ref={dropdownButtonRef}
+            onSubmit={e => { 
+              e.preventDefault(); 
+              if (onSearch) {
+                onSearch({ checkIn, checkOut, room: room.toString(), guests: guest.toString() });
+              }
+            }}
           >
-            <label
-              className="text-sm text-gray-700 mb-2 font-medium"
-              htmlFor="roomguest"
-            >
+              {/* Check In */}
+            <div className="flex flex-col w-full md:w-[240px]">
+              <label className="text-sm text-gray-700 mb-2 font-medium" htmlFor="checkin">Check In</label>
+              <div className="relative">
+                  <input
+                    id="checkin"
+                    type="text"
+                  className="w-full h-12 border border-gray-300 rounded-lg px-3 pr-10 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400 cursor-pointer bg-white"
+                  value={formatDateString(checkIn)}
+                    readOnly
+                    onClick={() => {
+                      setCalendarOpen('checkin');
+                      const ci = checkIn ? parseLocalYmd(checkIn) : new Date();
+                      setCurrentMonth(new Date(ci.getFullYear(), ci.getMonth(), 1));
+                  }}
+                />
+                {calendarIcon}
+                {calendarOpen === 'checkin' && (
+                  <div className="absolute left-0 top-full w-full">
+                    <CalendarPopup
+                      calendarRef={calendarRef}
+                      currentMonth={currentMonth}
+                      setCurrentMonth={setCurrentMonth}
+                      selectDate={date => {
+                        setCheckIn(formatLocalYmd(date));
+                        setCalendarOpen(null);
+                      }}
+                      selectedDate={checkIn}
+                      disabledDay={date => isPast(date)}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Separator */}
+            <div className="hidden md:flex items-center justify-center w-4 h-12 mt-4">
+              <div className="w-2 h-px bg-black"></div>
+            </div>
+
+            {/* Check Out */}
+            <div className="flex flex-col w-full md:w-[240px]">
+              <label className="text-sm text-gray-700 mb-2 font-medium" htmlFor="checkout">Check Out</label>
+              <div className="relative">
+                  <input
+                    id="checkout"
+                    type="text"
+                  className="w-full h-12 border border-gray-300 rounded-lg px-3 pr-10 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400 cursor-pointer bg-white"
+                  value={formatDateString(checkOut)}
+                    readOnly
+                    onClick={() => {
+                      setCalendarOpen('checkout');
+                    const co = checkOut ? parseLocalYmd(checkOut) : new Date();
+                    setCurrentMonth(new Date(co.getFullYear(), co.getMonth(), 1));
+                  }}
+                />
+                {calendarIcon}
+                {calendarOpen === 'checkout' && (
+                  <div className="absolute left-0 top-full w-full">
+                    <CalendarPopup
+                      calendarRef={calendarRef}
+                      currentMonth={currentMonth}
+                      setCurrentMonth={setCurrentMonth}
+                      selectDate={date => {
+                        setCheckOut(formatLocalYmd(date));
+                        setCalendarOpen(null);
+                      }}
+                      selectedDate={checkOut}
+                      disabledDay={date => isPast(date) || (checkIn ? (isBefore(date, parseLocalYmd(checkIn)) || isSameDay(date, parseLocalYmd(checkIn))) : false)}
+                    />
+                  </div>
+                  )}
+                </div>
+              </div>
+          {/* ห้อง / คน */}
+          <div className="flex flex-col w-full md:w-[240px] relative" ref={dropdownButtonRef}>
+            <label className="text-sm text-gray-700 mb-2 font-medium" htmlFor="roomguest">
               Rooms & Guests
             </label>
             <button
               id="roomguest"
               type="button"
               className="w-full h-12 border border-gray-300 rounded-lg px-3 pr-8 text-sm text-left bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:border-orange-400 appearance-none flex items-center"
-              onClick={() => setDropdownOpen((v) => !v)}
+              onClick={() => setDropdownOpen(v => !v)}
               tabIndex={0}
             >
               {roomGuestLabel}
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+              <span className="absolute right-3 top-[72%] -translate-y-1/2 text-gray-400 pointer-events-none">
+                {/* ปรับตำแหน่ง v ให้เลื่อนลงมา (top-[72%] จาก top-1/2 เดิม) */}
                 <svg width="16" height="16" fill="none" viewBox="0 0 20 20">
-                  <path
-                    d="M6 8l4 4 4-4"
-                    stroke="#BDBDBD"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
+                  <path d="M6 8l4 4 4-4" stroke="#BDBDBD" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </span>
             </button>
@@ -384,17 +355,12 @@ export default function SearchBox({ onSearch, defaultValues }: SearchBoxProps) {
                 style={{ boxShadow: "0 4px 24px 0 rgba(0,0,0,0.08)" }}
                 ref={dropdownPanelRef}
               >
-                {/* Room */}
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm text-gray-700">Room</span>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      className="w-7 h-7 flex items-center justify-center rounded-full border border-orange-400 text-orange-400 hover:bg-orange-50 transition disabled:opacity-50"
-                      onClick={() => setRoom((r) => Math.max(1, r - 1))}
-                      disabled={room <= 1}
-                      aria-label="Decrease room"
-                    >
+                      {/* Room */}
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm text-gray-700">Room</span>
+                        <div className="flex items-center gap-2">
+                    <button type="button" className="w-7 h-7 flex items-center justify-center rounded-full border border-orange-400 text-orange-400 hover:bg-orange-50 transition disabled:opacity-50"
+                      onClick={() => setRoom(r => Math.max(1, r - 1))} disabled={room <= 1} aria-label="Decrease room">
                       -
                     </button>
                     <span className="w-5 text-center text-base text-gray-700">
@@ -519,6 +485,9 @@ function CalendarPopup({
       const evt = new CustomEvent("navigate-calendar", {
         detail: { direction },
       });
+      const evt = new CustomEvent("navigate-calendar", {
+        detail: { direction },
+      });
       calendarRef.current.dispatchEvent(evt);
     }
   };
@@ -526,7 +495,10 @@ function CalendarPopup({
   // Handle month navigation
   const handleMonthChange = (direction: "prev" | "next") => {
     setCurrentMonth((prev) => {
+  const handleMonthChange = (direction: "prev" | "next") => {
+    setCurrentMonth((prev) => {
       const newMonth = new Date(prev);
+      if (direction === "prev") {
       if (direction === "prev") {
         newMonth.setMonth(prev.getMonth() - 1);
       } else {
@@ -539,15 +511,18 @@ function CalendarPopup({
   return (
     <div
       ref={calendarRef}
-      className="absolute left-0 top-full mt-2 bg-white rounded-lg shadow-lg border border-gray-200 z-30 calendar-mobile"
-      style={{
-        width: 280,
-        height: 332,
-        maxHeight: 332,
+      className="bg-white rounded-lg shadow-lg border border-gray-200 z-30 calendar-mobile"
+      style={{ 
+        width: "100%",
+        minWidth: 0,
+        maxWidth: "100%",
+        height: 280, 
+        maxHeight: 280, 
         overflow: "hidden",
+        position: "relative"
       }}
     >
-      <div className="p-4 h-full flex flex-col select-none calendar-content">
+      <div className="p-3 h-full flex flex-col select-none calendar-content">
         {/* Calendar Header */}
         <div className="flex items-center justify-between mb-3">
           <button
@@ -598,18 +573,13 @@ function CalendarPopup({
           </button>
         </div>
         {/* Calendar Days Header */}
-        <div className="grid grid-cols-7 gap-0 mb-2">
-          {["M", "T", "W", "T", "F", "S", "S"].map((day) => (
-            <div
-              key={day}
-              className="text-center text-xs font-medium text-gray-400 py-1"
-            >
-              {day}
-            </div>
-          ))}
-        </div>
+         <div className="grid grid-cols-7 gap-0 mb-1">
+           {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map(day => (
+             <div key={day} className="text-center text-xs font-medium text-gray-400 py-1">{day}</div>
+           ))}
+         </div>
         {/* Calendar Dates */}
-        <div className="grid grid-cols-7 gap-1 calendar-dates">
+        <div className="grid grid-cols-7 gap-0 calendar-dates">
           {dates.map((date, index) => {
             const disabled = disabledDay ? disabledDay(date) : false;
             return (
@@ -621,22 +591,10 @@ function CalendarPopup({
                   if (!disabled && isCurrentMonth(date)) selectDate(date);
                 }}
                 className={`
-                  w-8 h-8 text-sm rounded-full flex items-center justify-center transition
-                  ${
-                    !isCurrentMonth(date) || disabled
-                      ? "text-gray-300 bg-transparent cursor-not-allowed"
-                      : "hover:bg-orange-50 text-gray-800"
-                  }
-                  ${
-                    isSelected(date)
-                      ? "bg-orange-500 text-white hover:bg-orange-600"
-                      : ""
-                  }
-                  ${
-                    isToday(date) && !isSelected(date)
-                      ? "border border-orange-400"
-                      : ""
-                  }
+                  w-7 h-7 text-xs rounded-full flex items-center justify-center transition
+                  ${(!isCurrentMonth(date) || disabled ? 'text-gray-300 bg-transparent cursor-not-allowed' : 'hover:bg-orange-50 text-gray-800')}
+                  ${isSelected(date) ? 'bg-orange-500 text-white hover:bg-orange-600' : ''}
+                  ${isToday(date) && !isSelected(date) ? 'border border-orange-400' : ''}
                 `}
               >
                 {date.getDate()}

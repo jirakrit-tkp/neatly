@@ -325,7 +325,7 @@ function SearchResultPage() {
                         </button>
                         <button
                           onClick={() => handleBookNow(room.id)} // room.id จาก room_types table = room_type_id
-                          className="bg-[#F47A1F] text-white rounded-lg font-semibold text-sm hover:bg-[#d96a1a] transition"
+                          className="bg-orange-600 text-white rounded-lg font-semibold text-sm hover:bg-[#d96a1a] transition"
                           style={{
                             width: "143px",
                             height: "48px",
