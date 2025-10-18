@@ -485,9 +485,6 @@ function CalendarPopup({
       const evt = new CustomEvent("navigate-calendar", {
         detail: { direction },
       });
-      const evt = new CustomEvent("navigate-calendar", {
-        detail: { direction },
-      });
       calendarRef.current.dispatchEvent(evt);
     }
   };
@@ -495,10 +492,7 @@ function CalendarPopup({
   // Handle month navigation
   const handleMonthChange = (direction: "prev" | "next") => {
     setCurrentMonth((prev) => {
-  const handleMonthChange = (direction: "prev" | "next") => {
-    setCurrentMonth((prev) => {
       const newMonth = new Date(prev);
-      if (direction === "prev") {
       if (direction === "prev") {
         newMonth.setMonth(prev.getMonth() - 1);
       } else {
