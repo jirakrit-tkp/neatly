@@ -1,3 +1,1395 @@
+// import { useEffect, useMemo, useRef, useState } from "react";
+// import Layout from "@/components/Layout";
+// import BookingCard, { type Booking } from "@/components/booking-history/BookingCard";
+// import { supabase } from "@/lib/supabaseClient";
+
+// /* ---------- Types from DB ---------- */
+// type RoomFields = {
+//   room_type: string | null;
+//   main_image_url: string | string[] | null;
+//   currency: string | null;
+//   guests: number | null;
+//   promotion_price: number | null;
+// };
+// type PaymentLite = {
+//   card_last_three: string | null;
+//   amount: number | null;
+// };
+// type PromoCodeLite = {
+//   code?: string | null;
+//   discount_amount: number | null;
+//   discount_percent: number | null;
+// };
+// type BookingRowRaw = {
+//   id: string;
+//   room_id: string | null;
+//   created_at: string | null;
+//   booking_date: string | null;
+//   check_in_date: string | null;
+//   check_out_date: string | null;
+//   cancellation_date: string | null;
+//   total_amount: number | null;
+//   additional_request: string | null;
+//   promo_code: string | null;
+//   special_requests: unknown;
+//   standard_request: string[] | null;
+//   status: string | null;
+//   payment_method: string | null;
+
+//   rooms: RoomFields | RoomFields[] | null;
+//   payments: PaymentLite | PaymentLite[] | null;
+// };
+
+// /* ---------- Utils ---------- */
+// function calculatePromoDiscount(promo: PromoCodeLite | null, totalAmount: number): number {
+//   if (!promo) return 0;
+//   if (promo.discount_amount && promo.discount_amount > 0) return Math.min(promo.discount_amount, totalAmount);
+//   if (promo.discount_percent && promo.discount_percent > 0) return (totalAmount * promo.discount_percent) / 100;
+//   return 0;
+// }
+
+// function fmtDateUTC(d?: string | null) {
+//   if (!d) return "-";
+//   const safe = typeof d === "string" ? d.replace(" ", "T") : d;
+//   const dt = new Date(safe);
+//   if (Number.isNaN(dt.getTime())) return "-";
+//   const w = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][dt.getUTCDay()];
+//   const m = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][dt.getUTCMonth()];
+//   return `${w}, ${m} ${dt.getUTCDate()}, ${dt.getUTCFullYear()}`;
+// }
+
+// function calcNights(checkIn?: string | null, checkOut?: string | null) {
+//   if (!checkIn || !checkOut) return 1;
+//   const a = new Date(checkIn);
+//   const b = new Date(checkOut);
+//   const diffMs = b.getTime() - a.getTime();
+//   if (diffMs <= 0) return 1;
+//   return Math.ceil(diffMs / (1000 * 60 * 60 * 24)) || 1;
+// }
+
+// const FALLBACK_IMG = "/images/sample-room-1.png";
+
+// function safeImageUrl(raw: string | string[] | null | undefined): string {
+//   if (!raw) return FALLBACK_IMG;
+//   if (Array.isArray(raw)) {
+//     const first = raw.find((s) => typeof s === "string" && s.trim().length > 0);
+//     return first ?? FALLBACK_IMG;
+//   }
+//   const s = String(raw).trim();
+//   if (!s) return FALLBACK_IMG;
+//   try {
+//     const parsed = JSON.parse(s);
+//     if (Array.isArray(parsed)) {
+//       const first = parsed.find((x) => typeof x === "string" && x.trim().length > 0);
+//       return first ?? FALLBACK_IMG;
+//     }
+//     if (typeof parsed === "string" && parsed.trim()) return parsed;
+//   } catch {
+//     if (s && s !== "[]" && s !== '[""]') return s;
+//   }
+//   return FALLBACK_IMG;
+// }
+
+// function last3Mask(v?: string | null) {
+//   if (!v) return undefined;
+//   const cleaned = v.replace(/\s+/g, "").replace(/[^\d]/g, "");
+//   if (cleaned.length === 3) return `*${cleaned}`;
+//   if (cleaned.length > 3) return `*${cleaned.slice(-3)}`;
+//   return undefined;
+// }
+
+// function cleanLabel(label: string): string {
+//   return String(label || "").replace(/^standard:\s*/i, "").trim();
+// }
+
+// /* ---------- Page ---------- */
+// const PAGE_SIZE = 6;
+
+// export default function BookingHistoryPage() {
+//   const [bookings, setBookings] = useState<Booking[]>([]);
+//   const [loading, setLoading] = useState(true);
+//   const [error, setError] = useState<string | null>(null);
+//   const [page, setPage] = useState(1);
+//   const [total, setTotal] = useState(0);
+
+//   const [userId, setUserId] = useState<string | null>(null);
+//   const [authLoading, setAuthLoading] = useState(true);
+//   const requestSeqRef = useRef(0);
+
+//   // ใช้สำหรับเลื่อนขึ้นบนสุด
+//   const mainRef = useRef<HTMLDivElement>(null);
+
+//   const scrollTop = () => {
+//     if (mainRef.current) {
+//       mainRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+//     } else if (typeof window !== "undefined") {
+//       window.scrollTo({ top: 0, behavior: "smooth" });
+//     }
+//   };
+
+//   const goToPage = (p: number) => {
+//     setPage(p);
+//     scrollTop();
+//   };
+
+//   /* ---------- Auth ---------- */
+//   useEffect(() => {
+//     let mounted = true;
+//     setAuthLoading(true);
+
+//     supabase.auth.getSession().then(({ data }) => {
+//       if (!mounted) return;
+//       setUserId(data.session?.user?.id ?? null);
+//       setAuthLoading(false);
+//     });
+
+//     const { data: sub } = supabase.auth.onAuthStateChange((_evt, session) => {
+//       setUserId(session?.user?.id ?? null);
+//       setAuthLoading(false);
+//     });
+
+//     return () => {
+//       mounted = false;
+//       sub.subscription.unsubscribe();
+//     };
+//   }, []);
+
+//   /* ---------- Fetch Data ---------- */
+//   useEffect(() => {
+//     if (authLoading) return;
+
+//     const mySeq = ++requestSeqRef.current;
+//     let alive = true;
+//     setLoading(true);
+//     setError(null);
+
+//     (async () => {
+//       try {
+//         const from = (page - 1) * PAGE_SIZE;
+//         const to = from + PAGE_SIZE - 1;
+
+//         const controller = new AbortController();
+//         const timeout = setTimeout(() => controller.abort(), 15000);
+
+//         let query = supabase
+//           .from("bookings")
+//           .select(
+//             `
+//               id,
+//               room_id,
+//               created_at,
+//               booking_date,
+//               check_in_date,
+//               check_out_date,
+//               cancellation_date,
+//               total_amount,
+//               additional_request,
+//               promo_code,
+//               special_requests,
+//               standard_request,
+//               status,
+//               payment_method,
+//               rooms:room_id (
+//                 room_type,
+//                 main_image_url,
+//                 currency,
+//                 guests,
+//                 promotion_price
+//               ),
+//               payments:payments!booking_id (
+//                 card_last_three,
+//                 amount
+//               )
+//             `,
+//             { count: "exact" }
+//           )
+//           .order("created_at", { ascending: false })
+//           .range(from, to)
+//           .abortSignal(controller.signal);
+
+//         if (userId) query = query.eq("customer_id", userId);
+
+//         const { data, error: qErr, count } = await query;
+//         clearTimeout(timeout);
+
+//         if (!alive || mySeq !== requestSeqRef.current) return;
+//         if (qErr) throw qErr;
+
+//         setTotal(count ?? 0);
+//         const rows = (data ?? []) as BookingRowRaw[];
+
+//         // โหลดรายละเอียด promo code ของชุดนี้
+//         const promoCodeMap = new Map<string, PromoCodeLite>();
+//         const uniquePromoCodes = [...new Set(rows.map((r) => r.promo_code).filter(Boolean))] as string[];
+//         if (uniquePromoCodes.length > 0) {
+//           const { data: promoCodes } = await supabase
+//             .from("promo_codes")
+//             .select("code, discount_amount, discount_percent")
+//             .in("code", uniquePromoCodes);
+//           promoCodes?.forEach((p) =>
+//             promoCodeMap.set(p.code, {
+//               code: p.code,
+//               discount_amount: p.discount_amount,
+//               discount_percent: p.discount_percent,
+//             })
+//           );
+//         }
+
+//         const mapped: Booking[] = rows.map((row) => {
+//           // rooms normalize
+//           const roomsObj: RoomFields | null = Array.isArray(row.rooms) ? row.rooms[0] ?? null : row.rooms;
+
+//           const roomName = roomsObj?.room_type?.trim() || "Room";
+//           const imageUrl = safeImageUrl(roomsObj?.main_image_url);
+//           const currency: string = roomsObj?.currency ?? "THB";
+//           const guests: number =
+//             typeof roomsObj?.guests === "number" && roomsObj?.guests > 0 ? roomsObj.guests : 1;
+
+//           // คืนที่พัก
+//           const nights = calcNights(row.check_in_date, row.check_out_date);
+
+//           // special_requests -> ชื่อ+ราคา
+//           type SRItem = { name?: unknown; price?: unknown } | string | number | null;
+//           let specialReqItems: Array<{ label: string; amount: number }> = [];
+
+//           const buildItemsFromArray = (arr: unknown[]) => {
+//             const items: Array<{ label: string; amount: number }> = [];
+//             arr.forEach((raw: unknown) => {
+//               const it = raw as SRItem;
+//               if (typeof it === "object" && it !== null && "name" in it) {
+//                 const rawName = String((it as { name: unknown }).name ?? "");
+//                 const name = cleanLabel(rawName);
+//                 const priceRaw = (it as { price?: unknown }).price;
+//                 const amount = typeof priceRaw === "number" ? priceRaw : 0;
+//                 if (name && name !== "0" && name.toLowerCase() !== "null") {
+//                   items.push({ label: name, amount });
+//                 }
+//               } else {
+//                 const rawStr = String(it ?? "");
+//                 const name = cleanLabel(rawStr);
+//                 if (name && name !== "0" && name.toLowerCase() !== "null") {
+//                   items.push({ label: name, amount: 0 });
+//                 }
+//               }
+//             });
+//             return items;
+//           };
+
+//           if (Array.isArray(row.special_requests)) {
+//             specialReqItems = buildItemsFromArray(row.special_requests as unknown[]);
+//           } else if (typeof row.special_requests === "string" && row.special_requests.trim()) {
+//             try {
+//               const parsed = JSON.parse(row.special_requests);
+//               if (Array.isArray(parsed)) specialReqItems = buildItemsFromArray(parsed as unknown[]);
+//               else if (parsed) specialReqItems = buildItemsFromArray([parsed] as unknown[]);
+//             } catch {
+//               const name = cleanLabel(row.special_requests.trim());
+//               if (name && name !== "0" && name.toLowerCase() !== "null") {
+//                 specialReqItems = [{ label: name, amount: 0 }];
+//               }
+//             }
+//           }
+
+//           // standard_request -> แค่ข้อความ
+//           let standardReqItems: Array<{ label: string; amount: number }> = [];
+//           if (Array.isArray(row.standard_request)) {
+//             standardReqItems = row.standard_request
+//               .map((s) => cleanLabel(String(s ?? "")))
+//               .filter((s) => s && s !== "0" && s.toLowerCase() !== "null")
+//               .map((s) => ({ label: s, amount: 0 }));
+//           }
+
+//           // รวมรายการ + ราคาห้อง * คืน
+//           const items = [...specialReqItems, ...standardReqItems];
+//           const nightly = typeof roomsObj?.promotion_price === "number" ? roomsObj.promotion_price : 0;
+//           items.unshift({ label: `${roomName} Room`, amount: nightly * nights });
+
+//           // payment / total
+//           const paymentObj = Array.isArray(row.payments) ? row.payments[0] ?? null : row.payments;
+//           const mask = last3Mask(paymentObj?.card_last_three);
+//           const totalAmount =
+//             typeof paymentObj?.amount === "number" ? paymentObj.amount : Number(row.total_amount) || 0;
+
+//           // promo แสดงเป็นบรรทัด "Promotion"
+//           if (row.promo_code) {
+//             const promoDiscount = calculatePromoDiscount(promoCodeMap.get(row.promo_code) ?? null, totalAmount);
+//             if (promoDiscount > 0) {
+//               items.push({ label: "Promotion", amount: -promoDiscount });
+//             }
+//           }
+
+//           // เวลา Check-in/Check-out ตาม Early/Late
+//           const labelsLower = items.map((it) => it.label.toLowerCase());
+//           const hasEarlyCheckIn = labelsLower.some((l) => /early\s*check[- ]?in/i.test(l));
+//           const hasLateCheckOut = labelsLower.some((l) => /late\s*check[- ]?out/i.test(l));
+
+//           let checkInNote = "After 2:00 PM";
+//           let checkOutNote = "Before 12:00 PM";
+//           if (hasEarlyCheckIn) checkInNote = "After 12:00 PM";
+//           if (hasLateCheckOut) checkOutNote = "Before 16:00 PM";
+
+//           const cancelled = !!row.cancellation_date;
+//           const cancelledAtText = cancelled ? fmtDateUTC(row.cancellation_date) : undefined;
+
+//           return {
+//             id: row.id,
+//             roomName,
+//             imageUrl,
+//             checkInDate: fmtDateUTC(row.check_in_date),
+//             checkInNote,
+//             checkOutDate: fmtDateUTC(row.check_out_date),
+//             checkOutNote,
+//             bookedAtText: fmtDateUTC(row.created_at ?? row.booking_date),
+//             cancelled,
+//             cancelledAtText,
+//             checkInAtRaw: row.check_in_date ?? undefined,
+//             guests,
+//             nights,
+//             payment: {
+//               status:
+//                 row.status === "confirmed"
+//                   ? "success"
+//                   : row.status === "refunded" || row.status === "cancelled"
+//                   ? "failed"
+//                   : "pending",
+//               method: row.payment_method ?? "credit card",
+//               mask,
+//             },
+//             items,
+//             currency,
+//             total: totalAmount,
+//             additionalRequest: row.additional_request || undefined,
+//           };
+//         });
+
+//         setBookings(mapped);
+//       } catch (e) {
+//         if (!alive) return;
+//         const msg =
+//           (e as { name?: string; message?: string })?.name === "AbortError"
+//             ? "Request timed out"
+//             : (e as { message?: string })?.message || "Failed to load bookings";
+//         setError(msg);
+//         setBookings([]);
+//         setTotal(0);
+//       } finally {
+//         if (alive) setLoading(false);
+//       }
+//     })();
+
+//     return () => {
+//       alive = false;
+//     };
+//   }, [authLoading, userId, page]);
+
+//   const totalPages = useMemo(() => Math.max(1, Math.ceil(total / PAGE_SIZE)), [total]);
+
+//   const visiblePages = useMemo(() => {
+//     const pages: number[] = [];
+//     const maxToShow = 5;
+//     const totalP = totalPages;
+//     if (totalP <= maxToShow) {
+//       for (let i = 1; i <= totalP; i++) pages.push(i);
+//       return pages;
+//     }
+//     let start = Math.max(1, page - 2);
+//     const end = Math.min(totalP, start + maxToShow - 1);
+//     if (end - start + 1 < maxToShow) start = Math.max(1, end - maxToShow + 1);
+//     for (let i = start; i <= end; i++) pages.push(i);
+//     return pages;
+//   }, [page, totalPages]);
+
+//   /* ---------- Render ---------- */
+//   return (
+//     <Layout>
+//       <main
+//         ref={mainRef}
+//         className="max-w-[1120px] mx-auto md:px-6 pb-5 pt-[80px] sm:pt-[96px] md:pt-12"
+//       >
+//         <h1 className="text-[44px] sm:text-[52px] md:text-[68px] px-5 font-noto font-medium text-green-700 leading-[125%] tracking-[-0.02em] mb-6">
+//           Booking History
+//         </h1>
+
+//         {(authLoading || loading) && <div className="px-5 text-gray-600">Loading...</div>}
+
+//         {!authLoading && !loading && !error && bookings.length === 0 && (
+//           <div className="px-5 text-gray-600">No bookings found.</div>
+//         )}
+
+//         {error && !loading && (
+//           <div className="px-5 text-red-600">
+//             Error: {error}{" "}
+//             <button className="ml-3 underline text-orange-600" onClick={() => goToPage(page)}>
+//               Retry
+//             </button>
+//           </div>
+//         )}
+
+//         <div className="space-y-8">
+//           {bookings.map((b) => (
+//             <BookingCard key={b.id} booking={b} />
+//           ))}
+//         </div>
+
+//         {totalPages > 1 && (
+//           <div className="mt-8 flex items-center justify-center gap-2 px-5">
+//             <button
+//               type="button"
+//               onClick={() => goToPage(Math.max(1, page - 1))}
+//               disabled={page === 1}
+//               className={`h-8 w-8 grid place-items-center rounded-md text-gray-400 hover:text-gray-700 ${
+//                 page === 1 ? "opacity-40 cursor-not-allowed" : "cursor-pointer"
+//               }`}
+//               aria-label="Previous page"
+//             >
+//               ‹
+//             </button>
+
+//             {visiblePages.map((p) => (
+//               <button
+//                 key={p}
+//                 type="button"
+//                 onClick={() => goToPage(p)}
+//                 className={`h-8 min-w-8 px-3 rounded-md text-sm transition cursor-pointer ${
+//                   p === page
+//                     ? "bg-white border border-green-600 text-green-700"
+//                     : "text-gray-400 hover:text-gray-700"
+//                 }`}
+//               >
+//                 {p}
+//               </button>
+//             ))}
+
+//             <button
+//               type="button"
+//               onClick={() => goToPage(Math.min(totalPages, page + 1))}
+//               disabled={page === totalPages}
+//               className={`h-8 w-8 grid place-items-center rounded-md text-gray-400 hover:text-gray-700 ${
+//                 page === totalPages ? "opacity-40 cursor-not-allowed" : "cursor-pointer"
+//               }`}
+//               aria-label="Next page"
+//             >
+//               ›
+//             </button>
+//           </div>
+//         )}
+//       </main>
+//     </Layout>
+//   );
+// }
+
+// import { useEffect, useMemo, useRef, useState } from "react";
+// import Layout from "@/components/Layout";
+// import BookingCard, { type Booking } from "@/components/booking-history/BookingCard";
+// import { supabase } from "@/lib/supabaseClient";
+
+// /* ---------- Types from DB ---------- */
+// type RoomFields = {
+//   room_type: string | null;
+//   main_image_url: string | string[] | null;
+//   currency: string | null;
+//   guests: number | null;
+//   promotion_price: number | null;
+// };
+// type PaymentLite = {
+//   card_last_three: string | null;
+//   amount: number | null;
+// };
+// type PromoCodeLite = {
+//   code?: string | null;
+//   discount_amount: number | null;
+//   discount_percent: number | null;
+// };
+// type BookingRowRaw = {
+//   id: string;
+//   room_id: string | null;
+//   created_at: string | null;
+//   booking_date: string | null;
+//   check_in_date: string | null;
+//   check_out_date: string | null;
+//   cancellation_date: string | null;
+//   total_amount: number | null;
+//   additional_request: string | null;
+//   promo_code: string | null;
+//   special_requests: unknown;
+//   standard_request: string[] | null;
+//   status: string | null;
+//   payment_method: string | null;
+//   guest_count: number | null; // ✅ ใช้จากตารางหลัก
+//   rooms: RoomFields | RoomFields[] | null;
+//   payments: PaymentLite | PaymentLite[] | null;
+// };
+
+// /* ---------- Utils ---------- */
+// function calculatePromoDiscount(promo: PromoCodeLite | null, totalAmount: number): number {
+//   if (!promo) return 0;
+//   if (promo.discount_amount && promo.discount_amount > 0) return Math.min(promo.discount_amount, totalAmount);
+//   if (promo.discount_percent && promo.discount_percent > 0) return (totalAmount * promo.discount_percent) / 100;
+//   return 0;
+// }
+
+// function fmtDateUTC(d?: string | null) {
+//   if (!d) return "-";
+//   const safe = typeof d === "string" ? d.replace(" ", "T") : d;
+//   const dt = new Date(safe);
+//   if (Number.isNaN(dt.getTime())) return "-";
+//   const w = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][dt.getUTCDay()];
+//   const m = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][dt.getUTCMonth()];
+//   return `${w}, ${m} ${dt.getUTCDate()}, ${dt.getUTCFullYear()}`;
+// }
+
+// function calcNights(checkIn?: string | null, checkOut?: string | null) {
+//   if (!checkIn || !checkOut) return 1;
+//   const a = new Date(checkIn);
+//   const b = new Date(checkOut);
+//   const diffMs = b.getTime() - a.getTime();
+//   if (diffMs <= 0) return 1;
+//   return Math.ceil(diffMs / (1000 * 60 * 60 * 24)) || 1;
+// }
+
+// const FALLBACK_IMG = "/images/sample-room-1.png";
+
+// function safeImageUrl(raw: string | string[] | null | undefined): string {
+//   if (!raw) return FALLBACK_IMG;
+//   if (Array.isArray(raw)) {
+//     const first = raw.find((s) => typeof s === "string" && s.trim().length > 0);
+//     return first ?? FALLBACK_IMG;
+//   }
+//   const s = String(raw).trim();
+//   if (!s) return FALLBACK_IMG;
+//   try {
+//     const parsed = JSON.parse(s);
+//     if (Array.isArray(parsed)) {
+//       const first = parsed.find((x) => typeof x === "string" && x.trim().length > 0);
+//       return first ?? FALLBACK_IMG;
+//     }
+//     if (typeof parsed === "string" && parsed.trim()) return parsed;
+//   } catch {
+//     if (s && s !== "[]" && s !== '[""]') return s;
+//   }
+//   return FALLBACK_IMG;
+// }
+
+// function last3Mask(v?: string | null) {
+//   if (!v) return undefined;
+//   const cleaned = v.replace(/\s+/g, "").replace(/[^\d]/g, "");
+//   if (cleaned.length === 3) return `*${cleaned}`;
+//   if (cleaned.length > 3) return `*${cleaned.slice(-3)}`;
+//   return undefined;
+// }
+
+// function cleanLabel(label: string): string {
+//   return String(label || "").replace(/^standard:\s*/i, "").trim();
+// }
+
+// /* ---------- Page ---------- */
+// const PAGE_SIZE = 6;
+
+// export default function BookingHistoryPage() {
+//   const [bookings, setBookings] = useState<Booking[]>([]);
+//   const [loading, setLoading] = useState(true);
+//   const [error, setError] = useState<string | null>(null);
+//   const [page, setPage] = useState(1);
+//   const [total, setTotal] = useState(0);
+
+//   const [userId, setUserId] = useState<string | null>(null);
+//   const [authLoading, setAuthLoading] = useState(true);
+//   const requestSeqRef = useRef(0);
+
+//   const mainRef = useRef<HTMLDivElement>(null);
+
+//   const scrollTop = () => {
+//     if (mainRef.current) mainRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+//     else if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+//   };
+
+//   const goToPage = (p: number) => {
+//     setPage(p);
+//     scrollTop();
+//   };
+
+//   /* ---------- Auth ---------- */
+//   useEffect(() => {
+//     let mounted = true;
+//     setAuthLoading(true);
+
+//     supabase.auth.getSession().then(({ data }) => {
+//       if (!mounted) return;
+//       setUserId(data.session?.user?.id ?? null);
+//       setAuthLoading(false);
+//     });
+
+//     const { data: sub } = supabase.auth.onAuthStateChange((_evt, session) => {
+//       setUserId(session?.user?.id ?? null);
+//       setAuthLoading(false);
+//     });
+
+//     return () => {
+//       mounted = false;
+//       sub.subscription.unsubscribe();
+//     };
+//   }, []);
+
+//   /* ---------- Fetch Data ---------- */
+//   useEffect(() => {
+//     if (authLoading) return;
+
+//     const mySeq = ++requestSeqRef.current;
+//     let alive = true;
+//     setLoading(true);
+//     setError(null);
+
+//     (async () => {
+//       try {
+//         const from = (page - 1) * PAGE_SIZE;
+//         const to = from + PAGE_SIZE - 1;
+
+//         const controller = new AbortController();
+//         const timeout = setTimeout(() => controller.abort(), 15000);
+
+//         let query = supabase
+//           .from("bookings")
+//           .select(
+//             `
+//               id,
+//               room_id,
+//               created_at,
+//               booking_date,
+//               check_in_date,
+//               check_out_date,
+//               cancellation_date,
+//               total_amount,
+//               additional_request,
+//               promo_code,
+//               special_requests,
+//               standard_request,
+//               status,
+//               payment_method,
+//               guest_count,
+//               rooms:room_id (
+//                 room_type,
+//                 main_image_url,
+//                 currency,
+//                 guests,
+//                 promotion_price
+//               ),
+//               payments:payments!booking_id (
+//                 card_last_three,
+//                 amount
+//               )
+//             `,
+//             { count: "exact" }
+//           )
+//           .order("created_at", { ascending: false })
+//           .range(from, to)
+//           .abortSignal(controller.signal);
+
+//         if (userId) query = query.eq("customer_id", userId);
+
+//         const { data, error: qErr, count } = await query;
+//         clearTimeout(timeout);
+
+//         if (!alive || mySeq !== requestSeqRef.current) return;
+//         if (qErr) throw qErr;
+
+//         setTotal(count ?? 0);
+//         const rows = (data ?? []) as BookingRowRaw[];
+
+//         // โหลด promo codes
+//         const promoCodeMap = new Map<string, PromoCodeLite>();
+//         const uniquePromoCodes = [...new Set(rows.map((r) => r.promo_code).filter(Boolean))] as string[];
+//         if (uniquePromoCodes.length > 0) {
+//           const { data: promoCodes } = await supabase
+//             .from("promo_codes")
+//             .select("code, discount_amount, discount_percent")
+//             .in("code", uniquePromoCodes);
+//           promoCodes?.forEach((p) =>
+//             promoCodeMap.set(p.code, {
+//               code: p.code,
+//               discount_amount: p.discount_amount,
+//               discount_percent: p.discount_percent,
+//             })
+//           );
+//         }
+
+//         const mapped: Booking[] = rows.map((row) => {
+//           const roomsObj: RoomFields | null = Array.isArray(row.rooms) ? row.rooms[0] ?? null : row.rooms;
+
+//           const roomName = roomsObj?.room_type?.trim() || "Room";
+//           const imageUrl = safeImageUrl(roomsObj?.main_image_url);
+//           const currency: string = roomsObj?.currency ?? "THB";
+
+//           // ✅ ใช้ guest_count จากตารางหลัก
+//           const guests: number =
+//             typeof row.guest_count === "number" && row.guest_count > 0 ? row.guest_count : 1;
+
+//           const nights = calcNights(row.check_in_date, row.check_out_date);
+
+//           // special_requests
+//           type SRItem = { name?: unknown; price?: unknown } | string | number | null;
+//           let specialReqItems: Array<{ label: string; amount: number }> = [];
+
+//           const buildItemsFromArray = (arr: unknown[]) => {
+//             const items: Array<{ label: string; amount: number }> = [];
+//             arr.forEach((raw: unknown) => {
+//               const it = raw as SRItem;
+//               if (typeof it === "object" && it !== null && "name" in it) {
+//                 const rawName = String((it as { name: unknown }).name ?? "");
+//                 const name = cleanLabel(rawName);
+//                 const priceRaw = (it as { price?: unknown }).price;
+//                 const amount = typeof priceRaw === "number" ? priceRaw : 0;
+//                 if (name && name.toLowerCase() !== "null") items.push({ label: name, amount });
+//               } else {
+//                 const rawStr = String(it ?? "");
+//                 const name = cleanLabel(rawStr);
+//                 if (name && name.toLowerCase() !== "null") items.push({ label: name, amount: 0 });
+//               }
+//             });
+//             return items;
+//           };
+
+//           if (Array.isArray(row.special_requests)) {
+//             specialReqItems = buildItemsFromArray(row.special_requests as unknown[]);
+//           } else if (typeof row.special_requests === "string" && row.special_requests.trim()) {
+//             try {
+//               const parsed = JSON.parse(row.special_requests);
+//               if (Array.isArray(parsed)) specialReqItems = buildItemsFromArray(parsed as unknown[]);
+//               else if (parsed) specialReqItems = buildItemsFromArray([parsed] as unknown[]);
+//             } catch {
+//               const name = cleanLabel(row.special_requests.trim());
+//               if (name && name.toLowerCase() !== "null") specialReqItems = [{ label: name, amount: 0 }];
+//             }
+//           }
+
+//           // standard_request
+//           let standardReqItems: Array<{ label: string; amount: number }> = [];
+//           if (Array.isArray(row.standard_request)) {
+//             standardReqItems = row.standard_request
+//               .map((s) => cleanLabel(String(s ?? "")))
+//               .filter((s) => s && s.toLowerCase() !== "null")
+//               .map((s) => ({ label: s, amount: 0 }));
+//           }
+
+//           const items = [...specialReqItems, ...standardReqItems];
+//           const nightly = typeof roomsObj?.promotion_price === "number" ? roomsObj.promotion_price : 0;
+//           items.unshift({ label: `${roomName} Room`, amount: nightly * nights });
+
+//           // payment / total
+//           const paymentObj = Array.isArray(row.payments) ? row.payments[0] ?? null : row.payments;
+//           const mask = last3Mask(paymentObj?.card_last_three);
+//           const totalAmount =
+//             typeof paymentObj?.amount === "number" ? paymentObj.amount : Number(row.total_amount) || 0;
+
+//           if (row.promo_code) {
+//             const promoDiscount = calculatePromoDiscount(promoCodeMap.get(row.promo_code) ?? null, totalAmount);
+//             if (promoDiscount > 0) items.push({ label: "Promotion", amount: -promoDiscount });
+//           }
+
+//           const labelsLower = items.map((it) => it.label.toLowerCase());
+//           const hasEarlyCheckIn = labelsLower.some((l) => /early\s*check[- ]?in/i.test(l));
+//           const hasLateCheckOut = labelsLower.some((l) => /late\s*check[- ]?out/i.test(l));
+
+//           let checkInNote = "After 2:00 PM";
+//           let checkOutNote = "Before 12:00 PM";
+//           if (hasEarlyCheckIn) checkInNote = "After 12:00 PM";
+//           if (hasLateCheckOut) checkOutNote = "Before 4:00 PM";
+
+//           const cancelled = !!row.cancellation_date;
+//           const cancelledAtText = cancelled ? fmtDateUTC(row.cancellation_date) : undefined;
+
+//           return {
+//             id: row.id,
+//             roomName,
+//             imageUrl,
+//             checkInDate: fmtDateUTC(row.check_in_date),
+//             checkInNote,
+//             checkOutDate: fmtDateUTC(row.check_out_date),
+//             checkOutNote,
+//             bookedAtText: fmtDateUTC(row.created_at ?? row.booking_date),
+//             cancelled,
+//             cancelledAtText,
+//             guests,
+//             nights,
+//             payment: {
+//               status:
+//                 row.status === "confirmed"
+//                   ? "success"
+//                   : row.status === "refunded" || row.status === "cancelled"
+//                   ? "failed"
+//                   : "pending",
+//               method: row.payment_method ?? "credit card",
+//               mask,
+//             },
+//             items,
+//             currency,
+//             total: totalAmount,
+//             additionalRequest: row.additional_request || undefined,
+//           };
+//         });
+
+//         setBookings(mapped);
+//       } catch (e) {
+//         if (!alive) return;
+//         const msg =
+//           (e as { name?: string; message?: string })?.name === "AbortError"
+//             ? "Request timed out"
+//             : (e as { message?: string })?.message || "Failed to load bookings";
+//         setError(msg);
+//         setBookings([]);
+//         setTotal(0);
+//       } finally {
+//         if (alive) setLoading(false);
+//       }
+//     })();
+
+//     return () => {
+//       alive = false;
+//     };
+//   }, [authLoading, userId, page]);
+
+//   const totalPages = useMemo(() => Math.max(1, Math.ceil(total / PAGE_SIZE)), [total]);
+//   const visiblePages = useMemo(() => {
+//     const pages: number[] = [];
+//     const maxToShow = 5;
+//     const totalP = totalPages;
+//     if (totalP <= maxToShow) {
+//       for (let i = 1; i <= totalP; i++) pages.push(i);
+//       return pages;
+//     }
+//     let start = Math.max(1, page - 2);
+//     const end = Math.min(totalP, start + maxToShow - 1);
+//     if (end - start + 1 < maxToShow) start = Math.max(1, end - maxToShow + 1);
+//     for (let i = start; i <= end; i++) pages.push(i);
+//     return pages;
+//   }, [page, totalPages]);
+
+//   /* ---------- Render ---------- */
+//   return (
+//     <Layout>
+//       <main ref={mainRef} className="max-w-[1120px] mx-auto md:px-6 pb-5 pt-[80px] sm:pt-[96px] md:pt-12">
+//         <h1 className="text-[44px] sm:text-[52px] md:text-[68px] px-5 font-noto font-medium text-green-700 leading-[125%] tracking-[-0.02em] mb-6">
+//           Booking History
+//         </h1>
+
+//         {(authLoading || loading) && <div className="px-5 text-gray-600">Loading...</div>}
+//         {!authLoading && !loading && !error && bookings.length === 0 && <div className="px-5 text-gray-600">No bookings found.</div>}
+//         {error && !loading && (
+//           <div className="px-5 text-red-600">
+//             Error: {error}{" "}
+//             <button className="ml-3 underline text-orange-600" onClick={() => goToPage(page)}>
+//               Retry
+//             </button>
+//           </div>
+//         )}
+
+//         <div className="space-y-8">
+//           {bookings.map((b) => (
+//             <BookingCard key={b.id} booking={b} />
+//           ))}
+//         </div>
+
+//         {totalPages > 1 && (
+//           <div className="mt-8 flex items-center justify-center gap-2 px-5">
+//             <button
+//               type="button"
+//               onClick={() => goToPage(Math.max(1, page - 1))}
+//               disabled={page === 1}
+//               className={`h-8 w-8 grid place-items-center rounded-md text-gray-400 hover:text-gray-700 ${
+//                 page === 1 ? "opacity-40 cursor-not-allowed" : "cursor-pointer"
+//               }`}
+//               aria-label="Previous page"
+//             >
+//               ‹
+//             </button>
+
+//             {visiblePages.map((p) => (
+//               <button
+//                 key={p}
+//                 type="button"
+//                 onClick={() => goToPage(p)}
+//                 className={`h-8 min-w-8 px-3 rounded-md text-sm transition cursor-pointer ${
+//                   p === page ? "bg-white border border-green-600 text-green-700" : "text-gray-400 hover:text-gray-700"
+//                 }`}
+//               >
+//                 {p}
+//               </button>
+//             ))}
+
+//             <button
+//               type="button"
+//               onClick={() => goToPage(Math.min(totalPages, page + 1))}
+//               disabled={page === totalPages}
+//               className={`h-8 w-8 grid place-items-center rounded-md text-gray-400 hover:text-gray-700 ${
+//                 page === totalPages ? "opacity-40 cursor-not-allowed" : "cursor-pointer"
+//               }`}
+//               aria-label="Next page"
+//             >
+//               ›
+//             </button>
+//           </div>
+//         )}
+//       </main>
+//     </Layout>
+//   );
+// }
+
+// import { useEffect, useMemo, useRef, useState } from "react";
+// import Layout from "@/components/Layout";
+// import BookingCard, { type Booking } from "@/components/booking-history/BookingCard";
+// import { supabase } from "@/lib/supabaseClient";
+
+// /* ---------- Types from DB ---------- */
+// type RoomFields = {
+//   room_type: string | null;
+//   main_image_url: string | string[] | null;
+//   currency: string | null;
+//   guests: number | null;
+//   promotion_price: number | null;
+// };
+
+// type PaymentLite = {
+//   card_last_three: string | null;
+//   amount: number | null;
+// };
+
+// type PromoCodeLite = {
+//   code?: string | null;
+//   discount_amount: number | null;
+//   discount_percent: number | null;
+// };
+
+// type BookingRowRaw = {
+//   id: string;
+//   room_id: string | null;
+//   created_at: string | null;
+//   booking_date: string | null;
+//   check_in_date: string | null;
+//   check_out_date: string | null;
+//   cancellation_date: string | null;
+//   total_amount: number | null;
+//   additional_request: string | null;
+//   promo_code: string | null;
+//   special_requests: unknown;
+//   standard_request: string[] | null;
+//   status: string | null;
+//   payment_method: string | null;
+//   guest_count: number | null;
+//   room_count: number | null;
+//   rooms: RoomFields | RoomFields[] | null;
+//   payments: PaymentLite | PaymentLite[] | null;
+// };
+
+// /* ---------- Utils ---------- */
+// function calculatePromoDiscount(promo: PromoCodeLite | null, totalAmount: number): number {
+//   if (!promo) return 0;
+//   if (promo.discount_amount && promo.discount_amount > 0) return Math.min(promo.discount_amount, totalAmount);
+//   if (promo.discount_percent && promo.discount_percent > 0) return (totalAmount * promo.discount_percent) / 100;
+//   return 0;
+// }
+
+// function fmtDateUTC(d?: string | null) {
+//   if (!d) return "-";
+//   const safe = typeof d === "string" ? d.replace(" ", "T") : d;
+//   const dt = new Date(safe);
+//   if (Number.isNaN(dt.getTime())) return "-";
+//   const w = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][dt.getUTCDay()];
+//   const m = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][dt.getUTCMonth()];
+//   return `${w}, ${m} ${dt.getUTCDate()}, ${dt.getUTCFullYear()}`;
+// }
+
+// function calcNights(checkIn?: string | null, checkOut?: string | null) {
+//   if (!checkIn || !checkOut) return 1;
+//   const a = new Date(checkIn);
+//   const b = new Date(checkOut);
+//   const diffMs = b.getTime() - a.getTime();
+//   if (diffMs <= 0) return 1;
+//   return Math.ceil(diffMs / (1000 * 60 * 60 * 24)) || 1;
+// }
+
+// const FALLBACK_IMG = "/images/sample-room-1.png";
+
+// function safeImageUrl(raw: string | string[] | null | undefined): string {
+//   if (!raw) return FALLBACK_IMG;
+//   if (Array.isArray(raw)) {
+//     const first = raw.find((s) => typeof s === "string" && s.trim().length > 0);
+//     return first ?? FALLBACK_IMG;
+//   }
+//   const s = String(raw).trim();
+//   if (!s) return FALLBACK_IMG;
+//   try {
+//     const parsed = JSON.parse(s);
+//     if (Array.isArray(parsed)) {
+//       const first = parsed.find((x) => typeof x === "string" && x.trim().length > 0);
+//       return first ?? FALLBACK_IMG;
+//     }
+//     if (typeof parsed === "string" && parsed.trim()) return parsed;
+//   } catch {
+//     if (s && s !== "[]" && s !== '[""]') return s;
+//   }
+//   return FALLBACK_IMG;
+// }
+
+// function last3Mask(v?: string | null) {
+//   if (!v) return undefined;
+//   const cleaned = v.replace(/\s+/g, "").replace(/[^\d]/g, "");
+//   if (cleaned.length === 3) return `*${cleaned}`;
+//   if (cleaned.length > 3) return `*${cleaned.slice(-3)}`;
+//   return undefined;
+// }
+
+// function cleanLabel(label: string): string {
+//   return String(label || "").replace(/^standard:\s*/i, "").trim();
+// }
+
+// /* ---------- Page ---------- */
+// const PAGE_SIZE = 6;
+
+// export default function BookingHistoryPage() {
+//   const [bookings, setBookings] = useState<Booking[]>([]);
+//   const [loading, setLoading] = useState(true);
+//   const [error, setError] = useState<string | null>(null);
+//   const [page, setPage] = useState(1);
+//   const [total, setTotal] = useState(0);
+
+//   const [userId, setUserId] = useState<string | null>(null);
+//   const [authLoading, setAuthLoading] = useState(true);
+//   const requestSeqRef = useRef(0);
+
+//   const mainRef = useRef<HTMLDivElement>(null);
+
+//   const scrollTop = () => {
+//     if (mainRef.current) mainRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+//     else if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+//   };
+
+//   const goToPage = (p: number) => {
+//     setPage(p);
+//     scrollTop();
+//   };
+
+//   /* ---------- Auth ---------- */
+//   useEffect(() => {
+//     let mounted = true;
+//     setAuthLoading(true);
+
+//     supabase.auth.getSession().then(({ data }) => {
+//       if (!mounted) return;
+//       setUserId(data.session?.user?.id ?? null);
+//       setAuthLoading(false);
+//     });
+
+//     const { data: sub } = supabase.auth.onAuthStateChange((_evt, session) => {
+//       setUserId(session?.user?.id ?? null);
+//       setAuthLoading(false);
+//     });
+
+//     return () => {
+//       mounted = false;
+//       sub.subscription.unsubscribe();
+//     };
+//   }, []);
+
+//   /* ---------- Fetch Data ---------- */
+//   useEffect(() => {
+//     if (authLoading) return;
+
+//     const mySeq = ++requestSeqRef.current;
+//     let alive = true;
+//     setLoading(true);
+//     setError(null);
+
+//     (async () => {
+//       try {
+//         const from = (page - 1) * PAGE_SIZE;
+//         const to = from + PAGE_SIZE - 1;
+
+//         const controller = new AbortController();
+//         const timeout = setTimeout(() => controller.abort(), 15000);
+
+//         let query = supabase
+//           .from("bookings")
+//           .select(
+//             `
+//               id,
+//               room_id,
+//               created_at,
+//               booking_date,
+//               check_in_date,
+//               check_out_date,
+//               cancellation_date,
+//               total_amount,
+//               additional_request,
+//               promo_code,
+//               special_requests,
+//               standard_request,
+//               status,
+//               payment_method,
+//               guest_count,
+//               room_count,
+//               rooms:room_id (
+//                 room_type,
+//                 main_image_url,
+//                 currency,
+//                 guests,
+//                 promotion_price
+//               ),
+//               payments:payments!booking_id (
+//                 card_last_three,
+//                 amount
+//               )
+//             `,
+//             { count: "exact" }
+//           )
+//           .order("created_at", { ascending: false })
+//           .range(from, to)
+//           .abortSignal(controller.signal);
+
+//         if (userId) query = query.eq("customer_id", userId);
+
+//         const { data, error: qErr, count } = await query;
+//         clearTimeout(timeout);
+
+//         if (!alive || mySeq !== requestSeqRef.current) return;
+//         if (qErr) throw qErr;
+
+//         setTotal(count ?? 0);
+//         const rows = (data ?? []) as BookingRowRaw[];
+
+//         const promoCodeMap = new Map<string, PromoCodeLite>();
+//         const uniquePromoCodes = [...new Set(rows.map((r) => r.promo_code).filter(Boolean))] as string[];
+//         if (uniquePromoCodes.length > 0) {
+//           const { data: promoCodes } = await supabase
+//             .from("promo_codes")
+//             .select("code, discount_amount, discount_percent")
+//             .in("code", uniquePromoCodes);
+//           promoCodes?.forEach((p) =>
+//             promoCodeMap.set(p.code, {
+//               code: p.code,
+//               discount_amount: p.discount_amount,
+//               discount_percent: p.discount_percent,
+//             })
+//           );
+//         }
+
+//         const mapped: Booking[] = rows.map((row) => {
+//           const roomsObj: RoomFields | null = Array.isArray(row.rooms) ? row.rooms[0] ?? null : row.rooms;
+
+//           const roomName = roomsObj?.room_type?.trim() || "Room";
+//           const imageUrl = safeImageUrl(roomsObj?.main_image_url);
+//           const currency: string = roomsObj?.currency ?? "THB";
+//           const guests: number =
+//             typeof row.guest_count === "number" && row.guest_count > 0 ? row.guest_count : 1;
+//           const nights = calcNights(row.check_in_date, row.check_out_date);
+//           const roomCount = typeof row.room_count === "number" && row.room_count > 0 ? row.room_count : 1;
+
+//           type SRItem = { name?: unknown; price?: unknown } | string | number | null;
+//           let specialReqItems: Array<{ label: string; amount: number }> = [];
+
+//           const buildItemsFromArray = (arr: unknown[]) => {
+//             const items: Array<{ label: string; amount: number }> = [];
+//             arr.forEach((raw: unknown) => {
+//               const it = raw as SRItem;
+//               if (typeof it === "object" && it !== null && "name" in it) {
+//                 const rawName = String((it as { name: unknown }).name ?? "");
+//                 const name = cleanLabel(rawName);
+//                 const priceRaw = (it as { price?: unknown }).price;
+//                 const amount = typeof priceRaw === "number" ? priceRaw : 0;
+//                 if (name && name.toLowerCase() !== "null") items.push({ label: name, amount });
+//               } else {
+//                 const rawStr = String(it ?? "");
+//                 const name = cleanLabel(rawStr);
+//                 if (name && name.toLowerCase() !== "null") items.push({ label: name, amount: 0 });
+//               }
+//             });
+//             return items;
+//           };
+
+//           if (Array.isArray(row.special_requests)) {
+//             specialReqItems = buildItemsFromArray(row.special_requests as unknown[]);
+//           } else if (typeof row.special_requests === "string" && row.special_requests.trim()) {
+//             try {
+//               const parsed = JSON.parse(row.special_requests);
+//               if (Array.isArray(parsed)) specialReqItems = buildItemsFromArray(parsed as unknown[]);
+//               else if (parsed) specialReqItems = buildItemsFromArray([parsed] as unknown[]);
+//             } catch {
+//               const name = cleanLabel(row.special_requests.trim());
+//               if (name && name.toLowerCase() !== "null") specialReqItems = [{ label: name, amount: 0 }];
+//             }
+//           }
+
+//           let standardReqItems: Array<{ label: string; amount: number }> = [];
+//           if (Array.isArray(row.standard_request)) {
+//             standardReqItems = row.standard_request
+//               .map((s) => cleanLabel(String(s ?? "")))
+//               .filter((s) => s && s.toLowerCase() !== "null")
+//               .map((s) => ({ label: s, amount: 0 }));
+//           }
+
+//           const items = [...specialReqItems, ...standardReqItems];
+
+//           const nightly = typeof roomsObj?.promotion_price === "number" ? roomsObj.promotion_price : 0;
+//           items.unshift({ label: `${roomName} Room`, amount: nightly * nights * roomCount });
+
+//           const paymentObj = Array.isArray(row.payments) ? row.payments[0] ?? null : row.payments;
+//           const mask = last3Mask(paymentObj?.card_last_three);
+//           const totalAmount =
+//             typeof paymentObj?.amount === "number" ? paymentObj.amount : Number(row.total_amount) || 0;
+
+//           if (row.promo_code) {
+//             const promoDiscount = calculatePromoDiscount(promoCodeMap.get(row.promo_code) ?? null, totalAmount);
+//             if (promoDiscount > 0) items.push({ label: "Promotion", amount: -promoDiscount });
+//           }
+
+//           const labelsLower = items.map((it) => it.label.toLowerCase());
+//           const hasEarlyCheckIn = labelsLower.some((l) => /early\s*check[- ]?in/i.test(l));
+//           const hasLateCheckOut = labelsLower.some((l) => /late\s*check[- ]?out/i.test(l));
+
+//           let checkInNote = "After 2:00 PM";
+//           let checkOutNote = "Before 12:00 PM";
+//           if (hasEarlyCheckIn) checkInNote = "After 12:00 PM";
+//           if (hasLateCheckOut) checkOutNote = "Before 4:00 PM";
+
+//           const cancelled = !!row.cancellation_date;
+//           const cancelledAtText = cancelled ? fmtDateUTC(row.cancellation_date) : undefined;
+
+//           return {
+//             id: row.id,
+//             roomName,
+//             imageUrl,
+//             checkInDate: fmtDateUTC(row.check_in_date),
+//             checkInNote,
+//             checkOutDate: fmtDateUTC(row.check_out_date),
+//             checkOutNote,
+//             bookedAtText: fmtDateUTC(row.created_at ?? row.booking_date),
+//             cancelled,
+//             cancelledAtText,
+//             guests,
+//             nights,
+//             payment: {
+//               status:
+//                 row.status === "confirmed"
+//                   ? "success"
+//                   : row.status === "refunded" || row.status === "cancelled"
+//                   ? "failed"
+//                   : "pending",
+//               method: row.payment_method ?? "cash",
+//               mask,
+//             },
+//             items,
+//             currency,
+//             total: totalAmount,
+//             additionalRequest: row.additional_request || undefined,
+//           };
+//         });
+
+//         setBookings(mapped);
+//       } catch (e) {
+//         if (!alive) return;
+//         const msg =
+//           (e as { name?: string; message?: string })?.name === "AbortError"
+//             ? "Request timed out"
+//             : (e as { message?: string })?.message || "Failed to load bookings";
+//         setError(msg);
+//         setBookings([]);
+//         setTotal(0);
+//       } finally {
+//         if (alive) setLoading(false);
+//       }
+//     })();
+
+//     return () => {
+//       alive = false;
+//     };
+//   }, [authLoading, userId, page]);
+
+//   const totalPages = useMemo(() => Math.max(1, Math.ceil(total / PAGE_SIZE)), [total]);
+//   const visiblePages = useMemo(() => {
+//     const pages: number[] = [];
+//     const maxToShow = 5;
+//     const totalP = totalPages;
+//     if (totalP <= maxToShow) {
+//       for (let i = 1; i <= totalP; i++) pages.push(i);
+//       return pages;
+//     }
+//     let start = Math.max(1, page - 2);
+//     const end = Math.min(totalP, start + maxToShow - 1);
+//     if (end - start + 1 < maxToShow) start = Math.max(1, end - maxToShow + 1);
+//     for (let i = start; i <= end; i++) pages.push(i);
+//     return pages;
+//   }, [page, totalPages]);
+
+//   /* ---------- Render ---------- */
+//   return (
+//     <Layout>
+//       <main ref={mainRef} className="max-w-[1120px] mx-auto md:px-6 pb-5 pt-[80px] sm:pt-[96px] md:pt-12">
+//         <h1 className="text-[44px] sm:text-[52px] md:text-[68px] px-5 font-noto font-medium text-green-700 leading-[125%] tracking-[-0.02em] mb-6">
+//           Booking History
+//         </h1>
+
+//         {(authLoading || loading) && <div className="px-5 text-gray-600">Loading...</div>}
+//         {!authLoading && !loading && !error && bookings.length === 0 && (
+//           <div className="px-5 text-gray-600">No bookings found.</div>
+//         )}
+//         {error && !loading && (
+//           <div className="px-5 text-red-600">
+//             Error: {error}{" "}
+//             <button className="ml-3 underline text-orange-600" onClick={() => goToPage(page)}>
+//               Retry
+//             </button>
+//           </div>
+//         )}
+
+//         <div className="space-y-8">
+//           {bookings.map((b) => (
+//             <BookingCard key={b.id} booking={b} />
+//           ))}
+//         </div>
+
+//         {totalPages > 1 && (
+//           <div className="mt-8 flex items-center justify-center gap-2 px-5">
+//             <button
+//               type="button"
+//               onClick={() => goToPage(Math.max(1, page - 1))}
+//               disabled={page === 1}
+//               className={`h-8 w-8 grid place-items-center rounded-md text-gray-400 hover:text-gray-700 ${
+//                 page === 1 ? "opacity-40 cursor-not-allowed" : "cursor-pointer"
+//               }`}
+//               aria-label="Previous page"
+//             >
+//               ‹
+//             </button>
+
+//             {visiblePages.map((p) => (
+//               <button
+//                 key={p}
+//                 type="button"
+//                 onClick={() => goToPage(p)}
+//                 className={`h-8 min-w-8 px-3 rounded-md text-sm transition cursor-pointer ${
+//                   p === page ? "bg-white border border-green-600 text-green-700" : "text-gray-400 hover:text-gray-700"
+//                 }`}
+//               >
+//                 {p}
+//               </button>
+//             ))}
+
+//             <button
+//               type="button"
+//               onClick={() => goToPage(Math.min(totalPages, page + 1))}
+//               disabled={page === totalPages}
+//               className={`h-8 w-8 grid place-items-center rounded-md text-gray-400 hover:text-gray-700 ${
+//                 page === totalPages ? "opacity-40 cursor-not-allowed" : "cursor-pointer"
+//               }`}
+//               aria-label="Next page"
+//             >
+//               ›
+//             </button>
+//           </div>
+//         )}
+//       </main>
+//     </Layout>
+//   );
+// }
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import Layout from "@/components/Layout";
 import BookingCard, { type Booking } from "@/components/booking-history/BookingCard";
@@ -11,15 +1403,18 @@ type RoomFields = {
   guests: number | null;
   promotion_price: number | null;
 };
+
 type PaymentLite = {
   card_last_three: string | null;
   amount: number | null;
 };
+
 type PromoCodeLite = {
   code?: string | null;
   discount_amount: number | null;
   discount_percent: number | null;
 };
+
 type BookingRowRaw = {
   id: string;
   room_id: string | null;
@@ -35,7 +1430,8 @@ type BookingRowRaw = {
   standard_request: string[] | null;
   status: string | null;
   payment_method: string | null;
-
+  guest_count: number | null;
+  room_count: number | null;
   rooms: RoomFields | RoomFields[] | null;
   payments: PaymentLite | PaymentLite[] | null;
 };
@@ -53,8 +1449,8 @@ function fmtDateUTC(d?: string | null) {
   const safe = typeof d === "string" ? d.replace(" ", "T") : d;
   const dt = new Date(safe);
   if (Number.isNaN(dt.getTime())) return "-";
-  const w = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][dt.getUTCDay()];
-  const m = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][dt.getUTCMonth()];
+  const w = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][dt.getUTCDay()];
+  const m = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][dt.getUTCMonth()];
   return `${w}, ${m} ${dt.getUTCDate()}, ${dt.getUTCFullYear()}`;
 }
 
@@ -116,21 +1512,13 @@ export default function BookingHistoryPage() {
   const [authLoading, setAuthLoading] = useState(true);
   const requestSeqRef = useRef(0);
 
-  // ใช้สำหรับเลื่อนขึ้นบนสุด
   const mainRef = useRef<HTMLDivElement>(null);
 
   const scrollTop = () => {
-    if (mainRef.current) {
-      mainRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
-    } else if (typeof window !== "undefined") {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
+    if (mainRef.current) mainRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    else if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
   };
-
-  const goToPage = (p: number) => {
-    setPage(p);
-    scrollTop();
-  };
+  const goToPage = (p: number) => { setPage(p); scrollTop(); };
 
   /* ---------- Auth ---------- */
   useEffect(() => {
@@ -148,10 +1536,7 @@ export default function BookingHistoryPage() {
       setAuthLoading(false);
     });
 
-    return () => {
-      mounted = false;
-      sub.subscription.unsubscribe();
-    };
+    return () => { mounted = false; sub.subscription.unsubscribe(); };
   }, []);
 
   /* ---------- Fetch Data ---------- */
@@ -189,6 +1574,8 @@ export default function BookingHistoryPage() {
               standard_request,
               status,
               payment_method,
+              guest_count,
+              room_count,
               rooms:room_id (
                 room_type,
                 main_image_url,
@@ -218,7 +1605,7 @@ export default function BookingHistoryPage() {
         setTotal(count ?? 0);
         const rows = (data ?? []) as BookingRowRaw[];
 
-        // โหลดรายละเอียด promo code ของชุดนี้
+        // โหลด promo code ที่ใช้ในหน้านี้ (ถ้ามี)
         const promoCodeMap = new Map<string, PromoCodeLite>();
         const uniquePromoCodes = [...new Set(rows.map((r) => r.promo_code).filter(Boolean))] as string[];
         if (uniquePromoCodes.length > 0) {
@@ -236,19 +1623,19 @@ export default function BookingHistoryPage() {
         }
 
         const mapped: Booking[] = rows.map((row) => {
-          // rooms normalize
           const roomsObj: RoomFields | null = Array.isArray(row.rooms) ? row.rooms[0] ?? null : row.rooms;
 
           const roomName = roomsObj?.room_type?.trim() || "Room";
           const imageUrl = safeImageUrl(roomsObj?.main_image_url);
           const currency: string = roomsObj?.currency ?? "THB";
+
           const guests: number =
-            typeof roomsObj?.guests === "number" && roomsObj?.guests > 0 ? roomsObj.guests : 1;
+            typeof row.guest_count === "number" && row.guest_count > 0 ? row.guest_count : 1;
 
-          // คืนที่พัก
           const nights = calcNights(row.check_in_date, row.check_out_date);
+          const roomCount = typeof row.room_count === "number" && row.room_count > 0 ? row.room_count : 1;
 
-          // special_requests -> ชื่อ+ราคา
+          // ---------- แปลง special_requests / standard_request ----------
           type SRItem = { name?: unknown; price?: unknown } | string | number | null;
           let specialReqItems: Array<{ label: string; amount: number }> = [];
 
@@ -260,16 +1647,13 @@ export default function BookingHistoryPage() {
                 const rawName = String((it as { name: unknown }).name ?? "");
                 const name = cleanLabel(rawName);
                 const priceRaw = (it as { price?: unknown }).price;
-                const amount = typeof priceRaw === "number" ? priceRaw : 0;
-                if (name && name !== "0" && name.toLowerCase() !== "null") {
-                  items.push({ label: name, amount });
-                }
+                const base = typeof priceRaw === "number" ? priceRaw : 0;
+                const amount = base * roomCount; // ← คูณจำนวนห้องให้ add-on
+                if (name && name.toLowerCase() !== "null") items.push({ label: name, amount });
               } else {
                 const rawStr = String(it ?? "");
                 const name = cleanLabel(rawStr);
-                if (name && name !== "0" && name.toLowerCase() !== "null") {
-                  items.push({ label: name, amount: 0 });
-                }
+                if (name && name.toLowerCase() !== "null") items.push({ label: name, amount: 0 });
               }
             });
             return items;
@@ -284,25 +1668,23 @@ export default function BookingHistoryPage() {
               else if (parsed) specialReqItems = buildItemsFromArray([parsed] as unknown[]);
             } catch {
               const name = cleanLabel(row.special_requests.trim());
-              if (name && name !== "0" && name.toLowerCase() !== "null") {
-                specialReqItems = [{ label: name, amount: 0 }];
-              }
+              if (name && name.toLowerCase() !== "null") specialReqItems = [{ label: name, amount: 0 }];
             }
           }
 
-          // standard_request -> แค่ข้อความ
           let standardReqItems: Array<{ label: string; amount: number }> = [];
           if (Array.isArray(row.standard_request)) {
             standardReqItems = row.standard_request
               .map((s) => cleanLabel(String(s ?? "")))
-              .filter((s) => s && s !== "0" && s.toLowerCase() !== "null")
-              .map((s) => ({ label: s, amount: 0 }));
+              .filter((s) => s && s.toLowerCase() !== "null")
+              .map((s) => ({ label: s, amount: 0 })); // ไม่มีราคา ไม่ต้องคูณ
           }
 
-          // รวมรายการ + ราคาห้อง * คืน
           const items = [...specialReqItems, ...standardReqItems];
+
+          // ราคาห้อง = nightly * nights * roomCount
           const nightly = typeof roomsObj?.promotion_price === "number" ? roomsObj.promotion_price : 0;
-          items.unshift({ label: `${roomName} Room`, amount: nightly * nights });
+          items.unshift({ label: `${roomName} Room`, amount: nightly * nights * roomCount });
 
           // payment / total
           const paymentObj = Array.isArray(row.payments) ? row.payments[0] ?? null : row.payments;
@@ -310,15 +1692,11 @@ export default function BookingHistoryPage() {
           const totalAmount =
             typeof paymentObj?.amount === "number" ? paymentObj.amount : Number(row.total_amount) || 0;
 
-          // promo แสดงเป็นบรรทัด "Promotion"
           if (row.promo_code) {
             const promoDiscount = calculatePromoDiscount(promoCodeMap.get(row.promo_code) ?? null, totalAmount);
-            if (promoDiscount > 0) {
-              items.push({ label: "Promotion", amount: -promoDiscount });
-            }
+            if (promoDiscount > 0) items.push({ label: "Promotion", amount: -promoDiscount });
           }
 
-          // เวลา Check-in/Check-out ตาม Early/Late
           const labelsLower = items.map((it) => it.label.toLowerCase());
           const hasEarlyCheckIn = labelsLower.some((l) => /early\s*check[- ]?in/i.test(l));
           const hasLateCheckOut = labelsLower.some((l) => /late\s*check[- ]?out/i.test(l));
@@ -326,7 +1704,7 @@ export default function BookingHistoryPage() {
           let checkInNote = "After 2:00 PM";
           let checkOutNote = "Before 12:00 PM";
           if (hasEarlyCheckIn) checkInNote = "After 12:00 PM";
-          if (hasLateCheckOut) checkOutNote = "Before 16:00 PM";
+          if (hasLateCheckOut) checkOutNote = "Before 4:00 PM";
 
           const cancelled = !!row.cancellation_date;
           const cancelledAtText = cancelled ? fmtDateUTC(row.cancellation_date) : undefined;
@@ -342,7 +1720,6 @@ export default function BookingHistoryPage() {
             bookedAtText: fmtDateUTC(row.created_at ?? row.booking_date),
             cancelled,
             cancelledAtText,
-            checkInAtRaw: row.check_in_date ?? undefined,
             guests,
             nights,
             payment: {
@@ -352,7 +1729,7 @@ export default function BookingHistoryPage() {
                   : row.status === "refunded" || row.status === "cancelled"
                   ? "failed"
                   : "pending",
-              method: row.payment_method ?? "credit card",
+              method: row.payment_method ?? "cash",
               mask,
             },
             items,
@@ -377,45 +1754,32 @@ export default function BookingHistoryPage() {
       }
     })();
 
-    return () => {
-      alive = false;
-    };
+    return () => { alive = false; };
   }, [authLoading, userId, page]);
 
   const totalPages = useMemo(() => Math.max(1, Math.ceil(total / PAGE_SIZE)), [total]);
-
   const visiblePages = useMemo(() => {
     const pages: number[] = [];
     const maxToShow = 5;
-    const totalP = totalPages;
-    if (totalP <= maxToShow) {
-      for (let i = 1; i <= totalP; i++) pages.push(i);
-      return pages;
-    }
+    if (totalPages <= maxToShow) { for (let i = 1; i <= totalPages; i++) pages.push(i); return pages; }
     let start = Math.max(1, page - 2);
-    const end = Math.min(totalP, start + maxToShow - 1);
+    const end = Math.min(totalPages, start + maxToShow - 1);
     if (end - start + 1 < maxToShow) start = Math.max(1, end - maxToShow + 1);
     for (let i = start; i <= end; i++) pages.push(i);
     return pages;
   }, [page, totalPages]);
 
-  /* ---------- Render ---------- */
   return (
     <Layout>
-      <main
-        ref={mainRef}
-        className="max-w-[1120px] mx-auto md:px-6 pb-5 pt-[80px] sm:pt-[96px] md:pt-12"
-      >
+      <main ref={mainRef} className="max-w-[1120px] mx-auto md:px-6 pb-5 pt-[80px] sm:pt-[96px] md:pt-12">
         <h1 className="text-[44px] sm:text-[52px] md:text-[68px] px-5 font-noto font-medium text-green-700 leading-[125%] tracking-[-0.02em] mb-6">
           Booking History
         </h1>
 
         {(authLoading || loading) && <div className="px-5 text-gray-600">Loading...</div>}
-
         {!authLoading && !loading && !error && bookings.length === 0 && (
           <div className="px-5 text-gray-600">No bookings found.</div>
         )}
-
         {error && !loading && (
           <div className="px-5 text-red-600">
             Error: {error}{" "}
@@ -451,9 +1815,7 @@ export default function BookingHistoryPage() {
                 type="button"
                 onClick={() => goToPage(p)}
                 className={`h-8 min-w-8 px-3 rounded-md text-sm transition cursor-pointer ${
-                  p === page
-                    ? "bg-white border border-green-600 text-green-700"
-                    : "text-gray-400 hover:text-gray-700"
+                  p === page ? "bg-white border border-green-600 text-green-700" : "text-gray-400 hover:text-gray-700"
                 }`}
               >
                 {p}
