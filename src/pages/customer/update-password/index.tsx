@@ -7,7 +7,7 @@ export default function CustomerLoginPage() {
   return (
     <>
       <Head>
-        <title>Log In — Neatly</title>
+        <title>Update Password — Neatly</title>
       </Head>
 
       <Layout>
