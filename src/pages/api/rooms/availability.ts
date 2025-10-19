@@ -2,6 +2,17 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { supabase } from "@/lib/supabaseClient";
 import { BOOKING_STATUSES } from "@/constants/booking";
 
+// ✅ เพิ่มฟังก์ชัน filter rooms ตาม status
+const getAvailableRoomStatuses = () => {
+  // รองรับเฉพาะ status ที่ว่าง/พร้อมใช้งาน
+  return [
+    "Vacant",
+    "Vacant Clean",
+    "Vacant Clean Inspected",
+    "Vacant Clean Pick Up",
+  ];
+};
+
 interface AvailabilityRequest {
   room_type_id: number;
   check_in: string;
@@ -165,12 +176,18 @@ export default async function handler(
       )
       .eq("room_type_id", room_type_id)
       .eq("is_active", true)
+      .in("status", getAvailableRoomStatuses()) // ✅ เพิ่มการกรองตาม room status
       .gte("guests", guestsPerRoom);
 
     console.log(
       `Database query result: rooms=${rooms?.length || 0}, error=${
         roomsError?.message || "none"
       }`
+    );
+    console.log(
+      `Available room statuses filter: ${JSON.stringify(
+        getAvailableRoomStatuses()
+      )}`
     );
 
     if (roomsError) {
