@@ -11,6 +11,7 @@ import {
   PAYMENT_STATUSES,
   BOOKING_STATUSES,
 } from "@/constants/booking";
+import { StripeService } from "./stripeService";
 
 export class PaymentService {
   // ===== CREATE PAYMENT =====
@@ -92,48 +93,129 @@ export class PaymentService {
   // ===== PROCESS STRIPE PAYMENT =====
   static async processStripePayment(
     paymentId: string,
-    stripePaymentIntentId: string
+    cardNumber: string,
+    cardOwner: string,
+    expiryDate: string,
+    cvc: string
   ): Promise<PaymentApiResponse> {
     try {
-      // 1. Update payment with Stripe payment intent ID
-      const { data: payment, error } = await supabase
+      console.log(
+        "🔍 Processing Stripe payment with card:",
+        cardNumber.replace(/\d(?=\d{4})/g, "*")
+      );
+
+      // 1. Validate test card
+      const cardValidation = StripeService.validateTestCard(cardNumber);
+      if (!cardValidation.isValid) {
+        return {
+          success: false,
+          message: "Invalid test card number",
+          error: "Please use Stripe test cards for development",
+        };
+      }
+
+      // 2. Get payment record
+      const { data: payment, error: paymentError } = await supabase
+        .from("payments")
+        .select("*")
+        .eq("id", paymentId)
+        .single();
+
+      if (paymentError || !payment) {
+        return {
+          success: false,
+          message: "Payment record not found",
+          error: paymentError?.message || "Payment not found",
+        };
+      }
+
+      // 3. Simulate Stripe payment processing
+      const simulationResult = await StripeService.simulatePayment(
+        cardNumber,
+        payment.amount
+      );
+
+      if (!simulationResult.success) {
+        // Payment failed - update status
+        const { error: updateError } = await supabase
+          .from("payments")
+          .update({
+            status: PAYMENT_STATUSES.FAILED,
+            stripe_payment_id: `pi_failed_${Date.now()}`,
+            meta: {
+              ...payment.meta,
+              error: simulationResult.error,
+              card_info: cardValidation.info,
+            },
+          })
+          .eq("id", paymentId);
+
+        if (updateError) {
+          console.error("Error updating failed payment:", updateError);
+        }
+
+        return {
+          success: false,
+          message: "Payment failed",
+          error: simulationResult.error || "Card was declined",
+        };
+      }
+
+      // 4. Payment successful - update payment record
+      const { data: updatedPayment, error: updateError } = await supabase
         .from("payments")
         .update({
-          stripe_payment_id: stripePaymentIntentId,
+          stripe_payment_id: simulationResult.paymentIntentId,
           status: PAYMENT_STATUSES.COMPLETED,
+          paid_at: new Date().toISOString(),
+          meta: {
+            ...payment.meta,
+            card_info: cardValidation.info,
+            processed_at: new Date().toISOString(),
+          },
         })
         .eq("id", paymentId)
         .select()
         .single();
 
-      if (error) {
+      if (updateError) {
+        console.error("Error updating successful payment:", updateError);
         return {
           success: false,
-          message: "Failed to update payment",
-          error: error.message,
+          message: "Payment processed but failed to update record",
+          error: updateError.message,
         };
       }
 
-      // 2. Update booking status to confirmed
+      // 5. Update booking status to confirmed
       const { error: bookingError } = await supabase
         .from("bookings")
         .update({ status: BOOKING_STATUSES.CONFIRMED })
         .eq("id", payment.booking_id);
 
       if (bookingError) {
-        console.error("Failed to update booking status:", bookingError);
-        // Don't fail the payment, just log the error
+        console.error("Error updating booking status:", bookingError);
+        return {
+          success: false,
+          message: "Payment processed but failed to update booking",
+          error: bookingError.message,
+        };
       }
 
+      console.log(
+        "✅ Payment processed successfully:",
+        simulationResult.paymentIntentId
+      );
       return {
         success: true,
         message: "Payment processed successfully",
-        data: payment,
+        data: updatedPayment,
       };
     } catch (error) {
+      console.error("Stripe payment processing error:", error);
       return {
         success: false,
-        message: "Failed to process payment",
+        message: "Payment processing failed",
         error: error instanceof Error ? error.message : "Unknown error",
       };
     }

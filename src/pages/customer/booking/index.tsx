@@ -7,8 +7,6 @@ import { BookingPolicies } from "@/components/customer/booking/BookingPolicies";
 import { BasicInfoForm } from "@/components/customer/booking/forms/BasicInfoForm";
 import { SpecialRequestForm } from "@/components/customer/booking/forms/SpecialRequestForm";
 import { PaymentMethodForm } from "@/components/customer/booking/forms/PaymentMethodForm";
-import { PaymentSuccessModal } from "@/components/customer/booking/modals/PaymentSuccessModal";
-import { PaymentFailedModal } from "@/components/customer/booking/modals/PaymentFailedModal";
 import {
   BookingStep,
   GuestInfo,
@@ -74,6 +72,16 @@ export default function BookingPage() {
 
   const [specialRequests, setSpecialRequests] =
     useState<SpecialRequest[]>(SPECIAL_REQUESTS);
+
+  // Standard requests (Early check-in, Late check-out, etc.)
+  const [standardRequests, setStandardRequests] = useState([
+    { name: "Early check-in", selected: false },
+    { name: "Late check-out", selected: false },
+    { name: "Non-smoking room", selected: false },
+    { name: "A room on the high floor", selected: false },
+    { name: "A quiet room", selected: false },
+  ]);
+
   const [additionalRequest, setAdditionalRequest] = useState("");
 
   const [paymentMethod, setPaymentMethod] =
@@ -98,15 +106,10 @@ export default function BookingPage() {
     console.log("🔍 PromoCodeApplied updated:", promoDiscount > 0);
   }, [promoDiscount]);
 
-  // Modals
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [showFailedModal, setShowFailedModal] = useState(false);
-  const [paymentError, setPaymentError] = useState<BookingError | null>(null);
-  const [bookingConfirmation, setBookingConfirmation] =
-    useState<BookingConfirmation | null>(null);
+  // No longer need modals since we redirect to full pages
 
   // Timer
-  const [timeLeft, setTimeLeft] = useState({ minutes: 60, seconds: 0 });
+  const [timeLeft, setTimeLeft] = useState({ minutes: 5, seconds: 0 });
 
   // Check room availability when component mounts
   useEffect(() => {
@@ -114,6 +117,84 @@ export default function BookingPage() {
       if (!room_type_id || !checkIn || !checkOut || !guests) {
         setRoomError("Missing required booking parameters");
         setRoomLoading(false);
+        return;
+      }
+
+      // Check if this is a restore from payment failed page
+      const shouldRestoreData =
+        router.query.restore_data === "true" &&
+        localStorage.getItem("bookingData");
+
+      if (shouldRestoreData) {
+        console.log("🔍 Should restore data - starting restoration process");
+
+        // Restore all booking data from localStorage
+        try {
+          const storedBookingData = localStorage.getItem("bookingData");
+          if (storedBookingData) {
+            const parsedData = JSON.parse(storedBookingData);
+            console.log("🔍 Restoring booking data:", parsedData);
+
+            // Restore room info
+            if (parsedData.roomInfo) {
+              const roomData = {
+                id: parsedData.roomInfo.id,
+                room_type: parsedData.roomInfo.name,
+                price: parsedData.roomInfo.price,
+                guests: parsedData.guests,
+                amenities: [],
+                main_image_url: [],
+              };
+              console.log("🔍 Setting room data:", roomData);
+              setSelectedRoom(roomData);
+              setAvailableRooms([roomData]);
+            }
+
+            // Restore guest info from Step 1
+            if (parsedData.guestInfo) {
+              setGuestInfo(parsedData.guestInfo);
+            }
+
+            // Restore requests from Step 2
+            if (parsedData.standardRequests) {
+              setStandardRequests(parsedData.standardRequests);
+            }
+            if (parsedData.specialRequests) {
+              setSpecialRequests(parsedData.specialRequests);
+            }
+
+            // Restore payment info from Step 3
+            if (parsedData.paymentMethod) {
+              setPaymentMethod(parsedData.paymentMethod);
+            }
+            // Don't restore credit card details for security reasons
+            // User should re-enter credit card information
+
+            // Set current step to payment method
+            console.log("🔍 Setting current step to payment_method");
+            setCurrentStep("payment_method");
+
+            // Verify that room data is properly set
+            setTimeout(() => {
+              console.log("🔍 Verifying room data after restoration:", {
+                selectedRoom,
+                availableRooms: availableRooms.length,
+                currentStep,
+              });
+            }, 500);
+
+            console.log("🔍 Data restoration completed successfully");
+          } else {
+            console.error("🔍 No stored booking data found");
+          }
+        } catch (error) {
+          console.error(
+            "🔍 Error restoring booking data from localStorage:",
+            error
+          );
+        }
+        setRoomLoading(false);
+        setRoomError(null);
         return;
       }
 
@@ -217,6 +298,45 @@ export default function BookingPage() {
 
     updateGuestInfo();
   }, [profile, profileLoading]);
+
+  // Handle retry payment automatically when retry=true
+  useEffect(() => {
+    let retryExecuted = false; // Flag to prevent multiple retries
+
+    const handleRetryPayment = async () => {
+      if (
+        router.query.retry === "true" &&
+        router.query.step === "payment_method" &&
+        !retryExecuted
+      ) {
+        console.log("🔍 Auto-retry payment triggered");
+        retryExecuted = true;
+
+        // Wait longer for all data to be restored
+        setTimeout(async () => {
+          try {
+            // Check if room data is available
+            if (!selectedRoom) {
+              console.error("🔍 Selected room not available for retry");
+              return;
+            }
+
+            console.log(
+              "🔍 Starting auto-retry payment with room:",
+              selectedRoom
+            );
+
+            // Trigger payment process again
+            await handleConfirmBooking();
+          } catch (error) {
+            console.error("🔍 Error in auto-retry payment:", error);
+          }
+        }, 2000); // Increased delay to 2 seconds
+      }
+    };
+
+    handleRetryPayment();
+  }, [router.query, selectedRoom]); // Add selectedRoom as dependency
 
   const steps = [
     { id: "basic_info" as BookingStep, label: "Basic Information", number: 1 },
@@ -377,7 +497,10 @@ export default function BookingPage() {
           if (paymentMethod === PAYMENT_METHODS.CREDIT_CARD) {
             processResponse = await PaymentService.processStripePayment(
               payment.id,
-              "mock_stripe_payment_intent_id"
+              creditCardDetails.cardNumber,
+              creditCardDetails.cardOwner,
+              creditCardDetails.expiryDate,
+              creditCardDetails.cvc
             );
           } else if (paymentMethod === PAYMENT_METHODS.CASH) {
             processResponse = await PaymentService.processCashPayment(
@@ -388,70 +511,272 @@ export default function BookingPage() {
           }
 
           if (processResponse.success) {
-            // Show success modal
-            setBookingConfirmation({
-              bookingId: booking.id,
-              confirmationNumber: `CONF-${booking.id.slice(-8).toUpperCase()}`,
-              status: "confirmed",
-              paymentStatus:
+            // Prepare booking success data with real BookingSummary data
+            const bookingSuccessData = {
+              confirmation: {
+                bookingId: booking.id,
+                confirmationNumber: `CONF-${booking.id
+                  .slice(-8)
+                  .toUpperCase()}`,
+                status: "confirmed",
+                paymentStatus:
+                  paymentMethod === PAYMENT_METHODS.CREDIT_CARD
+                    ? "completed"
+                    : "pending",
+                total: calculation.total,
+                currency: "THB",
+                checkIn: checkIn as string,
+                checkOut: checkOut as string,
+                roomType: selectedRoom.room_type,
+                guestName: `${guestInfo.firstName} ${guestInfo.lastName}`,
+                email: guestInfo.email,
+              },
+              // BookingSummary data
+              roomInfo: {
+                name: selectedRoom.room_type,
+                price: (() => {
+                  if (
+                    selectedRoom.promotion_price &&
+                    selectedRoom.promotion_price > 0
+                  ) {
+                    return selectedRoom.promotion_price;
+                  }
+                  return selectedRoom.price;
+                })(),
+                image: selectedRoom.main_image_url[0] || "/image/deluxe.jpg",
+              },
+              guests: parseInt(guests as string),
+              paymentMethod,
+              roomCount,
+              calculation,
+              standardRequests: specialRequests.filter(
+                (req) => req.type === "standard"
+              ),
+              specialRequests: selectedSpecialRequests.map((req) => ({
+                name: req.name,
+                price: req.price || 0,
+                calculated_price: req.calculated_price || 0,
+              })),
+              promotionCode:
+                promoDiscount > 0
+                  ? { code: promoCode, discount: promoDiscount }
+                  : undefined,
+              creditCardLastDigits:
                 paymentMethod === PAYMENT_METHODS.CREDIT_CARD
-                  ? "completed"
-                  : "pending",
-              total: calculation.total,
-              currency: "THB",
-              checkIn: checkIn as string,
-              checkOut: checkOut as string,
-              roomType: selectedRoom.room_type,
-              guestName: `${guestInfo.firstName} ${guestInfo.lastName}`,
-              email: guestInfo.email,
-            });
-            setShowSuccessModal(true);
+                  ? creditCardDetails.cardNumber.replace(/\s/g, "").slice(-3)
+                  : undefined,
+            };
+
+            // Store data in localStorage
+            localStorage.setItem(
+              "bookingSuccessData",
+              JSON.stringify(bookingSuccessData)
+            );
+
+            // Redirect to success page
+            router.push("/customer/booking-success");
           } else {
-            throw new Error("Payment processing failed");
+            // Payment processing failed - redirect to payment failed page
+            console.log("🔍 Payment processing failed:", processResponse);
+
+            // Prepare payment failed data with complete booking information
+            const paymentFailedData = {
+              error: {
+                field: "payment",
+                code: "PAYMENT_PROCESSING_FAILED",
+                message:
+                  processResponse.error ||
+                  processResponse.message ||
+                  "Payment processing failed",
+              },
+              bookingData: {
+                // Room and search parameters
+                roomInfo: {
+                  id: selectedRoom?.id || room_type_id,
+                  name: selectedRoom?.room_type || "Unknown Room",
+                  price: selectedRoom?.price || 0,
+                },
+                checkInDate: checkIn,
+                checkOutDate: checkOut,
+                guests: parseInt(guests as string),
+                roomCount,
+
+                // Guest information from Step 1
+                guestInfo: guestInfo,
+
+                // Requests from Step 2
+                standardRequests: standardRequests,
+                specialRequests: specialRequests,
+
+                // Payment information from Step 3
+                paymentMethod,
+                creditCardDetails: creditCardDetails,
+
+                // Calculation data
+                calculation: calculation,
+              },
+            };
+
+            // Store data in localStorage
+            localStorage.setItem(
+              "paymentFailedData",
+              JSON.stringify(paymentFailedData)
+            );
+
+            // Redirect to payment failed page
+            router.push("/customer/payment-failed");
           }
         } else {
-          throw new Error("Payment creation failed");
+          // Payment creation failed - handle gracefully without throwing error
+          console.log("🔍 Payment creation failed");
+
+          // Prepare payment failed data with complete booking information
+          const paymentFailedData = {
+            error: {
+              field: "payment",
+              code: "PAYMENT_CREATION_FAILED",
+              message: "Payment creation failed",
+            },
+            bookingData: {
+              // Room and search parameters
+              roomInfo: {
+                id: selectedRoom?.id || room_type_id,
+                name: selectedRoom?.room_type || "Unknown Room",
+                price: selectedRoom?.price || 0,
+              },
+              checkInDate: checkIn,
+              checkOutDate: checkOut,
+              guests: parseInt(guests as string),
+              roomCount,
+
+              // Guest information from Step 1
+              guestInfo: guestInfo,
+
+              // Requests from Step 2
+              standardRequests: standardRequests,
+              specialRequests: specialRequests,
+
+              // Payment information from Step 3
+              paymentMethod,
+              creditCardDetails: creditCardDetails,
+
+              // Calculation data
+              calculation: calculation,
+            },
+          };
+
+          // Store data in localStorage
+          localStorage.setItem(
+            "paymentFailedData",
+            JSON.stringify(paymentFailedData)
+          );
+
+          // Redirect to payment failed page
+          router.push("/customer/payment-failed");
+          return;
         }
       } else {
         console.log("=== DEBUG: Booking Failed ===");
         console.log("Error:", bookingResponse.error);
         console.log("Message:", bookingResponse.message);
-        throw new Error("Booking creation failed");
+
+        // Booking creation failed - handle gracefully without throwing error
+        const paymentFailedData = {
+          error: {
+            field: "booking",
+            code: "BOOKING_CREATION_FAILED",
+            message: bookingResponse.message || "Booking creation failed",
+          },
+          bookingData: {
+            // Room and search parameters
+            roomInfo: {
+              id: selectedRoom?.id || room_type_id,
+              name: selectedRoom?.room_type || "Unknown Room",
+              price: selectedRoom?.price || 0,
+            },
+            checkInDate: checkIn,
+            checkOutDate: checkOut,
+            guests: parseInt(guests as string),
+            roomCount,
+
+            // Guest information from Step 1
+            guestInfo: guestInfo,
+
+            // Requests from Step 2
+            standardRequests: standardRequests,
+            specialRequests: specialRequests,
+
+            // Payment information from Step 3
+            paymentMethod,
+            creditCardDetails: creditCardDetails,
+
+            // Calculation data
+            calculation: calculation,
+          },
+        };
+
+        // Store data in localStorage
+        localStorage.setItem(
+          "paymentFailedData",
+          JSON.stringify(paymentFailedData)
+        );
+
+        // Redirect to payment failed page
+        router.push("/customer/payment-failed");
+        return;
       }
     } catch (error) {
       console.error("Booking error:", error);
-      setPaymentError({
-        field: "payment",
-        code: "PAYMENT_FAILED",
-        message: error instanceof Error ? error.message : "Booking failed",
-      });
-      setShowFailedModal(true);
+
+      // Prepare payment failed data with complete booking information
+      const paymentFailedData = {
+        error: {
+          field: "payment",
+          code: "PAYMENT_FAILED",
+          message: error instanceof Error ? error.message : "Booking failed",
+        },
+        bookingData: {
+          // Room and search parameters
+          roomInfo: {
+            id: selectedRoom?.id || room_type_id,
+            name: selectedRoom?.room_type || "Unknown Room",
+            price: selectedRoom?.price || 0,
+          },
+          checkInDate: checkIn,
+          checkOutDate: checkOut,
+          guests: parseInt(guests as string),
+          roomCount,
+
+          // Guest information from Step 1
+          guestInfo: guestInfo,
+
+          // Requests from Step 2
+          standardRequests: standardRequests,
+          specialRequests: specialRequests,
+
+          // Payment information from Step 3
+          paymentMethod,
+          creditCardDetails: creditCardDetails,
+
+          // Calculation data
+          calculation: calculation,
+        },
+      };
+
+      // Store data in localStorage
+      localStorage.setItem(
+        "paymentFailedData",
+        JSON.stringify(paymentFailedData)
+      );
+
+      // Redirect to payment failed page
+      router.push("/customer/payment-failed");
     } finally {
       setLoading(false);
     }
   };
 
-  // Modal handlers
-  const handleViewBooking = () => {
-    setShowSuccessModal(false);
-    router.push(`/customer/bookings/${bookingConfirmation?.bookingId}`);
-  };
-
-  const handleNewBooking = () => {
-    setShowSuccessModal(false);
-    router.push("/customer/search-result");
-  };
-
-  const handleRetryPayment = () => {
-    setShowFailedModal(false);
-    setPaymentError(null);
-  };
-
-  const handleTryDifferentMethod = () => {
-    setShowFailedModal(false);
-    setPaymentError(null);
-    setCurrentStep("payment_method");
-  };
+  // Modal handlers removed since we use full pages now
 
   // Calculations
   const nights = calculateNights(checkIn as string, checkOut as string);
@@ -631,24 +956,7 @@ export default function BookingPage() {
       >
         <div className="space-y-8">{renderStepContent()}</div>
 
-        {/* Modals */}
-        <PaymentSuccessModal
-          isOpen={showSuccessModal}
-          onClose={() => setShowSuccessModal(false)}
-          confirmation={bookingConfirmation!}
-          guests={parseInt(guests as string)}
-          paymentMethod={paymentMethod}
-          onViewBooking={handleViewBooking}
-          onNewBooking={handleNewBooking}
-        />
-
-        <PaymentFailedModal
-          isOpen={showFailedModal}
-          onClose={() => setShowFailedModal(false)}
-          error={paymentError!}
-          onRetry={handleRetryPayment}
-          onTryDifferentMethod={handleTryDifferentMethod}
-        />
+        {/* No modals needed since we redirect to full pages */}
       </BookingLayout>
     </Layout>
   );
