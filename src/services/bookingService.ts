@@ -465,6 +465,36 @@ export class BookingService {
     checkOut: string
   ): Promise<boolean> {
     try {
+      // ✅ 1. ตรวจสอบ room status และ is_active ก่อน
+      const { data: room, error: roomError } = await supabase
+        .from("rooms")
+        .select("status, is_active")
+        .eq("id", roomId)
+        .single();
+
+      if (roomError) {
+        console.error("Room status check error:", roomError);
+        return false;
+      }
+
+      // ✅ ตรวจสอบว่ารoom ยังว่างและ active อยู่หรือไม่
+      const availableStatuses = [
+        "Vacant",
+        "Vacant Clean",
+        "Vacant Clean Pick Up",
+      ];
+      if (
+        !room ||
+        !room.is_active ||
+        !availableStatuses.includes(room.status)
+      ) {
+        console.log(
+          `Room ${roomId} is not available - status: ${room?.status}, active: ${room?.is_active}`
+        );
+        return false;
+      }
+
+      // ✅ 2. ตรวจสอบ booking conflicts (โค้ดเดิม)
       const { data: conflictingBookings, error } = await supabase
         .from("bookings")
         .select("id")
@@ -477,6 +507,11 @@ export class BookingService {
         return false;
       }
 
+      console.log(
+        `Room ${roomId} availability check - conflicts: ${
+          conflictingBookings?.length || 0
+        }, status: ${room.status}`
+      );
       return conflictingBookings.length === 0;
     } catch (error) {
       console.error("Room availability check error:", error);
