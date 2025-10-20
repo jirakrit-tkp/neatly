@@ -61,21 +61,35 @@ export class BookingService {
       }
 
       // 2. Check room availability
+      console.log("🔍 === STARTING ROOM AVAILABILITY CHECK ===");
+      console.log("🔍 Booking data:", {
+        roomId: bookingData.roomId,
+        checkIn: bookingData.checkIn,
+        checkOut: bookingData.checkOut,
+        roomInfo: bookingData.roomInfo,
+      });
+
       const isAvailable = await this.checkRoomAvailability(
         bookingData.roomId,
         bookingData.checkIn,
         bookingData.checkOut
       );
-      console.log("Room availability:", isAvailable);
+
+      console.log("🔍 === ROOM AVAILABILITY FINAL RESULT ===");
+      console.log("🔍 isAvailable:", isAvailable);
 
       if (!isAvailable) {
-        console.log("Room not available");
+        console.log("❌ === BOOKING FAILED: ROOM NOT AVAILABLE ===");
+        console.log("❌ Room ID:", bookingData.roomId);
+        console.log("❌ Check-in:", bookingData.checkIn);
+        console.log("❌ Check-out:", bookingData.checkOut);
         return {
           success: false,
           message: "Room not available",
           error: BOOKING_ERROR_CODES.ROOM_NOT_AVAILABLE,
         };
       }
+      console.log("✅ === ROOM AVAILABLE: PROCEEDING WITH BOOKING ===");
 
       // 3. Calculate total amount
       const nights = calculateNights(bookingData.checkIn, bookingData.checkOut);
@@ -465,6 +479,67 @@ export class BookingService {
     checkOut: string
   ): Promise<boolean> {
     try {
+      console.log(`🔍 === ROOM AVAILABILITY CHECK START ===`);
+      console.log(`🔍 Checking room: ${roomId}`);
+      console.log(`🔍 Check-in: ${checkIn}, Check-out: ${checkOut}`);
+
+      // ✅ 1. ตรวจสอบ room status และ is_active ก่อน
+      const { data: room, error: roomError } = await supabase
+        .from("rooms")
+        .select("status, is_active")
+        .eq("id", roomId)
+        .single();
+
+      if (roomError) {
+        console.error("❌ Room status check error:", roomError);
+        return false;
+      }
+
+      console.log(`🔍 Room data retrieved:`, {
+        roomId,
+        status: room?.status,
+        is_active: room?.is_active,
+        roomExists: !!room,
+      });
+
+      // ✅ ตรวจสอบว่ารoom ยังว่างและ active อยู่หรือไม่
+      const availableStatuses = [
+        "Vacant",
+        "Vacant Clean",
+        "Vacant Clean Inspected",
+        "Vacant Clean Pick Up",
+      ];
+
+      const statusCheck = {
+        roomExists: !!room,
+        isActive: room?.is_active,
+        currentStatus: room?.status,
+        validStatus: availableStatuses.includes(room?.status || ""),
+        availableStatuses: availableStatuses,
+      };
+
+      console.log(`🔍 Room status validation:`, statusCheck);
+
+      if (
+        !room ||
+        !room.is_active ||
+        !availableStatuses.includes(room.status)
+      ) {
+        console.log(`❌ Room ${roomId} FAILED status check:`, {
+          reason: !room
+            ? "Room not found"
+            : !room.is_active
+            ? "Room is not active"
+            : `Status '${room.status}' not in allowed list`,
+          details: statusCheck,
+        });
+        return false;
+      }
+
+      console.log(`✅ Room ${roomId} passed status check`);
+
+      // ✅ 2. ตรวจสอบ booking conflicts (โค้ดเดิม)
+      console.log(`🔍 Checking booking conflicts for room ${roomId}...`);
       const { data: conflictingBookings, error } = await supabase
         .from("bookings")
         .select("id")
@@ -473,11 +548,28 @@ export class BookingService {
         .or(`and(check_in_date.lt.${checkOut},check_out_date.gt.${checkIn})`); // ใช้ check_in_date, check_out_date
 
       if (error) {
-        console.error("Room availability check error:", error);
+        console.error("❌ Room availability check error:", error);
         return false;
       }
 
-      return conflictingBookings.length === 0;
+      const conflictCount = conflictingBookings?.length || 0;
+      const isAvailable = conflictCount === 0;
+
+      console.log(`🔍 Booking conflict check result:`, {
+        roomId,
+        checkIn,
+        checkOut,
+        conflictingBookings: conflictCount,
+        isAvailable,
+        roomStatus: room.status,
+      });
+
+      console.log(`🔍 === ROOM AVAILABILITY CHECK END ===`);
+      console.log(
+        `🔍 Final result: ${isAvailable ? "✅ AVAILABLE" : "❌ NOT AVAILABLE"}`
+      );
+
+      return isAvailable;
     } catch (error) {
       console.error("Room availability check error:", error);
       return false;

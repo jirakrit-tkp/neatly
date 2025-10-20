@@ -13,6 +13,17 @@ type Data = {
   error?: string;
 };
 
+// ✅ เพิ่มฟังก์ชัน filter rooms ตาม status
+const getAvailableRoomStatuses = () => {
+  // รองรับเฉพาะ status ที่ว่าง/พร้อมใช้งาน
+  return [
+    "Vacant",
+    "Vacant Clean",
+    "Vacant Clean Inspected",
+    "Vacant Clean Pick Up",
+  ];
+};
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<Data>
@@ -21,10 +32,24 @@ export default async function handler(
     // ✅ Fetch room types with filtering
     try {
       // Get query parameters
-      const { checkIn, checkOut, room, guests } = req.query;
+      const { room, guests } = req.query;
 
-      // Build query with filters
-      let query = supabase.from("room_types").select("*");
+      // ✅ แก้ไข query ให้ join กับ rooms table และ filter ตาม status
+      let query = supabase
+        .from("room_types")
+        .select(
+          `
+          *,
+          rooms!inner(
+            id,
+            status,
+            is_active
+          )
+        `
+        )
+        // ✅ Filter เฉพาะห้องที่มี status ที่ว่างและ active
+        .in("rooms.status", getAvailableRoomStatuses())
+        .eq("rooms.is_active", true);
 
       // Filter by guest capacity with multi-room support
       if (guests && room) {
@@ -80,10 +105,28 @@ export default async function handler(
         });
       }
 
+      // ✅ Filter out duplicate room types (เพราะ join อาจส่งผลให้มี room_type เดียวกันหลายครั้ง)
+      const uniqueRoomTypes = (data || []).reduce(
+        (acc: RoomType[], roomType: RoomType & { rooms?: unknown }) => {
+          const existing = acc.find((rt: RoomType) => rt.id === roomType.id);
+          if (!existing) {
+            // Remove the rooms data from response เพื่อไม่ให้ frontend สับสน
+            const { rooms: _, ...cleanRoomType } = roomType;
+            acc.push(cleanRoomType as RoomType);
+          }
+          return acc;
+        },
+        [] as RoomType[]
+      );
+
+      console.log(
+        `✅ Found ${uniqueRoomTypes.length} available room types after filtering by status`
+      );
+
       return res.status(200).json({
         success: true,
         message: "Room types fetched successfully",
-        data: data || [],
+        data: uniqueRoomTypes || [],
       });
     } catch (error) {
       return res.status(500).json({
