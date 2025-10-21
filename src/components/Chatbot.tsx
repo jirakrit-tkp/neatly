@@ -485,17 +485,22 @@ export default function Chatbot() {
           // Update current ticket state when ticket is updated
           if (payload.eventType === "UPDATE") {
             if (payload.new?.status === "closed") {
+              // Clear ticket immediately when closed
               setCurrentTicket(null);
               setIsTicketSolved(false);
               setIsBotTyping(false); // Hide bot typing when ticket is closed
-              console.log("🔓 Ticket closed - cleared ticket state");
+              console.log("🔓 Ticket closed - cleared ticket state (can open new ticket now)");
             } else if (payload.new?.status === "solved") {
-              setCurrentTicket(null);
+              // Show success message, then clear ticket state
+              setCurrentTicket(null); // Clear immediately so user can open new ticket
               setIsTicketSolved(true);
               setIsBotTyping(false); // Hide bot typing when ticket is solved
-              console.log("✅ Ticket solved - cleared ticket state");
-              // Clear solved state after 3 seconds
-              setTimeout(() => setIsTicketSolved(false), 3000);
+              console.log("✅ Ticket solved - cleared ticket state (can open new ticket now)");
+              // Clear success message after 3 seconds
+              setTimeout(() => {
+                setIsTicketSolved(false);
+                console.log("✅ Cleared success message");
+              }, 3000);
             } else {
               // Update ticket info when status changes (open -> in_progress)
               setCurrentTicket(payload.new);
@@ -760,9 +765,24 @@ export default function Chatbot() {
         }
       }
 
-      // Show bot typing indicator immediately
-      setIsBotTyping(true);
-      console.log("🤖 Bot typing indicator shown");
+      // Show bot typing indicator only if:
+      // 1. No ticket exists (pure bot mode), OR
+      // 2. Ticket exists but is not closed/solved AND live_chat is disabled
+      const ticketIsClosed = currentTicket?.status === 'closed' || currentTicket?.status === 'solved';
+      const liveChatEnabled = currentTicket?.live_chat_enabled === true;
+      
+      if (ticketIsClosed) {
+        console.log("🤖 Ticket is closed/solved - skipping bot typing indicator");
+      } else if (liveChatEnabled) {
+        console.log("🤖 Live chat enabled - skipping bot typing indicator");
+      } else {
+        // Show typing: either no ticket or ticket with bot handling
+        setIsBotTyping(true);
+        console.log("🤖 Bot typing indicator shown", { 
+          hasTicket: !!currentTicket,
+          ticketStatus: currentTicket?.status 
+        });
+      }
 
       // Send message using the session with authentication
 
@@ -1168,8 +1188,8 @@ export default function Chatbot() {
               </div>
             </div>
 
-            {/* Ticket Status Bar */}
-            {currentTicket && (
+            {/* Ticket Status Bar - Only show for active tickets (not solved/closed) */}
+            {currentTicket && currentTicket.status !== 'solved' && currentTicket.status !== 'closed' && (
               <div
                 className={`px-4 py-2 border-b ${
                   currentTicket.status === "open"
@@ -1312,25 +1332,26 @@ export default function Chatbot() {
                       </div>
 
                       {/* Fallback message with Ticket button - outside message box */}
-                      {message.is_bot && message.message.includes("ticket") && (
-                        <div className="mt-2">
-                          <Button
-                            onClick={
-                              currentTicket ? undefined : handleOpenTicket
-                            }
-                            variant="outline"
-                            size="sm"
-                            disabled={!!currentTicket}
-                            className={`px-3 py-1.5 border-2 rounded-full text-sm ${
-                              currentTicket
-                                ? "border-gray-300 bg-gray-50 text-gray-500 cursor-not-allowed"
-                                : "border-orange-300 bg-orange-50 text-orange-700 hover:bg-orange-100 cursor-pointer"
-                            }`}
-                          >
-                            {currentTicket ? "Ticket Active" : "Open Ticket"}
-                          </Button>
-                        </div>
-                      )}
+                      {message.is_bot && message.message.includes("ticket") && (() => {
+                        const hasActiveTicket = currentTicket && currentTicket.status !== 'solved' && currentTicket.status !== 'closed';
+                        return (
+                          <div className="mt-2">
+                            <Button
+                              onClick={hasActiveTicket ? undefined : handleOpenTicket}
+                              variant="outline"
+                              size="sm"
+                              disabled={!!hasActiveTicket}
+                              className={`px-3 py-1.5 border-2 rounded-full text-sm ${
+                                hasActiveTicket
+                                  ? "border-gray-300 bg-gray-50 text-gray-500 cursor-not-allowed"
+                                  : "border-orange-300 bg-orange-50 text-orange-700 hover:bg-orange-100 cursor-pointer"
+                              }`}
+                            >
+                              {hasActiveTicket ? "Ticket Active" : "Open Ticket"}
+                            </Button>
+                          </div>
+                        );
+                      })()}
 
                       <p className="text-xs mt-1 text-gray-500 px-1">
                         {new Date(message.created_at).toLocaleTimeString(
@@ -1466,11 +1487,11 @@ export default function Chatbot() {
                      );
                    })}
 
-                {/* Bot Typing Indicator - Only show when Live Chat is OFF and ticket is not solved */}
+                {/* Bot Typing Indicator - Only show when Live Chat is OFF and no active ticket */}
                 {!isLoadingSession &&
                   isBotTyping &&
                   !(currentTicket && currentTicket.live_chat_enabled) &&
-                  !isTicketSolved && (
+                  !(currentTicket && (currentTicket.status === 'closed' || currentTicket.status === 'solved')) && (
                    <div
                      key="bot-typing-indicator"
                      className="flex flex-col items-start px-4"
@@ -1594,15 +1615,16 @@ export default function Chatbot() {
 
       {/* Ticket Modal */}
       {showTicketModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-96 max-w-full mx-4">
-            <h2 className="text-xl font-semibold mb-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999]">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-[631px] max-w-full mx-4">
+            <h2 className="text-xl font-semibold mb-4 text-gray-800">
               Create Support Ticket
             </h2>
-
+            <hr className="border-gray-300 mb-4" />
+            
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-2">
+                <label className="block text-sm font-medium mb-2 text-gray-700">
                   Ticket Topic
                 </label>
                 <textarea
@@ -1612,23 +1634,23 @@ export default function Chatbot() {
                   className="w-full p-3 border border-gray-300 hover:border-orange-400 focus:ring-2 focus:ring-orange-500 focus:border-orange-500 rounded-md h-24 resize-none outline-none"
                 />
               </div>
-              <div className="flex gap-2">
-                <Button
-                  onClick={handleCreateTicket}
-                  disabled={isCreatingTicket || !ticketTopic.trim()}
-                  className="bg-orange-500 text-white hover:bg-orange-600 disabled:bg-gray-300 disabled:text-gray-600 cursor-pointer flex-1"
-                >
-                  {isCreatingTicket ? "Creating..." : "Create Ticket"}
-                </Button>
+              <div className="flex gap-2 justify-end">
                 <Button
                   onClick={() => {
                     setShowTicketModal(false);
                     setTicketTopic("");
                   }}
                   variant="outline"
-                  className="cursor-pointer"
+                  className="cursor-pointer border-orange-500 text-orange-500 hover:bg-orange-50"
                 >
                   Cancel
+                </Button>
+                <Button
+                  onClick={handleCreateTicket}
+                  disabled={isCreatingTicket || !ticketTopic.trim()}
+                  className="bg-orange-600 text-white hover:bg-orange-700 disabled:bg-gray-300 disabled:text-gray-600 cursor-pointer"
+                >
+                  {isCreatingTicket ? "Creating..." : "Create Ticket"}
                 </Button>
               </div>
             </div>

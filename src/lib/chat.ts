@@ -24,6 +24,19 @@ const model = vertex.getGenerativeModel({ model: "gemini-2.5-flash" });
 
 export type historyType = { is_bot: boolean; message: string };
 
+// Direct call to Gemini without system prompt (for task-specific operations)
+export async function directGeminiCall(prompt: string) {
+  const result = await model.generateContent({
+    contents: [
+      {
+        role: "user",
+        parts: [{ text: prompt }],
+      },
+    ],
+  });
+  return result.response.candidates?.[0]?.content?.parts?.[0]?.text || "";
+}
+
 export async function chatWithGemini(
   question: string,
   conversationHistory?: historyType[],
@@ -32,23 +45,28 @@ export async function chatWithGemini(
   let historyContext = "";
 
   if (conversationHistory && conversationHistory.length > 0) {
-    // ส่งแค่ 3 ข้อความล่าสุด
+    // Last 3 messages only
     const recentHistory = conversationHistory.slice(-3);
     recentHistory.forEach((msg) => {
-      const role = msg.is_bot ? "พนักงาน" : "ลูกค้า";
+      const role = msg.is_bot ? "Assistant" : "User";
       historyContext += `${role}: ${msg.message}\n`;
     });
   } else {
-    historyContext = "(ไม่มีข้อมูลเพิ่มเติม)";
+    historyContext = "(No previous conversation)";
   }
 
   const prompt = `
   - You are a female hotel staff member at Neatly Hotel
-  - Answer questions in the same language the user used in their latest message
-  - Respond in a friendly and professional manner
-  - Answer all questions
+  - Answer in the same language the user used
+  - Be friendly, professional, and concise
   - Keep responses concise
-  - Review conversation history to understand context
+  - Review conversation history for context
+  
+  IMPORTANT:
+  - Only use provided information - don't make things up
+  - If you don't have the answer, be honest about it
+  - DO NOT say you will "check" or "investigate"
+  - For additional help: suggest opening a "ticket" (English) - DO NOT translate to "ตั๋ว" or any other language
 
   ${context ? `Context: ${context}\n` : ""}
   
