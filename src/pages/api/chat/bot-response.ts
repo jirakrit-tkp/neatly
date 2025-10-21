@@ -143,7 +143,8 @@ export default async function handler(
       roomTypes?.forEach(room => {
         roomDetails[room.name] = {
           id: room.id,
-          // Use base64 API to avoid cachedEgress (uses Storage Egress instead, which has more quota available)
+          // Use image proxy API (uses Storage Egress, not cachedEgress, saves quota)
+          // Proxy returns binary image directly (not base64) to avoid 4MB limit
           main_image: `/api/images/base64-room-image?roomName=${encodeURIComponent(room.name)}&width=400&height=300&t=${Date.now()}`,
           base_price: room.base_price || 0,
           promo_price: room.promo_price,
