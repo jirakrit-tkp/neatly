@@ -100,7 +100,7 @@ export default async function handler(
           return res.status(400).json({ error: "Status is required" });
         }
 
-        const updateData: { closed_at?: string | null; status: string; agent_id?: string } = {
+        const updateData: { closed_at?: string | null; status: string; agent_id?: string; live_chat_enabled?: boolean } = {
           status,
         };
 
@@ -109,9 +109,11 @@ export default async function handler(
           updateData.agent_id = agent_id;
         }
 
-        // If closing or solving ticket, set closed_at timestamp
+        // If closing or solving ticket, set closed_at timestamp and disable live chat
         if (status === "closed" || status === "solved") {
           updateData.closed_at = new Date().toISOString();
+          updateData.live_chat_enabled = false; // Re-enable chatbot when ticket is closed/solved
+          console.log("🤖 Chatbot re-enabled automatically after ticket solved/closed");
         } else if (status !== "closed" && status !== "solved") {
           // If reopening ticket, clear closed_at
           updateData.closed_at = null;
