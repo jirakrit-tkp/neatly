@@ -9,22 +9,22 @@ const testimonials = [
     text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
     customer: "Katherine,",
     company: "Company®",
-    avatar: "/image/customer.png"
+    avatar: "/image/customer.png",
   },
   {
     id: 2,
     text: "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
     customer: "Sarah,",
     company: "Tech Corp",
-    avatar: "/image/customer.png"
+    avatar: "/image/customer.png",
   },
   {
     id: 3,
     text: "Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.",
     customer: "Michael,",
     company: "Design Studio",
-    avatar: "/image/customer.png"
-  }
+    avatar: "/image/customer.png",
+  },
 ];
 
 const Testimonial = () => {
@@ -44,7 +44,9 @@ const Testimonial = () => {
   };
 
   const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + testimonials.length) % testimonials.length);
+    setCurrentSlide(
+      (prev) => (prev - 1 + testimonials.length) % testimonials.length
+    );
   };
 
   const goToSlide = (index: number) => {
@@ -54,14 +56,14 @@ const Testimonial = () => {
   return (
     <section
       className="
-        bg-green-300
+        bg-green-200
         w-full
         flex flex-col items-center
-        py-16 md:py-32
+        pt-16 md:py-25
         px-4 md:px-8
       "
       style={{
-        minHeight: "602px",
+        minHeight: "500px",
         maxWidth: "100vw",
       }}
     >
@@ -71,19 +73,15 @@ const Testimonial = () => {
           flex flex-col items-center
           relative
         "
-        style={{
-          minHeight: "602px",
-        }}
       >
         {/* Heading */}
         <h2
           className="
             text-[#2D5A27]
-            text-[34px] md:text-[50px]
-            font-normal
+            text-[34px] md:text-[70px]
+            font-noto
             text-center
             mb-8 md:mb-12
-            font-serif
           "
         >
           Our Customer Says
@@ -205,12 +203,8 @@ const Testimonial = () => {
                 w-2 h-2 md:w-3 md:h-3
                 rounded-full
                 transition-colors duration-200
-                border-2
-                ${
-                  index === currentSlide
-                    ? "bg-orange-400 border-orange-400"
-                    : "bg-transparent border-orange-400 hover:bg-orange-200"
-                }
+                b
+                ${index === currentSlide ? "bg-gray-600" : "bg-gray-400"}
               `}
               aria-label={`Go to testimonial ${index + 1}`}
             />
@@ -278,9 +272,7 @@ const Testimonial = () => {
         </div>
 
         {/* Auto Slide Indicator */}
-        <div className="mt-4 text-[#999] text-[10px] md:text-[12px]">
-        
-        </div>
+        <div className="mt-4 text-[#999] text-[10px] md:text-[12px]"></div>
       </div>
     </section>
   );
