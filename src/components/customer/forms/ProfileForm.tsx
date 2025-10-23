@@ -94,7 +94,7 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
 
     const success = await updateProfile(data);
     if (success) {
-      setSuccessMessage("อัปเดตโปรไฟล์สำเร็จ!");
+      setSuccessMessage("Profile updated successfully!");
       onSuccess?.(profile);
 
       setTimeout(() => {
@@ -104,12 +104,12 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
   };
 
   const handleDeleteProfilePicture = async () => {
-    if (window.confirm("คุณต้องการลบรูปโปรไฟล์หรือไม่?")) {
+    if (window.confirm("Do you want to delete the profile picture?")) {
       const success = await deleteProfilePicture();
       if (success) {
         setProfileImage("");
         form.setValue("profilePicture", undefined);
-        setSuccessMessage("ลบรูปโปรไฟล์สำเร็จ!");
+        setSuccessMessage("Profile picture deleted successfully!");
 
         setTimeout(() => {
           setSuccessMessage("");
@@ -137,7 +137,7 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
       <div className="flex items-center justify-center py-8">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto"></div>
-          <p className="mt-4 text-gray-600">กำลังโหลดข้อมูลโปรไฟล์...</p>
+          <p className="mt-4 text-gray-600">Loading profile data...</p>
         </div>
       </div>
     );
@@ -147,20 +147,21 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
     return (
       <div className="text-center py-8">
         <div className="text-red-600 text-lg font-semibold mb-2">
-          เกิดข้อผิดพลาด
+          An error occurred
         </div>
         <p className="text-gray-600 mb-4">{error}</p>
         <Button onClick={() => window.location.reload()} variant="primary">
-          โหลดใหม่
+          Reload
         </Button>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8 bg-[var(--color-bg)]">
-      <div className="flex justify-between items-center">
-        <h1 className="text-[68px] font-medium font-noto text-[var(--color-green-800)] leading-[125%] tracking-[-2%]">
+    <div className="space-y-8 bg-bg">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center pt-10 md:pt-0">
+        <h1 className="text-[44px] md:text-[68px] font-noto font-medium leading-[125%] tracking-[-2%] text-green-800">
           Profile
         </h1>
 
@@ -169,6 +170,7 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
           variant="primary"
           size="md"
           loading={isUpdating}
+          className="hidden md:block"
           onClick={(e) => {
             e.preventDefault();
             console.log("Button clicked - about to validate and submit");
@@ -177,17 +179,17 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
             })();
           }}
         >
-          {isUpdating ? "กำลังอัปเดต..." : "Update Profile"}
+          {isUpdating ? "Updating..." : "Update Profile"}
         </Button>
       </div>
 
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        className="space-y-8 customer-forms bg-[var(--color-bg)] "
+        className="space-y-8 customer-forms bg-bg"
       >
         {/* Basic Information */}
-        <div className="space-y-6 ">
-          <h3 className="font-inter font-semibold text-[20px] leading-[150%] tracking-[-2%] text-[var(--color-gray-600)]">
+        <div className="space-y-6">
+          <h3 className="text-[20px] font-inter font-semibold leading-[150%] tracking-[-2%] text-gray-600 pt-3">
             Basic Information
           </h3>
 
@@ -219,7 +221,7 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
                 error={!!errors.email}
                 placeholder="Enter your email"
                 readOnly
-                className="bg-[var(--color-gray-200)] text-[var(--color-gray-600)] cursor-not-allowed border-[var(--color-gray-400)]"
+                className="bg-gray-200 text-gray-600 cursor-not-allowed border-gray-400"
               />
             </FormField>
 
@@ -273,7 +275,7 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
 
         {/* Profile Picture */}
         <div className="space-y-6 border-t border-gray-300 pt-[20px]">
-          <h3 className="font-inter font-semibold text-[20px] leading-[150%] tracking-[-2%] text-[var(--color-gray-600)]">
+          <h3 className="text-[20px] font-inter font-semibold leading-[150%] tracking-[-2%] text-gray-600">
             Profile Picture
           </h3>
 
@@ -286,6 +288,26 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({
               />
             </FormField>
           </div>
+
+          {/* Mobile Update Button */}
+          <Button
+            type="submit"
+            variant="primary"
+            size="md"
+            loading={isUpdating}
+            className="w-full md:hidden"
+            onClick={(e) => {
+              e.preventDefault();
+              console.log(
+                "Mobile button clicked - about to validate and submit"
+              );
+              form.handleSubmit(onSubmit, (errors) => {
+                console.log("Validation failed with errors:", errors);
+              })();
+            }}
+          >
+            {isUpdating ? "Updating..." : "Update Profile"}
+          </Button>
         </div>
 
         {successMessage && (
