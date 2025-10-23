@@ -84,14 +84,14 @@ export default function ProfilePage() {
     <Layout>
       <div className="min-h-screen bg-[var(--color-bg)]">
         {/* Main Content */}
-        <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8 mt-10 md:mt-0">
           <ProfileForm
             onSuccess={handleProfileUpdate}
             onCancel={handleCancel}
           />
         </div>
       </div>
-      
+
       {/* Chatbot */}
       <Chatbot />
     </Layout>

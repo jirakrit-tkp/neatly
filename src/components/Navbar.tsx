@@ -209,19 +209,14 @@ function UserMenu() {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-44 rounded-lg border bg-white shadow-md z-50">
+        <div className="absolute right-0 mt-2 w-44 rounded-lg border border-gray-500 bg-white shadow-md z-50">
           <Link
             href="/customer/profile"
             className="block px-4 py-2 hover:bg-gray-50"
           >
-            Account
+            Profile
           </Link>
-          <Link
-            href="/customer/settings"
-            className="block px-4 py-2 hover:bg-gray-50"
-          >
-            Settings
-          </Link>
+
           <Link
             href="/customer/booking-history"
             className="block px-4 py-2 hover:bg-gray-50"
@@ -295,12 +290,12 @@ function MobileUserMenu({
         >
           Profile
         </Link>
-        <Link
+        {/* <Link
           href="/customer/payment"
           className="flex items-center gap-2 px-2 py-2 text-[#222] text-sm hover:text-[#F47A1F]"
         >
           Payment Method
-        </Link>
+        </Link> */}
         <Link
           href="/customer/booking-history"
           className="flex items-center gap-2 px-2 py-2 text-[#222] text-sm hover:text-[#F47A1F]"
