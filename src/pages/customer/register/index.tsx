@@ -25,10 +25,10 @@ const RegisterPage = () => {
       />
 
       {/* Main Content with Background */}
-      <div className="min-h-screen bg-cover bg-center bg-no-repeat relative">
-        {/* Overlay */}
+      <div className="min-h-screen bg-center bg-no-repeat relative bg-bg md:bg-cover">
+        {/* Overlay - Desktop only */}
         <div
-          className="absolute inset-0 bg-black bg-opacity-20"
+          className="absolute inset-0 hidden md:block"
           style={{
             backgroundImage: "url('/Images/register-bg.jpg')",
             backgroundSize: "cover",
@@ -38,17 +38,17 @@ const RegisterPage = () => {
 
         {/* Form Container */}
         <div className="relative z-10 flex items-center justify-center min-h-screen px-4 py-20">
-          <div className="w-full max-w-4xl">
-            <div className="bg-[var(--color-bg)] backdrop-blur-sm rounded-2xl shadow-2xl overflow-hidden">
+          <div className="w-full max-w-sm md:max-w-4xl">
+            <div className="bg-bg md:backdrop-blur-sm rounded-lg overflow-hidden">
               {/* Form Header */}
-              <div className="px-[80px] pt-[80px] pb-6">
-                <h1 className="text-[68px] font-medium leading-[125%] tracking-[-2%] font-noto text-left text-[var(--color-green-800)]">
+              <div className="px-4 pt-10 pb-6 md:px-20 md:pt-20">
+                <h1 className="text-[44px] md:text-[68px] font-noto font-medium leading-[125%] tracking-[-2%] text-left text-green-800">
                   Register
                 </h1>
               </div>
 
               {/* Form Content */}
-              <div className="px-[80px] pb-[80px]">
+              <div className="px-4 pb-10 md:px-20 md:pb-20">
                 <RegisterForm />
               </div>
             </div>

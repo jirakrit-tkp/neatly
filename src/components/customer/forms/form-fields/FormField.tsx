@@ -12,9 +12,9 @@ export const FormField = forwardRef<HTMLDivElement, FormFieldProps>(
   ({ label, error, children, required = false }, ref) => (
     <div ref={ref} className="space-y-2">
       {/* Label - Properties */}
-      <label className="block text-base font-normal leading-6 tracking-normal font-inter text-[var(--color-gray-900)]">
+      <label className="block text-base font-inter font-normal leading-[150%] tracking-normal text-gray-900">
         {label}
-        {required && <span className="text-[var(--color-red)] ml-1"></span>}
+        {required && <span className="text-red ml-1"></span>}
       </label>
 
       {/* Input Component */}
@@ -22,7 +22,7 @@ export const FormField = forwardRef<HTMLDivElement, FormFieldProps>(
 
       {/* Error Message */}
       {error && (
-        <p className="text-sm text-[var(--color-red)] font-inter font-normal leading-[1.5] tracking-normal">
+        <p className="text-sm font-inter font-normal leading-[1.5] tracking-normal text-red">
           {error.message}
         </p>
       )}
