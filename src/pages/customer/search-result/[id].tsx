@@ -31,7 +31,14 @@ function splitAmenities(amenities: string[]) {
 }
 
 // Silver Circle for wrapping arrow buttons
-function SilverCircle({ children, className = "", ...props }: React.HTMLAttributes<HTMLDivElement> & { children: React.ReactNode; className?: string }) {
+function SilverCircle({
+  children,
+  className = "",
+  ...props
+}: React.HTMLAttributes<HTMLDivElement> & {
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
     <div
       className={
@@ -95,7 +102,10 @@ const SilverArrowButton = ({
         alt={direction === "left" ? "Previous" : "Next"}
         width={56}
         height={56}
-        style={{ filter: "brightness(0) saturate(100%) invert(70%) sepia(8%) saturate(500%) hue-rotate(200deg) brightness(90%) contrast(85%)" }}
+        style={{
+          filter:
+            "brightness(0) saturate(100%) invert(70%) sepia(8%) saturate(500%) hue-rotate(200deg) brightness(90%) contrast(85%)",
+        }}
       />
     </button>
   </SilverCircle>
@@ -172,7 +182,9 @@ function Roomdetailpage() {
   // Images for gallery (first, second, third for desktop)
   const images: string[] = (() => {
     if (!room) return [];
-    const gallery = Array.isArray(room.gallery_images) ? room.gallery_images : [];
+    const gallery = Array.isArray(room.gallery_images)
+      ? room.gallery_images
+      : [];
     const allImages = [
       room.main_image,
       ...gallery.filter((img) => img && img !== room.main_image),
@@ -182,7 +194,10 @@ function Roomdetailpage() {
 
   const formatPrice = (price?: number) => {
     if (typeof price !== "number") return "";
-    return price.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return price.toLocaleString("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
   };
 
   // Slider state and handlers
@@ -278,6 +293,7 @@ function Roomdetailpage() {
                   alt={room.name || "Room"}
                   fill
                   sizes="375px"
+                  loading="lazy"
                   style={{ objectFit: "cover" }}
                   className="transition-all duration-300"
                   draggable={false}
@@ -309,7 +325,7 @@ function Roomdetailpage() {
                 <h1 className="font-serif text-[#2F3E35] text-[24px] leading-tight mb-3 text-center">
                   {room.name}
                 </h1>
-                
+
                 {/* Room Description */}
                 {room.description && (
                   <p className="text-[#4B5755] text-sm leading-6 mb-4 text-center">
@@ -340,18 +356,21 @@ function Roomdetailpage() {
                   <div className="flex flex-col">
                     {room.promo_price && room.base_price ? (
                       <>
-                        <span className="text-sm text-gray-600 line-through">THB {formatPrice(room.base_price)}</span>
+                        <span className="text-sm text-gray-600 line-through">
+                          THB {formatPrice(room.base_price)}
+                        </span>
                         <span className="text-[#2F3E35] text-lg font-semibold">
                           THB {formatPrice(room.promo_price)}
                         </span>
                       </>
                     ) : (
                       <span className="text-[#2F3E35] text-lg font-semibold">
-                        THB {formatPrice(room.base_price ?? room.promo_price ?? 0)}
+                        THB{" "}
+                        {formatPrice(room.base_price ?? room.promo_price ?? 0)}
                       </span>
                     )}
                   </div>
-                  
+
                   {/* Book Now Button */}
                   <button className="bg-orange-600 text-white px-6 py-3 rounded-md text-sm font-semibold hover:bg-[#d96a1a] transition-colors">
                     Book Now
@@ -422,6 +441,7 @@ function Roomdetailpage() {
                             alt="Room view prev"
                             fill
                             sizes="288px"
+                            loading="lazy"
                             style={{ objectFit: "cover" }}
                             className="transition-all duration-300"
                             draggable={false}
@@ -445,6 +465,7 @@ function Roomdetailpage() {
                           alt={room.name || "Room"}
                           fill
                           sizes="864px"
+                          loading="lazy"
                           style={{ objectFit: "cover" }}
                           className="transition-all duration-300"
                           draggable={false}
@@ -471,6 +492,7 @@ function Roomdetailpage() {
                             alt="Room view next"
                             fill
                             sizes="288px"
+                            loading="lazy"
                             style={{ objectFit: "cover" }}
                             className="transition-all duration-300"
                             draggable={false}
@@ -532,14 +554,19 @@ function Roomdetailpage() {
                     <div className="flex flex-col items-center md:items-end">
                       {room.promo_price && room.base_price ? (
                         <>
-                          <span className="text-sm text-gray-600 line-through">THB {formatPrice(room.base_price)}</span>
+                          <span className="text-sm text-gray-600 line-through">
+                            THB {formatPrice(room.base_price)}
+                          </span>
                           <span className="text-[#2F3E35] text-lg md:text-xl font-semibold">
                             THB {formatPrice(room.promo_price)}
                           </span>
                         </>
                       ) : (
                         <span className="text-[#2F3E35] text-lg md:text-xl font-semibold">
-                          THB {formatPrice(room.base_price ?? room.promo_price ?? 0)}
+                          THB{" "}
+                          {formatPrice(
+                            room.base_price ?? room.promo_price ?? 0
+                          )}
                         </span>
                       )}
                     </div>
@@ -578,10 +605,32 @@ function Roomdetailpage() {
       <Otherroompage />
       <Footer />
       <style jsx global>{`
-        @keyframes slideLeft { 0% { transform: translateX(0); opacity: 1; } 100% { transform: translateX(-60px); opacity: 0.7; } }
-        @keyframes slideRight { 0% { transform: translateX(0); opacity: 1; } 100% { transform: translateX(60px); opacity: 0.7; } }
-        .animate-slide-left { animation: slideLeft 0.35s cubic-bezier(0.4,0,0.2,1); }
-        .animate-slide-right { animation: slideRight 0.35s cubic-bezier(0.4,0,0.2,1); }
+        @keyframes slideLeft {
+          0% {
+            transform: translateX(0);
+            opacity: 1;
+          }
+          100% {
+            transform: translateX(-60px);
+            opacity: 0.7;
+          }
+        }
+        @keyframes slideRight {
+          0% {
+            transform: translateX(0);
+            opacity: 1;
+          }
+          100% {
+            transform: translateX(60px);
+            opacity: 0.7;
+          }
+        }
+        .animate-slide-left {
+          animation: slideLeft 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .animate-slide-right {
+          animation: slideRight 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        }
       `}</style>
     </div>
   );
