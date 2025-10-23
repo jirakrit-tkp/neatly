@@ -103,7 +103,7 @@ export default async function handler(
         .from("bookings")
         .select(
           `
-          id, customer_name, check_in_date, check_out_date, created_at, additional_request, special_requests, standard_request, cancellation_date, promo_code,
+          id, customer_name, check_in_date, check_out_date, created_at, additional_request, special_requests, standard_request, cancellation_date, promo_code, total_amount,
           rooms(guests, room_type, bed_type, main_image_url),
           profiles(first_name, last_name, username)
         `
@@ -145,6 +145,7 @@ export default async function handler(
         standard_request: rawData.standard_request,
         cancellation_date: rawData.cancellation_date,
         promo_code: rawData.promo_code,
+        total_amount: rawData.total_amount,
         guests: room?.guests ?? rawData.guests ?? null,
         room_type: room?.room_type ?? rawData.room_type ?? null,
         bed_type: room?.bed_type ?? rawData.bed_type ?? null,

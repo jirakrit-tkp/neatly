@@ -32,7 +32,8 @@ interface Booking {
   additional_request?: string[];
   standard_request?: string[];
   created_at: string;
-  rooms?: RoomforBookings | undefined;
+  main_image_url?: string[] | undefined;
+  room_type?: string;
 }
 
 type BookingApiResponse = {
@@ -52,7 +53,6 @@ export default function ChangeBookingPage() {
   const [validationError, setValidationError] = useState("");
   const today = new Date().toISOString().split("T")[0];
 
-  // KEY FIX 1: Only fetch when bookingId is available
   // Wait for router to be ready and bookingId to be a string
   const shouldFetch =
     router.isReady && bookingId && typeof bookingId === "string";
@@ -68,14 +68,12 @@ export default function ChangeBookingPage() {
 
   const booking = bookingResponse?.data;
 
-  // KEY FIX 2: Handle query errors
   useEffect(() => {
     if (queryError) {
       setError("Failed to load booking data");
     }
   }, [queryError]);
 
-  // KEY FIX 3: Handle case where booking wasn't found
   useEffect(() => {
     if (!loading && shouldFetch && bookingResponse && !booking) {
       setError("Booking not found");
@@ -170,7 +168,6 @@ export default function ChangeBookingPage() {
     setIsModalOpen(true);
   };
 
-  // KEY FIX 4: Show loading while router is initializing OR data is loading
   if (!router.isReady || loading || !shouldFetch) {
     return (
       <Layout>
@@ -179,7 +176,6 @@ export default function ChangeBookingPage() {
     );
   }
 
-  // KEY FIX 5: Show error state properly
   if (error || queryError) {
     return (
       <Layout>
@@ -200,7 +196,6 @@ export default function ChangeBookingPage() {
     );
   }
 
-  // KEY FIX 6: Show not found state
   if (!booking) {
     return (
       <Layout>
@@ -227,9 +222,9 @@ export default function ChangeBookingPage() {
   return (
     <Layout>
       <div className="min-h-screen bg-[#F7F7FB]">
-        <div className="min-w-screen md:px-20 pt-25">
+        <div className="min-w-screen md:px-20 pt-25 mb-10 md:mb-20">
           {/* Header */}
-          <h1 className="text-6xl md:text-7xl text-green-700 mb-5 md:mb-12 font-noto font-medium px-5 ">
+          <h1 className="text-6xl md:text-7xl text-green-700 md:mt-15 mb-5 md:mb-12 font-noto font-medium px-5 ">
             <span>Change </span>
             <br className="md:hidden" />
             <span>Check-in </span>
@@ -246,10 +241,10 @@ export default function ChangeBookingPage() {
                 <div className="w-full md:w-[370px] h-50 md:h-[200px] relative md:rounded-md overflow-hidden">
                   <Image
                     src={
-                      booking?.rooms?.main_image_url[0] ||
+                      booking?.main_image_url?.[0] ||
                       "https://images.unsplash.com/photo-1566073771259-6a8506099945"
                     }
-                    alt={booking?.rooms?.room_type || "room-image"}
+                    alt={booking?.room_type || "room-image"}
                     fill
                     className="block object-cover"
                   />
@@ -271,7 +266,7 @@ export default function ChangeBookingPage() {
               <div className="md:w-full">
                 {/* Original Booking Detail Component */}
                 <OriginalBookingDetail
-                  roomType={booking?.rooms?.room_type}
+                  roomType={booking?.room_type}
                   bookingDate={booking?.created_at}
                   checkInDate={booking?.check_in_date}
                   checkOutDate={booking?.check_out_date}
@@ -279,7 +274,7 @@ export default function ChangeBookingPage() {
 
                 {/* Validation Error Message */}
                 {validationError && (
-                  <div className="p-5 md:p-0 md:pl-15 mb-4">
+                  <div className="md:pl-15 mb-4">
                     <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
                       {validationError}
                     </div>
@@ -287,7 +282,7 @@ export default function ChangeBookingPage() {
                 )}
 
                 {/* Display original nights info */}
-                <div className="p-5 md:p-0 md:pl-15 mb-4">
+                <div className="px-5 md:p-0 md:pl-15 mb-4">
                   <p className="text-gray-600 text-sm">
                     Original booking: {originalNights}{" "}
                     {originalNights === 1 ? "night" : "nights"}
@@ -307,7 +302,7 @@ export default function ChangeBookingPage() {
                 )}
 
                 {/* Change Date Form Component - wrapped in padding div */}
-                <div className="p-5 md:p-0 md:pl-15">
+                <div className="px-5 md:p-0 md:pl-15">
                   <ChangeDateForm
                     checkIn={checkIn}
                     checkOut={checkOut}

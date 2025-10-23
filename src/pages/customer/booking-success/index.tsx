@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import Head from "next/head";
 import { BookingConfirmation } from "@/types/booking";
 import { formatCurrency, formatDate } from "@/utils/bookingUtils";
 import Layout from "@/components/Layout";
@@ -129,10 +128,8 @@ const BookingSuccessPage: React.FC = () => {
       </Head> */}
 
       <Layout>
-        <Navbar />
-
         <div className="min-h-screen bg-bg flex items-start justify-center ">
-          <div className="w-full max-w-4xl px-4">
+          <div className="w-full max-w-4xl px-4 mt-20 md:mt-40">
             {/* Booking Confirmation Box */}
             <div className="bg-green-800 rounded shadow-2xl overflow-hidden">
               {/* Header */}

@@ -134,6 +134,7 @@ export default function Aboutsection() {
         lineHeight: "36px",
         textAlign: "center",
         width: "100%",
+        fontWeight: "bold",
       }
     : {
         fontSize: "clamp(3rem, 7vw, 68px)",
@@ -143,6 +144,7 @@ export default function Aboutsection() {
         marginBottom: "40px",
         letterSpacing: 0,
         color: "#2F3E35",
+        fontWeight: "bold",
         fontFamily: "Noto Serif, serif",
       };
 
