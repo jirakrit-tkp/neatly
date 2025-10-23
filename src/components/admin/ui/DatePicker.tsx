@@ -357,11 +357,3 @@ function Demo() {
     </div>
   );
 }
-
-// Render the demo
-const root = document.getElementById("root");
-if (root) {
-  import("react-dom/client").then(({ createRoot }) => {
-    createRoot(root).render(<Demo />);
-  });
-}
