@@ -240,6 +240,7 @@ function SearchResultPage() {
                         alt={room.name || "Room image"}
                         width={800}
                         height={600}
+                        loading="lazy"
                         style={{
                           objectFit: "cover",
                           width: "100%",
