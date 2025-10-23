@@ -44,22 +44,21 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(
           className={cn(
             // Base styles from design system
             "w-full h-12 pt-3 pr-4 pb-3 pl-3 border rounded",
-            "bg-[var(--color-white)] border-[var(--color-gray-400)]",
-            "focus:outline-none focus:ring-2 focus:ring-[var(--color-orange-500)] focus:border-[var(--color-orange-500)]",
+            "bg-white border-gray-400",
+            "focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500",
             "transition-colors duration-200",
 
             // Typography from design system
             "font-inter text-base font-normal leading-6 tracking-normal",
-            "text-[var(--color-gray-900)]", // Text color เมื่อเลือก
-            "data-[placeholder]:text-[var(--color-gray-600)]", // Placeholder สีเทากลาง
+            "text-gray-900", // Text color เมื่อเลือก
+            "data-[placeholder]:text-gray-600", // Placeholder สีเทากลาง
 
             // Error state
-            error &&
-              "border-[var(--color-red)] focus:ring-[var(--color-red)] focus:border-[var(--color-red)]",
+            error && "border-red focus:ring-red focus:border-red",
 
             // Disabled state
             disabled &&
-              "bg-[var(--color-gray-200)] border-[var(--color-gray-400)] text-[var(--color-gray-600)] cursor-not-allowed",
+              "bg-gray-200 border-gray-400 text-gray-600 cursor-not-allowed",
 
             // Override Radix UI default styles
             "!h-12 !py-0", // Force height และ reset padding
@@ -75,12 +74,12 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
 
-        <SelectContent className="bg-white border border-[var(--color-gray-400)] rounded shadow-lg">
+        <SelectContent className="bg-white border border-gray-400 rounded shadow-lg">
           {options.map((option) => (
             <SelectItem
               key={option.value}
               value={option.value}
-              className="font-inter text-base font-normal leading-[150%] tracking-[0%] text-[#646D89] hover:bg-[var(--color-gray-100)] focus:bg-[var(--color-gray-100)] px-3 py-2 cursor-pointer"
+              className="font-inter text-base font-normal leading-[150%] tracking-[0%] text-[#646D89] hover:bg-gray-100 focus:bg-gray-100 px-3 py-2 cursor-pointer"
             >
               {option.label}
             </SelectItem>
@@ -91,7 +90,7 @@ export const Select = forwardRef<HTMLButtonElement, SelectProps>(
       {/* Error Icon - แสดงเฉพาะเมื่อมี error */}
       {error && (
         <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-          <ErrorIcon size={14} className="text-[var(--color-red)]" />
+          <ErrorIcon size={14} className="text-red" />
         </div>
       )}
     </div>

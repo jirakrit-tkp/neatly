@@ -56,10 +56,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   return (
     <div className="w-full">
       <div
-        className={`bg-[var(--color-gray-200)] relative w-[167px] h-[167px] rounded-[4px] text-center transition-colors cursor-pointer group ${
+        className={`bg-gray-200 relative w-[167px] h-[167px] rounded text-center transition-colors cursor-pointer group ${
           error
-            ? "border-[var(--color-red-300)] bg-[var(--color-red-50)]"
-            : "border-[var(--color-gray-300)] bg-[var(--color-gray-50)] hover:border-[var(--color-gray-400)]"
+            ? "border-red-300 bg-red-50"
+            : "border-gray-300 bg-gray-50 hover:border-gray-400"
         }`}
         style={{ overflow: "visible" }}
       >
@@ -82,7 +82,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
             <button
               type="button"
               onClick={handleRemoveImage}
-              className="absolute bg-[var(--color-red)] text-[var(--color-white)] rounded-full flex items-center justify-center z-30
+              className="absolute bg-red text-white rounded-full flex items-center justify-center z-30
                   transition-opacity duration-200"
               style={{
                 width: "24px",
@@ -99,8 +99,8 @@ export const FileUpload: React.FC<FileUploadProps> = ({
           </>
         ) : (
           <div className="absolute inset-0 flex flex-col items-center justify-center space-y-3 z-0">
-            <PlusIcon size={24} className="text-[var(--color-orange-500)]" />
-            <div className="w-[91px] h-[21px] text-[var(--color-orange-500)] font-medium text-sm leading-[150%] tracking-[0%] font-inter text-center">
+            <PlusIcon size={24} className="text-orange-500" />
+            <div className="w-[91px] h-[21px] text-orange-500 font-medium text-sm leading-[150%] tracking-[0%] font-inter text-center">
               Upload photo
             </div>
           </div>
@@ -108,7 +108,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       </div>
 
       {error && (
-        <p className="mt-2 text-sm text-[var(--color-red-600)]">
+        <p className="mt-2 text-sm text-red-600">
           Please select a valid image file
         </p>
       )}
