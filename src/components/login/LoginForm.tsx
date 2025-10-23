@@ -51,8 +51,10 @@ export default function LoginForm() {
 
       // ถ้าเป็น username → เรียก RPC แปลงเป็น email (ไม่สนตัวพิมพ์ใหญ่เล็ก)
       if (!isEmail) {
-        const { data: email, error } = await supabase
-          .rpc("get_email_by_username", { uname: trimmedUsername });
+        const { data: email, error } = await supabase.rpc(
+          "get_email_by_username",
+          { uname: trimmedUsername }
+        );
 
         if (error || !email) {
           setErrors({ username: "Username not found", password: "" });
@@ -62,10 +64,11 @@ export default function LoginForm() {
       }
 
       // ล็อกอินด้วยอีเมล + พาสเวิร์ด
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email: emailToLogin,
-        password: trimmedPassword,
-      });
+      const { data: authData, error: authError } =
+        await supabase.auth.signInWithPassword({
+          email: emailToLogin,
+          password: trimmedPassword,
+        });
 
       if (authError) {
         const msg =
@@ -124,8 +127,11 @@ export default function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit}>
-      <div className="mb-5 md:mb-[40px]">
-        <label htmlFor="email" className="block mb-2 text-[15px] md:text-[16px] leading-[150%] text-gray-900">
+      <div className="mb-5 md:mb-[20px]">
+        <label
+          htmlFor="email"
+          className="block mb-2 text-[15px] md:text-[16px] leading-[150%] text-gray-900"
+        >
           Username or Email
         </label>
         <input
@@ -136,13 +142,20 @@ export default function LoginForm() {
           placeholder="Enter your username or email"
           className="w-full md:w-[452px] h-[48px] rounded border border-gray-300 bg-white pt-3 pr-4 pb-3 pl-3 text-[16px] outline-none placeholder:text-gray-500 focus:border-green-700 transition"
         />
-        <p className={`text-sm h-5 mt-1 ${errors.username ? "text-red-500 visible" : "invisible"}`}>
+        <p
+          className={`text-sm h-5 mt-1 ${
+            errors.username ? "text-red-500 visible" : "invisible"
+          }`}
+        >
           {errors.username || "placeholder"}
         </p>
       </div>
 
-      <div className="mb-5 md:mb-[40px]">
-        <label htmlFor="password" className="block mb-2 text-[15px] md:text-[16px] leading-[150%] text-gray-900">
+      <div className="mb-5 md:mb-[20px]">
+        <label
+          htmlFor="password"
+          className="block mb-2 text-[15px] md:text-[16px] leading-[150%] text-gray-900"
+        >
           Password
         </label>
         <input
@@ -153,7 +166,11 @@ export default function LoginForm() {
           placeholder="Enter your password"
           className="w-full md:w-[452px] h-[48px] rounded border border-gray-300 bg-white pt-3 pr-4 pb-3 pl-3 text-[16px] outline-none placeholder:text-gray-500 focus:border-green-700 focus:ring-2 focus:ring-green-100 transition"
         />
-        <p className={`text-sm h-5 mt-1 ${errors.password ? "text-red-500 visible" : "invisible"}`}>
+        <p
+          className={`text-sm h-5 mt-1 ${
+            errors.password ? "text-red-500 visible" : "invisible"
+          }`}
+        >
           {errors.password || "placeholder"}
         </p>
       </div>
@@ -172,11 +189,17 @@ export default function LoginForm() {
             Don’t have an account yet?
           </p>
 
-          <Link href="/customer/register" className="font-semibold text-orange-500 text-[15px] md:text-[16px] hover:underline">
+          <Link
+            href="/customer/register"
+            className="font-semibold text-orange-500 text-[15px] md:text-[16px] hover:underline"
+          >
             Register
           </Link>
 
-          <Link href="/customer/forgot-password" className="w-full sm:w-auto ml-0 sm:ml-auto text-left sm:text-right mt-1 sm:mt-0 font-semibold text-orange-500 text-[15px] md:text-[16px] hover:underline">
+          <Link
+            href="/customer/forgot-password"
+            className="w-full sm:w-auto ml-0 sm:ml-auto text-left sm:text-right mt-1 sm:mt-0 font-semibold text-orange-500 text-[15px] md:text-[16px] hover:underline"
+          >
             Forgot Password?
           </Link>
         </div>

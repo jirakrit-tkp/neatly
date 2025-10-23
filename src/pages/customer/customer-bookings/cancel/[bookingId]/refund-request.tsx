@@ -31,7 +31,9 @@ interface Booking {
   additional_request?: string[];
   standard_request?: string[];
   created_at: string;
-  rooms?: RoomforBookings | undefined;
+  room_type?: string;
+  main_image_url?: string[];
+  guests?: number;
 }
 
 type BookingApiResponse = {
@@ -64,6 +66,7 @@ export default function RefundBookingPage() {
   );
 
   const booking = bookingResponse?.data;
+  console.log("Booking Data:", bookingResponse);
 
   // Handle query errors
   useEffect(() => {
@@ -186,7 +189,7 @@ export default function RefundBookingPage() {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-[#F7F7FB]">
+      <div className="min-h-screen bg-[#F7F7FB] md:mt-20">
         <div className="min-w-screen md:px-20 pt-25">
           {/* Header */}
           <h1 className="text-5xl md:text-7xl text-green-700 mb-10 md:mb-12 font-noto font-medium px-5 ">
@@ -202,10 +205,10 @@ export default function RefundBookingPage() {
                 <div className="w-full md:w-[370px] h-50 md:h-[200px] relative md:rounded-md overflow-hidden">
                   <Image
                     src={
-                      booking?.rooms?.main_image_url[0] ||
+                      booking?.main_image_url?.[0] ||
                       "https://images.unsplash.com/photo-1566073771259-6a8506099945"
                     }
-                    alt={booking?.rooms?.room_type || "room-image"}
+                    alt={booking?.room_type || "room-image"}
                     fill
                     className="block object-cover"
                   />
@@ -218,7 +221,7 @@ export default function RefundBookingPage() {
                   {/* Room Type and Booking Date Header */}
                   <div className="flex flex-col md:flex-row justify-between items-start mb-6">
                     <h2 className="text-5xl md:text-4xl font-semibold text-black font-inter mt-2">
-                      {booking?.rooms?.room_type}
+                      {booking?.room_type}
                     </h2>
                     <p className="text-md text-gray-600 mt-3 md:mt-0">
                       Booking date:{" "}
@@ -236,7 +239,7 @@ export default function RefundBookingPage() {
                         {formatDate(booking.check_out_date)}
                       </p>
                       <p className="text-md text-gray-800">
-                        {booking?.rooms?.guests} guests
+                        {booking?.guests} Guests
                       </p>
                     </div>
 

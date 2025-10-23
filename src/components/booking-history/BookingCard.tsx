@@ -12,39 +12,39 @@ export type Booking = {
   roomName: string;
   imageUrl: string;
 
-  checkInDate: string;       // วันที่ check-in ในรูปแบบข้อความพร้อมแสดง
-  checkInNote?: string;      // หมายเหตุเวลาเช็กอิน (เช่น After 2:00 PM)
-  checkOutDate: string;      // วันที่ check-out
-  checkOutNote?: string;     // หมายเหตุเวลาเช็กเอาต์
+  checkInDate: string; // วันที่ check-in ในรูปแบบข้อความพร้อมแสดง
+  checkInNote?: string; // หมายเหตุเวลาเช็กอิน (เช่น After 2:00 PM)
+  checkOutDate: string; // วันที่ check-out
+  checkOutNote?: string; // หมายเหตุเวลาเช็กเอาต์
 
-  bookedAtText: string;      // วันที่ทำการจอง (เพื่อแสดง "Booking date")
-  cancelled?: boolean;       // สถานะถูกยกเลิกแล้วหรือยัง
-  cancelledAtText?: string;  // ถ้ายกเลิกแล้ว แสดงวันยกเลิก
+  bookedAtText: string; // วันที่ทำการจอง (เพื่อแสดง "Booking date")
+  cancelled?: boolean; // สถานะถูกยกเลิกแล้วหรือยัง
+  cancelledAtText?: string; // ถ้ายกเลิกแล้ว แสดงวันยกเลิก
   checkInAtRaw?: string | null; // ใช้เทียบว่าเลย "วัน" เช็กอิน (ตามเวลาไทย) หรือยัง
 
-  guests: number;            // จำนวนผู้เข้าพัก
-  nights: number;            // จำนวนคืน
+  guests: number; // จำนวนผู้เข้าพัก
+  nights: number; // จำนวนคืน
   payment: {
     status: "success" | "pending" | "failed"; // สถานะการจ่ายเงิน
-    method: string;           // ช่องทางการชำระ
-    mask?: string;            // เลขบัตร เช่น *123
+    method: string; // ช่องทางการชำระ
+    mask?: string; // เลขบัตร เช่น *123
   };
   items: Array<{ label: string; amount: number }>; // รายการค่าใช้จ่ายต่างๆ
-  currency: string;          // สกุลเงิน (เช่น THB)
-  total: number;             // ยอดรวมทั้งหมด
-  additionalRequest?: string;// คำขอเพิ่มเติม
+  currency: string; // สกุลเงิน (เช่น THB)
+  total: number; // ยอดรวมทั้งหมด
+  additionalRequest?: string; // คำขอเพิ่มเติม
 
-  promoCode?: string;        // โค้ดโปรโมชัน (ถ้ามี)
-  promoDiscount?: number;    // ส่วนลดจากโปรโมชัน (ถ้ามี)
+  promoCode?: string; // โค้ดโปรโมชัน (ถ้ามี)
+  promoDiscount?: number; // ส่วนลดจากโปรโมชัน (ถ้ามี)
 };
 
 type Props = {
-  booking: Booking;          // ข้อมูลการจองตัวเดียวที่ใช้แสดงการ์ด
+  booking: Booking; // ข้อมูลการจองตัวเดียวที่ใช้แสดงการ์ด
   onDeleted?: (id: string) => void; // callback เผื่อมีการลบ (ยังไม่ได้ใช้)
 };
 
 /** ---- Helpers ---- */
-// ฟังก์ชันแปลงจำนวนเงินให้มีทศนิยมสองตำแหน่ง 
+// ฟังก์ชันแปลงจำนวนเงินให้มีทศนิยมสองตำแหน่ง
 function money(n: number) {
   return new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 2,
@@ -107,7 +107,7 @@ function thaiYmdKey(d: Date): number {
     month: "2-digit",
     day: "2-digit",
   }).formatToParts(d);
-  const get = (t: string) => parts.find(p => p.type === t)?.value ?? "";
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
   const y = get("year");
   const m = get("month");
   const day = get("day");
@@ -134,11 +134,11 @@ const FALLBACK_IMG = "/images/sample-room-1.png";
 // แมปชื่อห้องที่ normalize แล้วไปยังหน้า Room Detail เฉพาะแต่ละประเภท
 const ROOM_PATHS: Record<string, string> = {
   "superior garden view": "/customer/search-result/1",
-  "deluxe": "/customer/search-result/2",
-  "superior": "/customer/search-result/3",
-  "supreme": "/customer/search-result/4",
+  deluxe: "/customer/search-result/2",
+  superior: "/customer/search-result/3",
+  supreme: "/customer/search-result/4",
   "premier sea view": "/customer/search-result/5",
-  "suite": "/customer/search-result/6",
+  suite: "/customer/search-result/6",
 };
 
 // normalize ชื่อห้อง: ตัดคำว่า "room" ท้าย, trim, และทำให้เป็นตัวพิมพ์เล็ก
@@ -158,12 +158,12 @@ function getRoomDetailPath(roomName: string, bookingId: string) {
 /** ---- Component ---- */
 export default function BookingCard({ booking }: Props) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);                    // toggle panel "Booking Detail"
-  const [showRefundModal, setShowRefundModal] = useState(false);     // modal กรณีขอคืนเงินได้
+  const [open, setOpen] = useState(false); // toggle panel "Booking Detail"
+  const [showRefundModal, setShowRefundModal] = useState(false); // modal กรณีขอคืนเงินได้
   const [showNonRefundModal, setShowNonRefundModal] = useState(false); // modal กรณี non-refund
-  const [deleting] = useState(false);                         // state เผื่ออนาคต (ตอนนี้ยังไม่ใช้ลบ)
-  const [deleteError] = useState<string | null>(null);        // แสดง error ตอนลบ (ถ้ามี)
-  const panelId = useId();                                    // id สำหรับ aria-controls
+  const [deleting] = useState(false); // state เผื่ออนาคต (ตอนนี้ยังไม่ใช้ลบ)
+  const [deleteError] = useState<string | null>(null); // แสดง error ตอนลบ (ถ้ามี)
+  const panelId = useId(); // id สำหรับ aria-controls
 
   // คลิก "Cancel Booking"
   const handleCancelClick = () => {
@@ -175,7 +175,9 @@ export default function BookingCard({ booking }: Props) {
   // ยืนยัน cancel แล้วไปหน้า refund request
   const onConfirmRefund = () => {
     setShowRefundModal(false);
-    router.push(`/customer/customer-bookings/cancel/${booking.id}/refund-request`);
+    router.push(
+      `/customer/customer-bookings/cancel/${booking.id}/refund-request`
+    );
   };
   // ยืนยัน cancel แบบ non-refund แล้วไปหน้าดำเนินการยกเลิก
   const onConfirmNonRefund = () => {
@@ -187,7 +189,8 @@ export default function BookingCard({ booking }: Props) {
   const roomDetailHref = getRoomDetailPath(booking.roomName, booking.id);
 
   // แสดงปุ่ม action ก็ต่อเมื่อยังไม่ถูกยกเลิก และยังไม่ "เลยวันเช็กอิน (ไทย)"
-  const showActions = !booking.cancelled && !isPastCheckIn(booking.checkInAtRaw);
+  const showActions =
+    !booking.cancelled && !isPastCheckIn(booking.checkInAtRaw);
 
   return (
     <article className="bg-white border-b border-gray-200 last:border-b-0 mt-6 md:mt-0">
@@ -227,7 +230,9 @@ export default function BookingCard({ booking }: Props) {
             {/* ส่วนวันที่ Check-in / Check-out + หมายเหตุ */}
             <div className="mt-[24px] md:mt-[32px] flex flex-col sm:flex-row sm:gap-x-8 gap-y-4">
               <div>
-                <div className="text-[16px] font-semibold font-inter text-gray-800 mb-1">Check-in</div>
+                <div className="text-[16px] font-semibold font-inter text-gray-800 mb-1">
+                  Check-in
+                </div>
                 <div className="flex items-center text-[16px] font-inter text-gray-800">
                   <span>{booking.checkInDate}</span>
                   {booking.checkInNote && (
@@ -240,7 +245,9 @@ export default function BookingCard({ booking }: Props) {
               </div>
 
               <div>
-                <div className="text-[16px] font-semibold text-gray-800 font-inter mb-1">Check-out</div>
+                <div className="text-[16px] font-semibold text-gray-800 font-inter mb-1">
+                  Check-out
+                </div>
                 <div className="flex items-center text-[16px] font-inter text-gray-800">
                   <span>{booking.checkOutDate}</span>
                   {booking.checkOutNote && (
@@ -257,7 +264,7 @@ export default function BookingCard({ booking }: Props) {
             <button
               type="button"
               onClick={() => setOpen((v) => !v)}
-              className="mt-[24px] md:mt-[32px] w-full flex items-center justify-between bg-gray-200 px-4 sm:px-5 py-3 text-[16px] font-inter font-semibold text-gray-900 hover:bg-gray-100"
+              className="mt-[24px] md:mt-[32px] w-full flex items-center justify-between bg-gray-200 px-4 sm:px-5 py-3 text-[16px] font-inter font-semibold text-gray-800 hover:bg-gray-100"
               aria-expanded={open}
               aria-controls={panelId}
             >
@@ -286,17 +293,22 @@ export default function BookingCard({ booking }: Props) {
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-gray-600 text-[14px] sm:text-[15px]">
                     <div>
                       <span className="text-gray-700 text-[16px] font-inter">
-                        {booking.guests} {booking.guests > 1 ? "Guests" : "Guest"}
+                        {booking.guests}{" "}
+                        {booking.guests > 1 ? "Guests" : "Guest"}
                       </span>
                       <span className="text-gray-700 text-[16px] font-inter">
-                        {" "}({booking.nights} {booking.nights > 1 ? "Nights" : "Night"})
+                        {" "}
+                        ({booking.nights}{" "}
+                        {booking.nights > 1 ? "Nights" : "Night"})
                       </span>
                     </div>
                     <div className="sm:text-right">
                       <span className="text-gray-700 text-[16px] font-inter">{`Payment ${booking.payment.status} via `}</span>
                       <span className="text-gray-700 text-[16px] font-inter font-semibold">
                         {booking.payment.method}
-                        {booking.payment.mask ? ` - ${booking.payment.mask}` : ""}
+                        {booking.payment.mask
+                          ? ` - ${booking.payment.mask}`
+                          : ""}
                       </span>
                     </div>
                   </div>
@@ -304,12 +316,18 @@ export default function BookingCard({ booking }: Props) {
                   {/* รายการค่าใช้จ่ายย่อย + Total */}
                   <div className="mt-6">
                     {booking.items.map((it, idx) => (
-                      <Row key={idx} label={it.label} amount={money(it.amount)} />
+                      <Row
+                        key={idx}
+                        label={it.label}
+                        amount={money(it.amount)}
+                      />
                     ))}
 
                     {/* เส้นคั่นก่อน Total */}
                     <div className="mt-4 border-t border-gray-400 pt-3 flex items-center justify-between">
-                      <span className="text-gray-700 text-[16px] font-inter">Total</span>
+                      <span className="text-gray-700 text-[16px] font-inter">
+                        Total
+                      </span>
                       <span className="text-[20px] font-inter font-semibold text-gray-900">
                         {moneyWithCurrency(booking.total, booking.currency)}
                       </span>
@@ -317,13 +335,19 @@ export default function BookingCard({ booking }: Props) {
                   </div>
 
                   {/* แสดง error ตอนลบ ถ้ามี (ตอนนี้ยังไม่ได้ใช้จริง) */}
-                  {deleteError && <div className="mt-4 text-sm text-red-600">{deleteError}</div>}
+                  {deleteError && (
+                    <div className="mt-4 text-sm text-red-600">
+                      {deleteError}
+                    </div>
+                  )}
                 </div>
 
                 {/* คำขอเพิ่มเติมจากลูกค้า */}
                 {booking.additionalRequest && (
                   <div className="bg-gray-300 px-4 sm:px-6 py-4 text-[16px] font-inter text-gray-700">
-                    <div className="font-semibold font-inter text-gray-700 mb-1">Additional Request</div>
+                    <div className="font-semibold font-inter text-gray-700 mb-1">
+                      Additional Request
+                    </div>
                     <div>{booking.additionalRequest}</div>
                   </div>
                 )}
@@ -353,7 +377,10 @@ export default function BookingCard({ booking }: Props) {
                   Room Detail
                 </Link>
 
-                <Link href={`/customer/customer-bookings/change/${booking.id}`} passHref>
+                <Link
+                  href={`/customer/customer-bookings/change/${booking.id}`}
+                  passHref
+                >
                   <button
                     type="button"
                     className="rounded-md bg-orange-600 text-white px-5 py-2 text-[16px] font-semibold font-inter cursor-pointer hover:brightness-110"
@@ -368,7 +395,7 @@ export default function BookingCard({ booking }: Props) {
           {/* ปุ่มล่างสำหรับ Mobile/Tablet: เรียงใหม่ให้เหมาะกับจอเล็ก */}
           {showActions && (
             <div className="mt-6 md:hidden">
-              <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center justify-end gap-10">
                 <Link
                   href={roomDetailHref}
                   className="text-[16px] text-orange-500 font-semibold font-inter"
@@ -376,10 +403,13 @@ export default function BookingCard({ booking }: Props) {
                   Room Detail
                 </Link>
 
-                <Link href={`/customer/customer-bookings/change/${booking.id}`} passHref>
+                <Link
+                  href={`/customer/customer-bookings/change/${booking.id}`}
+                  passHref
+                >
                   <button
                     type="button"
-                    className="rounded-md bg-orange-600 text-white px-5 py-2 text-[16px] font-semibold font-inter"
+                    className="rounded-md bg-orange-600 text-white px-10 py-4 text-[16px] font-semibold font-inter"
                   >
                     Change Date
                   </button>
@@ -426,7 +456,9 @@ function Row({ label, amount }: { label: string; amount: string }) {
   return (
     <div className="py-2 flex items-start justify-between">
       <span className="font-inter text-[16px] text-gray-700">{label}</span>
-      <span className="font-inter text-[16px] text-gray-900 font-semibold">{amount}</span>
+      <span className="font-inter text-[16px] text-gray-900 font-semibold">
+        {amount}
+      </span>
     </div>
   );
 }

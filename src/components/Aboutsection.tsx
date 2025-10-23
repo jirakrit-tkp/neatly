@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { useHotelInfo } from "@/context/HotelInfoContext";
+import { motion, Variants } from "framer-motion";
 
 // Images array remains unchanged
 const images = [
@@ -15,9 +16,42 @@ const images = [
 
 export default function Aboutsection() {
   const { hotelInfo, loading } = useHotelInfo();
-  const [mobileIndex, setMobileIndex] = useState(0);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Animation variants for hotel name
+  const titleVariants: Variants = {
+    hidden: {
+      opacity: 0,
+      y: 50,
+    },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.8,
+        ease: [0.25, 0.1, 0.25, 1],
+      },
+    },
+  };
+
+  // Animation variants for description paragraphs with stagger
+  const paragraphVariants: Variants = {
+    hidden: {
+      opacity: 0,
+      y: 30,
+    },
+    visible: (index: number) => ({
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.8,
+        ease: [0.25, 0.1, 0.25, 1],
+        delay: 0.2 + index * 0.1, // Stagger each paragraph by 0.1s
+      },
+    }),
+  };
 
   // When screen <= 700, treat as mobile
   useEffect(() => {
@@ -32,29 +66,40 @@ export default function Aboutsection() {
   // Carousel auto play - for both mobile and desktop
   useEffect(() => {
     timerRef.current = setInterval(() => {
-      setMobileIndex((prev) => (prev + 1) % images.length);
-    }, 8000); // Change to 8 seconds (8000ms)
+      setCurrentIndex((prev) => (prev + 1) % images.length);
+    }, 8000);
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, []);
 
-  const handleMobilePrev = () => {
-    setMobileIndex((prev) => (prev - 1 + images.length) % images.length);
+  const handlePrev = () => {
+    setCurrentIndex((prev) => (prev - 1 + images.length) % images.length);
   };
 
-  // const handleMobileNext = () => {
-  //   setMobileIndex((prev) => (prev + 1) % images.length);
-  // };
+  const handleNext = () => {
+    setCurrentIndex((prev) => (prev + 1) % images.length);
+  };
 
-  // Desktop carousel functions
-  const getVisibleImages = () => {
-    const visibleImages = [];
-    for (let i = 0; i < 5; i++) {
-      const idx = (mobileIndex + i) % images.length;
-      visibleImages.push(images[idx]);
+  // Desktop: Get extended array for infinite scroll effect
+  const getExtendedImages = () => {
+    // Create array with images before, current, and after for smooth infinite scroll
+    const extended = [];
+    for (let i = -1; i < 6; i++) {
+      const idx = (currentIndex + i + images.length) % images.length;
+      extended.push({ ...images[idx], key: `${idx}-${i}` });
     }
-    return visibleImages;
+    return extended;
+  };
+
+  // Mobile: Get 3 images centered on current
+  const getMobileImages = () => {
+    const mobile = [];
+    for (let i = -1; i <= 1; i++) {
+      const idx = (currentIndex + i + images.length) % images.length;
+      mobile.push({ ...images[idx], key: `${idx}-${i}` });
+    }
+    return mobile;
   };
 
   // Style helpers
@@ -79,12 +124,11 @@ export default function Aboutsection() {
         minWidth: "1440px",
         width: "1440px",
         maxWidth: "1440px",
-        minHeight: "1178px",
+        minHeight: "1100px",
         height: "auto",
         marginLeft: "auto",
         marginRight: "auto",
         paddingTop: 0,
-        paddingBottom: "48px",
         boxSizing: "border-box",
         background: "#fff",
         position: "relative",
@@ -116,16 +160,15 @@ export default function Aboutsection() {
 
   const titleStyle: React.CSSProperties = isMobile
     ? {
-        fontFamily: "Noto Serif, serif",
         color: "#2F3E35",
         fontSize: "28px",
-        fontWeight: "600",
         marginBottom: "20px",
         marginTop: "0",
         letterSpacing: "0",
         lineHeight: "36px",
         textAlign: "center",
         width: "100%",
+        fontWeight: "bold",
       }
     : {
         fontSize: "clamp(3rem, 7vw, 68px)",
@@ -135,6 +178,7 @@ export default function Aboutsection() {
         marginBottom: "40px",
         letterSpacing: 0,
         color: "#2F3E35",
+        fontWeight: "bold",
         fontFamily: "Noto Serif, serif",
       };
 
@@ -193,36 +237,48 @@ export default function Aboutsection() {
             max-height: 480px !important;
             overflow: visible !important;
             border-radius: 12px !important;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.2) !important;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2) !important;
           }
           .calendar-overflow-container .calendar-mobile * {
             overflow: visible !important;
             position: relative !important;
           }
         }
+
+        .carousel-track {
+          transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
       `}</style>
-      <section id="about" style={sectionStyle} className="calendar-overflow-container">
+      <section
+        id="about"
+        style={sectionStyle}
+        className="calendar-overflow-container"
+      >
         {/* MOBILE VERSION */}
         {isMobile ? (
           <>
             {/* Title & Description */}
             <div style={textBoxStyle}>
-              <h2
+              <motion.h2
+                className="font-noto"
                 style={{
                   ...titleStyle,
                   textAlign: "left",
                   width: "100%",
-                  fontFamily: "Noto Sans, Noto Serif, sans-serif",
                 }}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, amount: 0.3 }}
+                variants={titleVariants}
               >
                 {loading ? "Loading..." : hotelInfo.name}
-              </h2>
+              </motion.h2>
               <div style={descriptionStyle}>
                 {loading ? (
                   <p>Loading hotel description...</p>
                 ) : (
                   descriptionParagraphs.map((paragraph, i) => (
-                    <p
+                    <motion.p
                       key={i}
                       style={{
                         fontSize: "14px",
@@ -231,125 +287,84 @@ export default function Aboutsection() {
                         marginBottom:
                           i < descriptionParagraphs.length - 1 ? "15px" : "0px",
                       }}
+                      initial="hidden"
+                      whileInView="visible"
+                      viewport={{ once: true, amount: 0.3 }}
+                      custom={i}
+                      variants={paragraphVariants}
                     >
                       {paragraph}
-                    </p>
+                    </motion.p>
                   ))
                 )}
               </div>
             </div>
-            {/* Auto-sliding 3-image carousel with left button on image */}
-            <div
-              style={{
-                width: "100vw",
-                maxWidth: "100vw",
-                background: "#fff",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                boxSizing: "border-box",
-                paddingTop: "18px",
-                paddingBottom: "16px",
-                borderRadius: "0px 0px 24px 24px",
-                boxShadow: "0 2px 8px 0 rgba(20,36,46,0.04)",
-                overflow: "hidden",
-                position: "relative",
-              }}
-            >
+            {/* Mobile 3-image carousel */}
+            {/* Carousel Section */}
+            <div className="relative w-full max-w-[1440px] overflow-hidden flex justify-center items-center mt-8 md:mt-16">
               <div
+                className="flex transition-transform duration-500 ease-in-out mb-10"
                 style={{
-                  width: "100%",
-                  display: "flex",
-                  flexDirection: "row", // Horizontal layout for images
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "100px", // Horizontal gap between images
-                  paddingLeft: "18px",
-                  paddingRight: "18px",
-                  background: "#fff",
+                  transform: `translateX(-${currentIndex * 188}px)`,
                 }}
               >
-                {/* Centered Carousel - shows 3 images at once, centered on mobileIndex */}
-                {[0, 1, 2].map((k) => {
-                  // For 3-image card: center = mobileIndex, show (mobileIndex-1, mobileIndex, mobileIndex+1)
-                  const idx =
-                    (mobileIndex - 1 + k + images.length) % images.length;
-                  return (
-                    <div
-                      key={images[idx].src}
+                {[...images, ...images].map((img, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      width: 180,
+                      height: 225,
+                      marginRight: 8,
+                      overflow: "hidden",
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Image
+                      src={img.src}
+                      alt={img.alt}
+                      width={180}
+                      height={225}
                       style={{
-                        width: 180,
-                        height: 225,
-                        borderRadius: "0px",
-                        overflow: "hidden",
-                        background: "#fff",
-                        boxShadow: "0 2px 8px 0 rgba(72, 73, 74, 0.08)",
-                        opacity: 1,
-                        zIndex: 1,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        transition: "all 0.3s ease",
-                        position: "relative",
-                        flex: "0 0 180px",
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
                       }}
-                    >
-                      <Image
-                        src={images[idx].src}
-                        alt={images[idx].alt}
-                        width={180}
-                        height={225}
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "cover",
-                          borderRadius: "0px",
-                        }}
-                      />
-                      {/* Left button on center image only */}
-                      {k === 1 && (
-                        <button
-                          aria-label="Previous images"
-                          onClick={handleMobilePrev}
-                          style={{
-                            position: "absolute",
-                            left: "-100px",
-                            top: "0%",
-                            transform: "translateY(-50%)",
-                            background: "transparent",
-                            border: "2px solid silver",
-                            borderRadius: "50%",
-                            width: 36,
-                            height: 36,
-                            minWidth: 36,
-                            minHeight: 36,
-                            display: "inline-flex",
-                            alignItems: "start",
-                            justifyContent: "center",
-                            boxShadow: "0 2px 4px rgba(192,192,192, 0.6)",
-                            cursor: "pointer",
-                            zIndex: 10,
-                            transition: "all 0.2s",
-                          }}
-                          tabIndex={0}
-                        >
-                          <Image
-                            src="/icons/left.png"
-                            alt="Previous"
-                            width={68}
-                            height={68}
-                            style={{ filter: "brightness(0) saturate(100%) invert(70%) sepia(8%) saturate(500%) hue-rotate(200deg) brightness(90%) contrast(85%)" }}
-                          />
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
+                    />
+                  </div>
+                ))}
               </div>
+
+              {/* Prev Button */}
+              <button
+                aria-label="Previous images"
+                onClick={handlePrev}
+                className="absolute top-1/2 -translate-y-1/2 left-2 md:left-6 bg-white/90 border border-gray-300 w-9 h-9 md:w-12 md:h-12 rounded-full flex items-center justify-center shadow-md hover:scale-105 transition-transform"
+              >
+                <Image
+                  src="/icons/left.png"
+                  alt="Previous"
+                  width={24}
+                  height={24}
+                />
+              </button>
+
+              {/* Next Button */}
+              <button
+                aria-label="Next images"
+                onClick={handleNext}
+                className="absolute top-1/2 -translate-y-1/2 right-2 md:right-6 bg-white/90 border border-gray-300 w-9 h-9 md:w-12 md:h-12 rounded-full flex items-center justify-center shadow-md hover:scale-105 transition-transform"
+              >
+                <Image
+                  src="/icons/right.png"
+                  alt="Next"
+                  width={24}
+                  height={24}
+                />
+              </button>
             </div>
           </>
         ) : (
-          // DESKTOP VERSION (UNCHANGED)
+          // DESKTOP VERSION
           <>
             {/* Title & Description */}
             <div
@@ -361,8 +376,8 @@ export default function Aboutsection() {
                 marginBottom: "52px",
               }}
             >
-              <h2
-                className="font-serif text-[#2F3E35] text-[40px] md:text-[48px] leading-[48px] md:leading-[56px] font-Noto max-md:text-left max-md:w-full"
+              <motion.h2
+                className="text-[#2F3E35] text-[40px] md:text-[48px] leading-[48px] md:leading-[56px] font-noto max-md:text-left max-md:w-full"
                 style={{
                   fontSize: "clamp(3rem, 7vw, 68px)",
                   textAlign: "left",
@@ -371,9 +386,13 @@ export default function Aboutsection() {
                   marginBottom: "40px",
                   letterSpacing: 0,
                 }}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, amount: 0.3 }}
+                variants={titleVariants}
               >
                 {loading ? "Loading..." : hotelInfo.name}
-              </h2>
+              </motion.h2>
               <div
                 className="text-[#4B5755] text-[18px] md:text-[14px] leading-[26px] md:leading-[30px] font-Noto text-left w-full max-w-[800px] mb-0 md:mt-[20px] max-md:mt-[15px] max-md:text-left max-md:w-full max-md:max-w-none max-md:px-0 max-md:text-[16px] max-md:leading-[24px]"
                 style={{
@@ -384,104 +403,48 @@ export default function Aboutsection() {
                 {loading ? (
                   <p>Loading hotel description...</p>
                 ) : (
-                  hotelInfo.description.split('\n\n').map((paragraph, i) => (
-                    <p
+                  hotelInfo.description.split("\n\n").map((paragraph, i) => (
+                    <motion.p
                       key={i}
                       style={{
                         fontSize: "clamp(1rem, 7vw, 16px)",
-                        marginBottom: i < hotelInfo.description.split('\n\n').length - 1 ? "20px" : "0px",
-                        marginTop: "0px"
+                        marginBottom:
+                          i < hotelInfo.description.split("\n\n").length - 1
+                            ? "20px"
+                            : "0px",
+                        marginTop: "0px",
                       }}
+                      initial="hidden"
+                      whileInView="visible"
+                      viewport={{ once: true, amount: 0.3 }}
+                      custom={i}
+                      variants={paragraphVariants}
                     >
                       {paragraph}
-                    </p>
+                    </motion.p>
                   ))
                 )}
               </div>
             </div>
-            {/* Image horizontal strip with left/right buttons */}
-            <div
-              className="w-full flex flex-row items-end justify-center gap-0 md:mt-[0px] md:px-0 max-md:mt-[10px] max-md:px-[15px]"
-              style={{
-                maxWidth: "1440px",
-                width: "1440px",
-                margin: "0 auto",
-                minHeight: "370px",
-                marginTop: "100px",
-                marginBottom: 0,
-                position: "relative",
-                background: "#fff", 
-              }}
-            >
-              {/* Left Button */}
+            {/* Desktop carousel with smooth infinite scroll */}
+            {/* Carousel Section */}
+            <div className="relative w-full max-w-[1440px] overflow-hidden flex justify-center items-center mt-8 md:mt-16">
               <div
+                className="flex transition-transform duration-500 ease-in-out"
                 style={{
-                  height: "370px",
-                  display: "flex",
-                  alignItems: "center",
-                  position: "absolute",
-                  left: 0,
-                  zIndex: 3,
+                  transform: `translateX(-${currentIndex * (272 + 20)}px)`, // 272px image + 20px margin
+                  width: `${images.length * (272 + 20)}px`, // total width of images
                 }}
               >
-                <button
-                  aria-label="Previous images"
-                  onClick={() => setMobileIndex((prev) => (prev - 1 + images.length) % images.length)}
-                  style={{
-                    background: "transparent",
-                    borderRadius: "50%",
-                    boxShadow: "none",
-                    width: 48,
-                    height: 48,
-                    minWidth: 48,
-                    minHeight: 48,
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    border: "2px solid #ccc",
-                    marginLeft: 24,
-                    cursor: "pointer",
-                    position: "relative",
-                  }}
-                  tabIndex={0}
-                >
-                  <Image
-                    src="/icons/left.png"
-                    alt="Previous"
-                    width={68}
-                    height={68}
-                    style={{ filter: "brightness(0) saturate(100%) invert(70%) sepia(8%) saturate(500%) hue-rotate(200deg) brightness(90%) contrast(85%)" }}
-                  />
-                </button>
-              </div>
-              {/* Images */}
-              <div
-                className="flex flex-row items-end justify-center gap-0"
-                style={{
-                  margin: "0 auto",
-                  width: "100%",
-                  minWidth: 0,
-                  position: "relative",
-                  zIndex: 1,
-                }}
-              >
-                {getVisibleImages().map((img, i) => (
+                {[...images, ...images].map((img, idx) => (
                   <div
-                    key={img.src}
-                    className="overflow-hidden bg-white md:w-[272px] md:h-[370px] max-md:w-[160px] max-md:h-[200px]"
+                    key={idx}
                     style={{
-                      width: "272px",
-                      height: "370px",
-                      minWidth: "0",
-                      minHeight: "0",
-                      aspectRatio: "1 / 1",
-                      objectFit: "cover",
-                      boxShadow: "0 4px 24px rgba(0,0,0,0.08)",
-                      marginLeft: i === 0 ? 0 : "24px",
-                      marginRight: 0,
-                      display: "flex",
-                      alignItems: "flex-end",
-                      borderRadius: "0px",
+                      width: 272,
+                      height: 370,
+                      marginRight: 15,
+                      overflow: "hidden",
+                      flexShrink: 0,
                     }}
                   >
                     <Image
@@ -489,59 +452,43 @@ export default function Aboutsection() {
                       alt={img.alt}
                       width={272}
                       height={370}
-                      className="object-cover w-full h-full"
                       style={{
                         width: "100%",
                         height: "100%",
-                        borderRadius: "0px",
-                        aspectRatio: "1/1",
                         objectFit: "cover",
                       }}
                     />
                   </div>
                 ))}
               </div>
-              {/* Right Button */}
-              <div
-                style={{
-                  height: "370px",
-                  display: "flex",
-                  alignItems: "center",
-                  position: "absolute",
-                  right: 0,
-                  zIndex: 3,
-                }}
+
+              {/* Prev Button */}
+              <button
+                aria-label="Previous images"
+                onClick={handlePrev}
+                className="absolute top-1/2 -translate-y-1/2 left-2 md:left-6 border border-white w-9 h-9 md:w-12 md:h-12 rounded-full flex items-center justify-center shadow-md hover:scale-105 transition-transform"
               >
-                <button
-                  aria-label="Next images"
-                  onClick={() => setMobileIndex((prev) => (prev + 1) % images.length)}
-                  style={{
-                    background: "transparent",
-                    borderRadius: "50%",
-                    boxShadow: "none",
-                    width: 48,
-                    height: 48,
-                    minWidth: 48,
-                    minHeight: 48,
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    border: "2px solid #ccc",
-                    marginRight: 24,
-                    cursor: "pointer",
-                    position: "relative",
-                  }}
-                  tabIndex={0}
-                >
-                  <Image
-                    src="/icons/right.png"
-                    alt="Next"
-                    width={68}
-                    height={68}
-                    style={{ filter: "brightness(0) saturate(100%) invert(70%) sepia(8%) saturate(500%) hue-rotate(200deg) brightness(90%) contrast(85%)" }}
-                  />
-                </button>
-              </div>
+                <Image
+                  src="/icons/left.png"
+                  alt="Previous"
+                  width={24}
+                  height={24}
+                />
+              </button>
+
+              {/* Next Button */}
+              <button
+                aria-label="Next images"
+                onClick={handleNext}
+                className="absolute top-1/2 -translate-y-1/2 left-340 border border-white w-9 h-9 md:w-12 md:h-12 rounded-full flex items-center justify-center shadow-md hover:scale-105 transition-transform"
+              >
+                <Image
+                  src="/icons/right.png"
+                  alt="Next"
+                  width={24}
+                  height={24}
+                />
+              </button>
             </div>
           </>
         )}

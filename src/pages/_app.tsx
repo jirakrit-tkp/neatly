@@ -7,6 +7,18 @@ import { useEffect } from "react";
 import { useRouter } from "next/router";
 import * as gtag from "../lib/gtag";
 
+import { Noto_Serif_Display } from "next/font/google";
+
+// 2. Configure the font object
+const noto = Noto_Serif_Display({
+  // Always include subsets
+  subsets: ["latin"],
+  // Use 'variable' to assign a CSS variable name
+  variable: "--font-noto",
+  // You can specify weights and styles here if needed
+  // weights: [ '400', '700' ],
+  display: "swap", // Recommended to prevent layout shift
+});
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
 

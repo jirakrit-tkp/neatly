@@ -1,8 +1,8 @@
 /**
  * Navbar.tsx
- * 
+ *
  * คอมโพเนนต์ Navbar สำหรับ Next.js (Client Component)
- * 
+ *
  * - รองรับ Responsive: Desktop (1440x100) และ Mobile (375x48)
  * - Desktop: แสดงโลโก้, เมนูนำทาง, ปุ่ม Login หรือ User Menu
  * - Mobile: แสดงโลโก้, Hamburger menu, เมนูเลื่อนออกด้านข้าง
@@ -88,7 +88,9 @@ async function fetchProfileInfo(user: { id: string; email: string | null }) {
  * - ใช้ supabase ตรวจสอบสถานะผู้ใช้และ logout
  */
 function UserMenu() {
-  const [user, setUser] = useState<null | { id: string; email: string | null }>(null);
+  const [user, setUser] = useState<null | { id: string; email: string | null }>(
+    null
+  );
   const [displayName, setDisplayName] = useState<string>("");
   const [avatarUrl, setAvatarUrl] = useState<string>("/Images/avatar.png");
   const [loading, setLoading] = useState(true);
@@ -207,19 +209,14 @@ function UserMenu() {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-44 rounded-lg border bg-white shadow-md z-50">
+        <div className="absolute right-0 mt-2 w-44 rounded-lg border border-gray-500 bg-white shadow-md z-50">
           <Link
             href="/customer/profile"
             className="block px-4 py-2 hover:bg-gray-50"
           >
-            Account
+            Profile
           </Link>
-          <Link
-            href="/customer/settings"
-            className="block px-4 py-2 hover:bg-gray-50"
-          >
-            Settings
-          </Link>
+
           <Link
             href="/customer/booking-history"
             className="block px-4 py-2 hover:bg-gray-50"
@@ -293,12 +290,12 @@ function MobileUserMenu({
         >
           Profile
         </Link>
-        <Link
+        {/* <Link
           href="/customer/payment"
           className="flex items-center gap-2 px-2 py-2 text-[#222] text-sm hover:text-[#F47A1F]"
         >
           Payment Method
-        </Link>
+        </Link> */}
         <Link
           href="/customer/booking-history"
           className="flex items-center gap-2 px-2 py-2 text-[#222] text-sm hover:text-[#F47A1F]"
@@ -335,7 +332,7 @@ function scrollToSection(id: string) {
  * Navbar
  * - คอมโพเนนต์หลักของ Navbar
  * - แสดงโลโก้, เมนู, user menu, hamburger, mobile drawer
- * 
+ *
  * ปรับตามคำขอ: ให้เมนูไปอยู่ติดกับโลโก้ (ด้านขวา) และเว้นช่องว่างมากขึ้น
  */
 const Navbar = ({
@@ -344,7 +341,9 @@ const Navbar = ({
   logo = defaultLogo,
 }: NavbarProps) => {
   const [open, setOpen] = useState(false); // สถานะเปิด/ปิด mobile drawer
-  const [user, setUser] = useState<null | { id: string; email: string | null }>(null);
+  const [user, setUser] = useState<null | { id: string; email: string | null }>(
+    null
+  );
   const [loading, setLoading] = useState(true);
 
   // โหลดสถานะผู้ใช้ (สำหรับ mobile menu)
@@ -498,7 +497,8 @@ const Navbar = ({
           </div>
 
           {/* Desktop: เมนูนำทางอยู่ติดกับโลโก้ (ด้านขวา) และเว้นช่องว่างมากขึ้น */}
-          <nav className="hidden md:flex items-center"
+          <nav
+            className="hidden md:flex items-center"
             style={{ marginLeft: 48, gap: 32, flex: 1 }}
           >
             <div className="flex items-center space-x-8">
@@ -521,7 +521,6 @@ const Navbar = ({
 
       {/* Spacer สำหรับ fixed navbar (กันเนื้อหาถูกบัง) */}
       <div className="block md:hidden" style={{ height: 48 }} />
-      <div className="hidden md:block" style={{ height: 100 }} />
     </>
   );
 };

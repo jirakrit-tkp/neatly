@@ -3,7 +3,7 @@ import Image from "next/image";
 const Footer = () => {
   return (
     <footer
-      className="w-full bg-[#384B3F] text-white"
+      className="w-full bg-green-800 text-white"
       style={{ margin: "0 auto" }}
     >
       <div
@@ -37,12 +37,11 @@ const Footer = () => {
         </div>
 
         {/* Right: Contact Info */}
-        <div className="md:w-1/2 w-full flex flex-col items-end md:items-end md:pl-16 justify-start">
+        <div className="w-full flex flex-col items-end justify-start">
           {/* CONTACT Header */}
-          <div className="mb-6 font-semibold text-base tracking-wide text-white w-full text-left md:text-center">
-            CONTACT
-          </div>
+
           <div className="space-y-6 w-full md:w-auto md:min-w-[320px]">
+            <p className="text-inter font-bold">CONTACT</p>
             <div className="flex items-center gap-3 text-base text-[#ffffff] justify-start">
               <span className="inline-block text-[#ffffff]">
                 <Image
@@ -50,7 +49,7 @@ const Footer = () => {
                   alt="Phone"
                   width={24}
                   height={24}
-                  style={{ minWidth: 24, minHeight: 24 }}
+                  className="h-5 w-5"
                 />
               </span>
               <span className="font-normal text-[#ffffff] text-left">
@@ -64,7 +63,7 @@ const Footer = () => {
                   alt="Mail"
                   width={24}
                   height={24}
-                  style={{ minWidth: 24, minHeight: 24 }}
+                  className="w-5 h-5"
                 />
               </span>
               <span className="font-normal text-[#ffffff] text-left">
@@ -76,9 +75,9 @@ const Footer = () => {
                 <Image
                   src="/icons/location.png"
                   alt="Location"
+                  className="w-5 h-5"
                   width={24}
                   height={24}
-                  style={{ minWidth: 24, minHeight: 24 }}
                 />
               </span>
               <span className="font-normal text-[#ffffff] leading-snug text-left">

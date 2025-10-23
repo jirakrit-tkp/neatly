@@ -80,8 +80,8 @@ const Roomwrapper = () => {
       <h2
         className="
             text-[#2D5A27]
-            text-[30px] md:text-[48px]
-            font-serif
+            text-[30px] md:text-[60px]
+            font-noto
             text-center
             mb-8 md:mb-14
           "
@@ -107,7 +107,9 @@ const Roomwrapper = () => {
         ) : rooms.length === 0 ? (
           <div className="text-center py-10 text-gray-500">
             <p>No rooms available at the moment.</p>
-            <p className="text-sm mt-2">Please check your database connection or add some room types.</p>
+            <p className="text-sm mt-2">
+              Please check your database connection or add some room types.
+            </p>
           </div>
         ) : (
           <>
@@ -210,7 +212,10 @@ const Roomwrapper = () => {
                         borderRadius: "0px",
                       }}
                       onError={(e) => {
-                        console.error("Image failed to load:", rooms[1].main_image);
+                        console.error(
+                          "Image failed to load:",
+                          rooms[1].main_image
+                        );
                         e.currentTarget.src = "/image/deluxe.jpg";
                       }}
                     />
@@ -280,7 +285,10 @@ const Roomwrapper = () => {
                         borderRadius: "0px",
                       }}
                       onError={(e) => {
-                        console.error("Image failed to load:", rooms[2].main_image);
+                        console.error(
+                          "Image failed to load:",
+                          rooms[2].main_image
+                        );
                         e.currentTarget.src = "/image/superior.jpg";
                       }}
                     />
@@ -355,7 +363,10 @@ const Roomwrapper = () => {
                         borderRadius: "0px",
                       }}
                       onError={(e) => {
-                        console.error("Image failed to load:", rooms[3].main_image);
+                        console.error(
+                          "Image failed to load:",
+                          rooms[3].main_image
+                        );
                         e.currentTarget.src = "/image/premiersea.jpg";
                       }}
                     />
@@ -446,7 +457,10 @@ const Roomwrapper = () => {
                             borderRadius: "0px",
                           }}
                           onError={(e) => {
-                            console.error("Image failed to load:", rooms[4].main_image);
+                            console.error(
+                              "Image failed to load:",
+                              rooms[4].main_image
+                            );
                             e.currentTarget.src = "/image/supreme.jpg";
                           }}
                         />
@@ -516,7 +530,10 @@ const Roomwrapper = () => {
                             borderRadius: "0px",
                           }}
                           onError={(e) => {
-                            console.error("Image failed to load:", rooms[5].main_image);
+                            console.error(
+                              "Image failed to load:",
+                              rooms[5].main_image
+                            );
                             e.currentTarget.src = "/image/suite.jpg";
                           }}
                         />

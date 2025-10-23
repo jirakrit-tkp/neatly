@@ -28,7 +28,8 @@ interface Booking {
   additional_request?: string[];
   standard_request?: string[];
   created_at: string;
-  rooms?: RoomforBookings | undefined;
+  room_type?: string;
+  guests?: number;
 }
 
 type BookingApiResponse = {
@@ -77,7 +78,7 @@ export default function ChangeBookingPage() {
   return (
     <Layout>
       <div className="bg-[#F7F7FB] flex flex-col justify-center items-center">
-        <div className="bg-green-700 h-[580px] md:h-[500px] w-full md:w-[750px] mt-10 md:mt-20 md:rounded-md">
+        <div className="bg-green-700 h-[580px] md:h-[500px] w-full md:w-[750px] mt-10 md:mt-40 md:rounded-md">
           <div className="bg-green-800 md:w-[750px] justify-center items-center text-center p-10 md:p-8 md:rounded-md">
             <h1 className="text-5xl md:text-4xl text-white font-noto mb-4">
               The Cancellation is Complete
@@ -93,7 +94,7 @@ export default function ChangeBookingPage() {
 
           <div className="flex flex-col bg-green-600 m-5 md:m-10 p-5 rounded-md">
             <p className="text-white font-bold text-3xl md:text-xl">
-              {booking?.rooms?.room_type}
+              {booking?.room_type}
             </p>
 
             <div className="mt-8 flex flex-col gap-y-2">
@@ -102,13 +103,13 @@ export default function ChangeBookingPage() {
                 {formatDate(booking.check_out_date)}
               </p>
               <p className="text-lg md:text-md text-white">
-                {booking?.rooms?.guests} Guests
+                {booking?.guests} Guests
               </p>
             </div>
 
             <div className="flex flex-col mt-10 gap-y-2">
               <p className="text-green-400">
-                Booking date: {formatDate(booking.booking_date)}
+                Booking date: {formatDate(booking.created_at)}
               </p>
               <p className="text-green-400">
                 Cancellation date: {cancelledDate}
