@@ -192,7 +192,7 @@ export default function SearchBox({ onSearch, defaultValues }: SearchBoxProps) {
         }
         @media (min-width: 768px) {
           .searchbox-container {
-            width: 1120px !important;
+            width: 1150px !important;
             height: 196px !important;
             padding: 20px !important;
           }

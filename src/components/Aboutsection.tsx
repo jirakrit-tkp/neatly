@@ -128,7 +128,6 @@ export default function Aboutsection() {
     ? {
         color: "#2F3E35",
         fontSize: "28px",
-        fontWeight: "600",
         marginBottom: "20px",
         marginTop: "0",
         letterSpacing: "0",

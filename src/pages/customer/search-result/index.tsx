@@ -175,11 +175,11 @@ function SearchResultPage() {
         </div>
         <div className="max-w-[1200px] mx-auto">
           {loading ? (
-            <div className="text-center py-10 text-gray-500 text-lg">
+            <div className="text-center py-10 text-gray-500 text-lg md:mb-30">
               Loading rooms...
             </div>
           ) : error ? (
-            <div className="text-center py-10 text-red-500 text-lg">
+            <div className="text-center py-10 text-red-500 text-lg md:mb-30">
               {error}
             </div>
           ) : (
@@ -196,7 +196,7 @@ function SearchResultPage() {
                     style={{
                       // Mobile: 375x649, Desktop: 1120x400
                       width: "100%",
-                      maxWidth: "1120px",
+                      maxWidth: "1150px",
                       minWidth: 0,
                     }}
                   >
@@ -233,7 +233,7 @@ function SearchResultPage() {
                           <h2 className="text-3xl font-bold text-[#2F3E35] mb-5">
                             {room.name}
                           </h2>
-                          <div className="flex items-center gap-2 text-s text-gray-700 mb-7">
+                          <div className="flex items-center gap-2 text-md text-gray-700 mb-7">
                             <span>
                               {room.guests ?? 2}{" "}
                               {room.guests > 1 ? "Guests" : "Guest"}
@@ -273,7 +273,7 @@ function SearchResultPage() {
                               Including Taxes & Fees
                             </span>
                           </div>
-                          <div className="flex flex-row gap-2 mt-4">
+                          <div className="flex flex-row gap-20 md:gap-4 mt-4">
                             <button
                               className="text-[#F47A1F] bg-[#F7F7FA] rounded-md font-medium text-xs hover:bg-[#f7e7d7] transition cursor-pointer"
                               style={{
@@ -291,9 +291,9 @@ function SearchResultPage() {
                             </button>
                             <button
                               onClick={() => handleBookNow(room.id)} // room.id จาก room_types table = room_type_id
-                              className="bg-orange-600 text-white rounded-lg font-semibold text-sm hover:bg-[#d96a1a] transition cursor-pointer"
+                              className="bg-orange-600 text-white rounded-md font-semibold text-sm hover:bg-[#d96a1a] transition cursor-pointer"
                               style={{
-                                width: "143px",
+                                width: "160px",
                                 height: "48px",
                                 minWidth: "143px",
                                 minHeight: "48px",
