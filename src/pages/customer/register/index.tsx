@@ -37,8 +37,8 @@ const RegisterPage = () => {
         ></div>
 
         {/* Form Container */}
-        <div className="relative z-10 flex items-center justify-center min-h-screen px-4 py-20">
-          <div className="w-full max-w-sm md:max-w-4xl">
+        <div className="relative z-10 flex items-center justify-center min-h-screen">
+          <div className="w-full max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
             <div className="bg-bg md:backdrop-blur-sm rounded-lg overflow-hidden">
               {/* Form Header */}
               <div className="px-4 pt-10 pb-6 md:px-20 md:pt-20">
