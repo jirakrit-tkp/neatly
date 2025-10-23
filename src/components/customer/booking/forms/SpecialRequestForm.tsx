@@ -220,15 +220,17 @@ export const SpecialRequestForm: React.FC<SpecialRequestFormProps> = ({
         </button>
       </div> */}
 
-      {/* BookingButtons */}
-      <BookingButtons
-        onBack={onBack}
-        onNext={onNext}
-        nextLabel="Next"
-        showBack={true}
-        disabled={disabled}
-        loading={loading}
-      />
+      {/* BookingButtons - Desktop Only */}
+      <div className="hidden md:block">
+        <BookingButtons
+          onBack={onBack}
+          onNext={onNext}
+          nextLabel="Next"
+          showBack={true}
+          disabled={disabled}
+          loading={loading}
+        />
+      </div>
     </div>
   );
 };

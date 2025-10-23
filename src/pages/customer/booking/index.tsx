@@ -4,6 +4,7 @@ import { BookingLayout } from "@/components/customer/booking/BookingLayout";
 import { BookingStepper } from "@/components/customer/booking/BookingStepper";
 import { BookingSummary } from "@/components/customer/booking/BookingSummary";
 import { BookingPolicies } from "@/components/customer/booking/BookingPolicies";
+import { BookingButtons } from "@/components/customer/booking/BookingButtons";
 import { BasicInfoForm } from "@/components/customer/booking/forms/BasicInfoForm";
 import { SpecialRequestForm } from "@/components/customer/booking/forms/SpecialRequestForm";
 import { PaymentMethodForm } from "@/components/customer/booking/forms/PaymentMethodForm";
@@ -951,6 +952,24 @@ export default function BookingPage() {
               timeLeft={timeLeft}
             />
             <BookingPolicies />
+
+            {/* Mobile Navigation Buttons */}
+            <div className="px-6 pb-6 md:hidden">
+              <BookingButtons
+                onBack={handleBack}
+                onNext={
+                  currentStep === "payment_method"
+                    ? handleConfirmBooking
+                    : handleNext
+                }
+                nextLabel={
+                  currentStep === "payment_method" ? "Confirm Booking" : "Next"
+                }
+                showBack={true}
+                disabled={loading}
+                loading={loading}
+              />
+            </div>
           </div>
         }
       >

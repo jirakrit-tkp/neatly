@@ -187,14 +187,14 @@ export const PaymentMethodForm: React.FC<PaymentMethodFormProps> = ({
   ];
 
   return (
-    <div className="p-8 space-y-8 border border-gray-300 rounded-lg bg-white">
+    <div className="p-4 space-y-6 border border-gray-300 rounded bg-white md:p-8 md:space-y-8 md:rounded-lg">
       {/* Payment Method Selection */}
       <div className="space-y-4 mb-8">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="grid grid-cols-2 gap-4">
           {paymentMethodOptions.map((option) => (
             <div
               key={option.value}
-              className={`flex items-center justify-center h-20 p-4 border rounded cursor-pointer transition-all duration-200 ${
+              className={`flex items-center justify-center h-16 p-3 border rounded cursor-pointer transition-all duration-200 md:h-20 md:p-4 ${
                 paymentMethod === option.value
                   ? "border-orange-500 shadow-[4px_4px_16px_rgba(0,0,0,0.08)]"
                   : "border-gray-300 hover:border-orange-500"
@@ -202,11 +202,11 @@ export const PaymentMethodForm: React.FC<PaymentMethodFormProps> = ({
               onClick={() => handlePaymentMethodChange(option.value)}
             >
               <div className="flex items-center">
-                <div className="mr-3">
+                <div className="mr-2 md:mr-3">
                   <option.icon
-                    width={26}
-                    height={20}
-                    className={`${
+                    width={20}
+                    height={16}
+                    className={`md:w-[26px] md:h-[20px] ${
                       paymentMethod === option.value
                         ? "text-orange-500"
                         : "text-gray-600"
@@ -215,7 +215,7 @@ export const PaymentMethodForm: React.FC<PaymentMethodFormProps> = ({
                 </div>
                 <div>
                   <h3
-                    className={`text-xl font-semibold font-inter ${
+                    className={`text-base font-semibold font-inter md:text-xl ${
                       paymentMethod === option.value
                         ? "text-orange-500"
                         : "text-gray-600"
@@ -238,7 +238,7 @@ export const PaymentMethodForm: React.FC<PaymentMethodFormProps> = ({
 
       {/* Cash Payment Info */}
       {paymentMethod === PAYMENT_METHODS.CASH && (
-        <div className="pt-6 mb-6 border-gray-200">
+        <div className="pt-4 mb-4 border-gray-200 md:pt-6 md:mb-6">
           <h3 className="mb-4 text-lg text-gray-900 font-semibold font-inter">
             Cash
           </h3>
@@ -248,13 +248,29 @@ export const PaymentMethodForm: React.FC<PaymentMethodFormProps> = ({
               <WalletIcon size={50} className="text-orange-500" />
             </div>
             <div>
-              <p className="text-base text-gray-900 font-normal font-inter">
-                Pay at the hotel with cash or cheque No payment is required
-                until you
-              </p>
-              <p className="text-base text-gray-900 font-normal font-inter">
-                check in
-              </p>
+              {/* Desktop - 2 lines */}
+              <div className="hidden md:block">
+                <p className="text-base text-gray-900 font-normal font-inter">
+                  Pay at the hotel with cash or cheque No payment is required
+                  until you
+                </p>
+                <p className="text-base text-gray-900 font-normal font-inter">
+                  check in
+                </p>
+              </div>
+
+              {/* Mobile - 3 lines */}
+              <div className="block md:hidden">
+                <p className="text-base text-gray-900 font-normal font-inter">
+                  Pay at the hotel with cash or
+                </p>
+                <p className="text-base text-gray-900 font-normal font-inter">
+                  cheque. No payment is
+                </p>
+                <p className="text-base text-gray-900 font-normal font-inter">
+                  required until you check in
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -262,7 +278,7 @@ export const PaymentMethodForm: React.FC<PaymentMethodFormProps> = ({
 
       {/* Credit Card Form */}
       {paymentMethod === PAYMENT_METHODS.CREDIT_CARD && (
-        <div className="pt-6 mb-6 border-gray-200">
+        <div className="pt-4 mb-4 border-gray-200 md:pt-6 md:mb-6">
           <h3 className="mb-4 text-lg text-gray-900 font-semibold font-inter">
             Credit Card
           </h3>
@@ -331,7 +347,7 @@ export const PaymentMethodForm: React.FC<PaymentMethodFormProps> = ({
             </FormField>
 
             {/* Expiry Date and CVV */}
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="grid grid-cols-2 gap-4">
               <FormField
                 label="Expiry Date"
                 error={
@@ -399,7 +415,7 @@ export const PaymentMethodForm: React.FC<PaymentMethodFormProps> = ({
       )}
 
       {/* Promotion Code */}
-      <div className="pt-6 border-t border-gray-200">
+      <div className="pt-4 border-t border-gray-200 md:pt-6">
         <h3 className="mb-4 text-lg text-gray-900 font-medium font-inter">
           Promotion Code
         </h3>
@@ -432,15 +448,17 @@ export const PaymentMethodForm: React.FC<PaymentMethodFormProps> = ({
         </FormField>
       </div>
 
-      {/* BookingButtons */}
-      <BookingButtons
-        onBack={onBack}
-        onConfirm={handleFormSubmit}
-        nextLabel="Confirm Booking"
-        showBack={true}
-        disabled={disabled}
-        loading={loading}
-      />
+      {/* BookingButtons - Desktop Only */}
+      <div className="hidden md:block">
+        <BookingButtons
+          onBack={onBack}
+          onConfirm={handleFormSubmit}
+          nextLabel="Confirm Booking"
+          showBack={true}
+          disabled={disabled}
+          loading={loading}
+        />
+      </div>
     </div>
   );
 };
