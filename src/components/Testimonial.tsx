@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useState, useEffect } from "react";
+import { motion, Variants, AnimatePresence } from "framer-motion";
 
 const testimonials = [
   {
@@ -29,6 +30,86 @@ const testimonials = [
 
 const Testimonial = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
+
+  // Animation variant for the heading
+  const headingVariants: Variants = {
+    hidden: {
+      opacity: 0,
+      y: 50,
+    },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.8,
+        ease: [0.25, 0.1, 0.25, 1],
+      },
+    },
+  };
+
+  // Animation variants for testimonial content with fade and slide
+  const testimonialVariants: Variants = {
+    hidden: {
+      opacity: 0,
+      y: 30,
+    },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.6,
+        ease: [0.25, 0.1, 0.25, 1],
+      },
+    },
+    exit: {
+      opacity: 0,
+      y: -20,
+      transition: {
+        duration: 0.4,
+      },
+    },
+  };
+
+  // Animation for customer info
+  const customerInfoVariants: Variants = {
+    hidden: {
+      opacity: 0,
+      y: 20,
+    },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.6,
+        ease: [0.25, 0.1, 0.25, 1],
+        delay: 0.2,
+      },
+    },
+    exit: {
+      opacity: 0,
+      y: -10,
+      transition: {
+        duration: 0.3,
+      },
+    },
+  };
+
+  // Animation for pagination dots
+  const dotsVariants: Variants = {
+    hidden: {
+      opacity: 0,
+      y: 20,
+    },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.6,
+        ease: [0.25, 0.1, 0.25, 1],
+        delay: 0.4,
+      },
+    },
+  };
 
   // Auto slide functionality - change slide every 8 seconds
   useEffect(() => {
@@ -75,7 +156,7 @@ const Testimonial = () => {
         "
       >
         {/* Heading */}
-        <h2
+        <motion.h2
           className="
             text-[#2D5A27]
             text-[34px] md:text-[70px]
@@ -83,9 +164,13 @@ const Testimonial = () => {
             text-center
             mb-8 md:mb-12
           "
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.3 }}
+          variants={headingVariants}
         >
           Our Customer Says
-        </h2>
+        </motion.h2>
 
         {/* Testimonial Content */}
         <div className="relative w-full flex justify-center items-center">
@@ -154,8 +239,16 @@ const Testimonial = () => {
 
           {/* Testimonial Text */}
           <div className="w-full max-w-[600px] md:max-w-[800px] text-center">
-            <blockquote
-              className="
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentSlide}
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                variants={testimonialVariants}
+              >
+                <blockquote
+                  className="
                 text-[#666] md:text-[#555]
                 text-[14px] md:text-[16px]
                 leading-relaxed
@@ -163,38 +256,55 @@ const Testimonial = () => {
                 mb-8 md:mb-10
                 px-4
               "
-            >
-              {`"${testimonials[currentSlide].text}"`}
-            </blockquote>
+                >
+                  {`"${testimonials[currentSlide].text}"`}
+                </blockquote>
+              </motion.div>
+            </AnimatePresence>
 
             {/* Customer Info */}
-            <div className="flex flex-col items-center space-y-3">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 md:w-14 md:h-14 rounded-full overflow-hidden">
-                  <Image
-                    src={testimonials[currentSlide].avatar}
-                    alt={testimonials[currentSlide].customer}
-                    width={56}
-                    height={56}
-                    className="w-full h-full object-cover"
-                  />
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={`customer-${currentSlide}`}
+                className="flex flex-col items-center space-y-3"
+                initial="hidden"
+                animate="visible"
+                exit="exit"
+                variants={customerInfoVariants}
+              >
+                <div className="flex items-center space-x-3">
+                  <div className="w-12 h-12 md:w-14 md:h-14 rounded-full overflow-hidden">
+                    <Image
+                      src={testimonials[currentSlide].avatar}
+                      alt={testimonials[currentSlide].customer}
+                      width={56}
+                      height={56}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  {/* ชื่อและบริษัทอยู่บรรทัดเดียวกัน */}
+                  <div className="flex flex-row items-center space-x-2 text-left">
+                    <span className="text-[#999] text-[12px] md:text-[14px] font-medium">
+                      {testimonials[currentSlide].customer}
+                    </span>
+                    <span className="text-[#999] text-[12px] md:text-[14px]">
+                      {testimonials[currentSlide].company}
+                    </span>
+                  </div>
                 </div>
-                {/* ชื่อและบริษัทอยู่บรรทัดเดียวกัน */}
-                <div className="flex flex-row items-center space-x-2 text-left">
-                  <span className="text-[#999] text-[12px] md:text-[14px] font-medium">
-                    {testimonials[currentSlide].customer}
-                  </span>
-                  <span className="text-[#999] text-[12px] md:text-[14px]">
-                    {testimonials[currentSlide].company}
-                  </span>
-                </div>
-              </div>
-            </div>
+              </motion.div>
+            </AnimatePresence>
           </div>
         </div>
 
         {/* Pagination Dots */}
-        <div className="flex space-x-2 mt-8 md:mt-12">
+        <motion.div
+          className="flex space-x-2 mt-8 md:mt-12"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.3 }}
+          variants={dotsVariants}
+        >
           {testimonials.map((_, index) => (
             <button
               key={index}
@@ -209,10 +319,16 @@ const Testimonial = () => {
               aria-label={`Go to testimonial ${index + 1}`}
             />
           ))}
-        </div>
+        </motion.div>
 
         {/* Navigation Buttons for mobile only - put under the dots */}
-        <div className="flex justify-center md:hidden space-x-4 mt-6">
+        <motion.div
+          className="flex justify-center md:hidden space-x-4 mt-6"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.3 }}
+          variants={dotsVariants}
+        >
           <button
             onClick={prevSlide}
             className="
@@ -269,7 +385,7 @@ const Testimonial = () => {
               />
             </svg>
           </button>
-        </div>
+        </motion.div>
 
         {/* Auto Slide Indicator */}
         <div className="mt-4 text-[#999] text-[10px] md:text-[12px]"></div>

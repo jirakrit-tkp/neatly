@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { useHotelInfo } from "@/context/HotelInfoContext";
+import { motion, Variants } from "framer-motion";
 
 // Images array remains unchanged
 const images = [
@@ -18,6 +19,39 @@ export default function Aboutsection() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Animation variants for hotel name
+  const titleVariants: Variants = {
+    hidden: {
+      opacity: 0,
+      y: 50,
+    },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.8,
+        ease: [0.25, 0.1, 0.25, 1],
+      },
+    },
+  };
+
+  // Animation variants for description paragraphs with stagger
+  const paragraphVariants: Variants = {
+    hidden: {
+      opacity: 0,
+      y: 30,
+    },
+    visible: (index: number) => ({
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.8,
+        ease: [0.25, 0.1, 0.25, 1],
+        delay: 0.2 + index * 0.1, // Stagger each paragraph by 0.1s
+      },
+    }),
+  };
 
   // When screen <= 700, treat as mobile
   useEffect(() => {
@@ -225,22 +259,26 @@ export default function Aboutsection() {
           <>
             {/* Title & Description */}
             <div style={textBoxStyle}>
-              <h2
+              <motion.h2
                 className="font-noto"
                 style={{
                   ...titleStyle,
                   textAlign: "left",
                   width: "100%",
                 }}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, amount: 0.3 }}
+                variants={titleVariants}
               >
                 {loading ? "Loading..." : hotelInfo.name}
-              </h2>
+              </motion.h2>
               <div style={descriptionStyle}>
                 {loading ? (
                   <p>Loading hotel description...</p>
                 ) : (
                   descriptionParagraphs.map((paragraph, i) => (
-                    <p
+                    <motion.p
                       key={i}
                       style={{
                         fontSize: "14px",
@@ -249,9 +287,14 @@ export default function Aboutsection() {
                         marginBottom:
                           i < descriptionParagraphs.length - 1 ? "15px" : "0px",
                       }}
+                      initial="hidden"
+                      whileInView="visible"
+                      viewport={{ once: true, amount: 0.3 }}
+                      custom={i}
+                      variants={paragraphVariants}
                     >
                       {paragraph}
-                    </p>
+                    </motion.p>
                   ))
                 )}
               </div>
@@ -333,7 +376,7 @@ export default function Aboutsection() {
                 marginBottom: "52px",
               }}
             >
-              <h2
+              <motion.h2
                 className="text-[#2F3E35] text-[40px] md:text-[48px] leading-[48px] md:leading-[56px] font-noto max-md:text-left max-md:w-full"
                 style={{
                   fontSize: "clamp(3rem, 7vw, 68px)",
@@ -343,9 +386,13 @@ export default function Aboutsection() {
                   marginBottom: "40px",
                   letterSpacing: 0,
                 }}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, amount: 0.3 }}
+                variants={titleVariants}
               >
                 {loading ? "Loading..." : hotelInfo.name}
-              </h2>
+              </motion.h2>
               <div
                 className="text-[#4B5755] text-[18px] md:text-[14px] leading-[26px] md:leading-[30px] font-Noto text-left w-full max-w-[800px] mb-0 md:mt-[20px] max-md:mt-[15px] max-md:text-left max-md:w-full max-md:max-w-none max-md:px-0 max-md:text-[16px] max-md:leading-[24px]"
                 style={{
@@ -357,7 +404,7 @@ export default function Aboutsection() {
                   <p>Loading hotel description...</p>
                 ) : (
                   hotelInfo.description.split("\n\n").map((paragraph, i) => (
-                    <p
+                    <motion.p
                       key={i}
                       style={{
                         fontSize: "clamp(1rem, 7vw, 16px)",
@@ -367,9 +414,14 @@ export default function Aboutsection() {
                             : "0px",
                         marginTop: "0px",
                       }}
+                      initial="hidden"
+                      whileInView="visible"
+                      viewport={{ once: true, amount: 0.3 }}
+                      custom={i}
+                      variants={paragraphVariants}
                     >
                       {paragraph}
-                    </p>
+                    </motion.p>
                   ))
                 )}
               </div>

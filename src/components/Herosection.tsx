@@ -1,9 +1,9 @@
 // โค้ดนี้คือคอมโพเนนต์ Hero Section สำหรับหน้าแรก (Landing Page) ของเว็บจองโรงแรม
 // โดยแสดงภาพพื้นหลังแบบเต็มจอ, ตัวหนังสือ headline, และกล่องค้นหาโรงแรม (SearchBox)
-
 import Image from "next/image"; // ใช้สำหรับแสดงรูปภาพพื้นหลังแบบ Responsive
 import SearchBox from "./customer/searchbar/Searchbox"; // คอมโพเนนต์กรอกข้อมูลการค้นหาโรงแรม
 import { useRouter } from "next/router"; // ใช้เปลี่ยนหน้า/redirect ไปหน้าค้นหาเมื่อค้นหาโรงแรม
+import { motion, Variants } from "framer-motion"; // ใช้สำหรับ animation
 
 // ฟังก์ชันช่วยสำหรับคืนวันที่วันนี้ในรูปแบบ yyyy-mm-dd (ไม่ได้ถูกใช้งานในไฟล์นี้ แต่เป็น utility ทั่วไป)
 function getTodayDateString(): string {
@@ -16,7 +16,6 @@ function getTodayDateString(): string {
 
 export default function Herosection() {
   const router = useRouter();
-
   const handleSearch = (params: {
     checkIn: string;
     checkOut: string;
@@ -25,6 +24,39 @@ export default function Herosection() {
   }) => {
     const query = new URLSearchParams(params).toString();
     router.push(`/customer/search-result?${query}`);
+  };
+
+  // Animation variants สำหรับ headline
+  const headlineVariants: Variants = {
+    hidden: {
+      opacity: 0,
+      y: 50, // เริ่มต้นที่ต่ำกว่าตำแหน่งปกติ 50px
+    },
+    visible: {
+      opacity: 1,
+      y: 0, // เลื่อนขึ้นมาที่ตำแหน่งปกติ
+      transition: {
+        duration: 0.8, // ใช้เวลา 0.8 วินาที
+        ease: [0.25, 0.1, 0.25, 1], // การเคลื่อนไหวแบบ ease out (cubic-bezier)
+      },
+    },
+  };
+
+  // Animation variants สำหรับ SearchBox (เริ่มหลังจาก headline)
+  const searchBoxVariants: Variants = {
+    hidden: {
+      opacity: 0,
+      y: 30,
+    },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.8,
+        ease: [0.25, 0.1, 0.25, 1], // การเคลื่อนไหวแบบ ease out (cubic-bezier)
+        delay: 0.3, // รอ 0.3 วินาทีหลังจาก headline
+      },
+    },
   };
 
   // ส่วนนี้คือ layout หลักของ Hero Section
@@ -72,7 +104,13 @@ export default function Herosection() {
           className="flex flex-col items-center justify-center w-full h-[900px]"
           style={{ position: "relative" }}
         >
-          <h1 className="text-5xl md:text-8xl text-white text-center font-noto">
+          {/* Animated headline */}
+          <motion.h1
+            className="text-5xl md:text-8xl text-white text-center font-noto"
+            initial="hidden"
+            animate="visible"
+            variants={headlineVariants}
+          >
             {/* Headline แบบ Responsive (ขึ้นบรรทัดใหม่บนจอเล็ก) */}
             <span className="hidden sm:inline">
               A Best Place for Your
@@ -86,9 +124,9 @@ export default function Herosection() {
               <br />
               Experience
             </span>
-          </h1>
-          {/* กล่อง SearchBox สำหรับค้นหาโรงแรม */}
-          <div
+          </motion.h1>
+          {/* Animated SearchBox สำหรับค้นหาโรงแรม */}
+          <motion.div
             className="
               w-full
               max-w-[900px]
@@ -99,10 +137,13 @@ export default function Herosection() {
               mt-15
               md:mt-25
             "
+            initial="hidden"
+            animate="visible"
+            variants={searchBoxVariants}
           >
             {/* ส่งฟังก์ชัน handleSearch ให้กับ SearchBox เมื่อยืนยันข้อมูล จะ redirect ไปหน้าผลลัพธ์ */}
             <SearchBox onSearch={handleSearch} />
-          </div>
+          </motion.div>
         </div>
       </div>
     </section>

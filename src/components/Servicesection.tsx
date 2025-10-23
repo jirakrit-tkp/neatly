@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { motion, Variants } from "framer-motion";
 
 const services = [
   {
@@ -32,6 +33,39 @@ const services = [
 ];
 
 const Servicesection = () => {
+  // Animation variant for the title
+  const titleVariants: Variants = {
+    hidden: {
+      opacity: 0,
+      y: 50,
+    },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.8,
+        ease: [0.25, 0.1, 0.25, 1],
+      },
+    },
+  };
+
+  // Animation variant for service icons with stagger
+  const iconVariants: Variants = {
+    hidden: {
+      opacity: 0,
+      y: 40,
+    },
+    visible: (index: number) => ({
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.6,
+        ease: [0.25, 0.1, 0.25, 1],
+        delay: 0.2 + index * 0.1, // Stagger each icon by 0.1s
+      },
+    }),
+  };
+
   return (
     <section
       id="services"
@@ -51,7 +85,7 @@ const Servicesection = () => {
       }}
     >
       {/* Title */}
-      <h2
+      <motion.h2
         className="
     font-noto
     text-white
@@ -61,11 +95,14 @@ const Servicesection = () => {
     mb-12 md:mb-16
     text-center
   "
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.3 }}
+        variants={titleVariants}
       >
         Service &amp; <br className="block md:hidden" />
         Facilities
-      </h2>
-
+      </motion.h2>
       {/* Services Icons */}
       <div
         className="
@@ -80,10 +117,15 @@ const Servicesection = () => {
           maxWidth: "1100px",
         }}
       >
-        {services.map((service) => (
-          <div
+        {services.map((service, index) => (
+          <motion.div
             key={service.label}
             className="flex flex-col items-center w-1/3 md:w-auto mb-2 mx-2"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.3 }}
+            custom={index}
+            variants={iconVariants}
           >
             <div className="mb-2 md:mb-3">
               {/* 
@@ -114,7 +156,7 @@ const Servicesection = () => {
             <span className="text-white text-xs md:text-sm text-center font-normal leading-tight">
               {service.label}
             </span>
-          </div>
+          </motion.div>
         ))}
       </div>
     </section>
