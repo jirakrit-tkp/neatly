@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
+import Head from "next/head";
 import { BookingConfirmation } from "@/types/booking";
 import { formatCurrency, formatDate } from "@/utils/bookingUtils";
 import Layout from "@/components/Layout";
