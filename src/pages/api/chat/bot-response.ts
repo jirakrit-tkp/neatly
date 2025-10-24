@@ -23,9 +23,13 @@ interface RoomFilters {
   roomType?: string;
   bedType?: string;
   roomSizeMin?: number;
+  roomSizeMax?: number;
   amenities?: string[];
   promoOnly?: boolean;
   isActive?: boolean;
+  // Percentile filtering for vague terms
+  pricePercentile?: 'bottom25' | 'top25';  // cheap = bottom25, expensive = top25
+  sizePercentile?: 'bottom25' | 'top25';   // small = bottom25, big = top25
 }
 
 interface PromoFilters {
@@ -34,6 +38,8 @@ interface PromoFilters {
   hasUsageLeft?: boolean;
   codeSearch?: string;
   expiresAfter?: string; // ISO date string
+  // Percentile filtering for vague terms
+  discountPercentile?: 'bottom25' | 'top25';  // low discount = bottom25, high discount = top25
 }
 
 export default async function handler(
@@ -563,21 +569,39 @@ ${contextString ? `Conversation context:\n${contextString}\n` : ""}
 Schema (all optional):
 {
   "priceMin": number, "priceMax": number, "guests": number,
-  "roomType": string, "bedType": string, "roomSizeMin": number,
-  "amenities": string[], "promoOnly": boolean, "isActive": boolean
+  "roomType": string, "bedType": string, "roomSizeMin": number, "roomSizeMax": number,
+  "amenities": string[], "promoOnly": boolean, "isActive": boolean,
+  "pricePercentile": "bottom25" | "top25", "sizePercentile": "bottom25" | "top25"
 }
 
 Guidelines:
-- Price in THB. roomType: Deluxe, Suite, Superior, etc.
+- priceMin/priceMax: Price range in THB (Thai Baht) - ONLY use when user specifies exact numbers
+- guests: Number of guests (1-10)
+- roomType: Deluxe, Suite, Superior, Premier, Supreme, etc.
 - bedType: Double bed, King bed, Twin bed, Single bed
-- amenities: ["wifi", "pool", "gym", "spa", "parking"]
+- roomSizeMin/roomSizeMax: Room size in sqm - ONLY use when user specifies exact numbers
+- amenities: Array like ["wifi", "pool", "gym", "spa", "parking", "sea view", "garden view"]
+- promoOnly: true if user wants rooms with promotions only
+- isActive: Default true (show only active rooms)
+- pricePercentile: Use "bottom25" for cheap/budget/affordable, "top25" for expensive/luxury/premium
+- sizePercentile: Use "bottom25" for small/compact, "top25" for big/large/spacious
 - Use context for "cheaper", "bigger", "more" references
 
 Examples:
 - "rooms under 5000" → {"priceMax":5000,"isActive":true}
+- "rooms between 3000-6000 baht" → {"priceMin":3000,"priceMax":6000,"isActive":true}
+- "cheap rooms" → {"pricePercentile":"bottom25","isActive":true}
+- "luxury rooms" → {"pricePercentile":"top25","isActive":true}
+- "small rooms" → {"sizePercentile":"bottom25","isActive":true}
+- "big rooms" → {"sizePercentile":"top25","isActive":true}
+- "affordable suite" → {"roomType":"Suite","pricePercentile":"bottom25","isActive":true}
+- "rooms between 35-50 sqm" → {"roomSizeMin":35,"roomSizeMax":50,"isActive":true}
 - "4 guests with wifi" → {"guests":4,"amenities":["wifi"],"isActive":true}
 - "Deluxe with king bed" → {"roomType":"Deluxe","bedType":"King bed","isActive":true}
 - "rooms with pool and gym" → {"amenities":["pool","gym"],"isActive":true}
+- "bigger than 40 sqm" → {"roomSizeMin":40,"isActive":true}
+- "rooms with promotions" → {"promoOnly":true,"isActive":true}
+- "sea view suite over 50 sqm" → {"roomType":"Suite","amenities":["sea view"],"roomSizeMin":50,"isActive":true}
 - Context: "3000 baht", Question: "cheaper than this" → {"priceMax":2500,"isActive":true}
 
 Question: "${userQuestion}"
@@ -618,21 +642,28 @@ ${contextString ? `Conversation context:\n${contextString}\n` : ""}
 Schema (all optional):
 {
   "discountMin": number, "activeOnly": boolean, "hasUsageLeft": boolean,
-  "codeSearch": string, "expiresAfter": string
+  "codeSearch": string, "expiresAfter": string, "discountPercentile": "bottom25" | "top25"
 }
 
 Guidelines:
-- discountMin: minimum discount percentage (10 = 10%)
-- activeOnly: default true (only active promos)
-- hasUsageLeft: default true (only usable promos)
-- codeSearch: search by code name
+- discountMin: Minimum discount percentage (e.g. 10 = 10%, 20 = 20%) - ONLY use when user specifies exact numbers
+- activeOnly: Default true (show only active/valid promos)
+- hasUsageLeft: Default true (show only promos with remaining usage)
+- codeSearch: Search by specific promo code name (case-insensitive)
+- expiresAfter: ISO date string (e.g. "2025-01-01") to find promos valid after this date
+- discountPercentile: Use "bottom25" for small/low discounts, "top25" for big/high/best discounts
 
 Examples:
 - "any promotions?" → {"activeOnly":true,"hasUsageLeft":true}
-- "discount over 20%" → {"discountMin":20,"activeOnly":true}
+- "discount over 20%" → {"discountMin":20,"activeOnly":true,"hasUsageLeft":true}
+- "best discounts" → {"discountPercentile":"top25","activeOnly":true,"hasUsageLeft":true}
+- "big promotions" → {"discountPercentile":"top25","activeOnly":true,"hasUsageLeft":true}
+- "small discounts" → {"discountPercentile":"bottom25","activeOnly":true,"hasUsageLeft":true}
 - "code SUMMER" → {"codeSearch":"SUMMER","activeOnly":true}
 - "active promo codes" → {"activeOnly":true,"hasUsageLeft":true}
-- Context: "15% discount", Question: "more than this?" → {"discountMin":20,"activeOnly":true}
+- "promotions valid in February" → {"expiresAfter":"2025-02-01","activeOnly":true}
+- "codes with 30% or more" → {"discountMin":30,"activeOnly":true,"hasUsageLeft":true}
+- Context: "15% discount", Question: "more than this?" → {"discountMin":20,"activeOnly":true,"hasUsageLeft":true}
 
 Question: "${userQuestion}"
 JSON:`;
@@ -693,6 +724,10 @@ async function queryRoomsWithFilters(filters: RoomFilters) {
     query = query.gte('room_size', filters.roomSizeMin);
   }
   
+  if (filters.roomSizeMax !== undefined) {
+    query = query.lte('room_size', filters.roomSizeMax);
+  }
+  
   if (filters.amenities && filters.amenities.length > 0) {
     // Check if amenities array contains all requested amenities
     query = query.contains('amenities', filters.amenities);
@@ -713,8 +748,38 @@ async function queryRoomsWithFilters(filters: RoomFilters) {
     throw error;
   }
   
-  console.log('🏨 Found rooms:', data?.length || 0);
-  return data;
+  let filteredData = data || [];
+  console.log('🏨 Found rooms before percentile filter:', filteredData.length);
+  
+  // Apply percentile filtering in code (after DB query)
+  if (filters.pricePercentile && filteredData.length > 0) {
+    const sorted = [...filteredData].sort((a, b) => a.price - b.price);
+    const count = Math.ceil(sorted.length * 0.25);
+    
+    if (filters.pricePercentile === 'bottom25') {
+      filteredData = sorted.slice(0, count); // Cheapest 25%
+      console.log('🏨 Applied price bottom25 filter:', count, 'rooms');
+    } else if (filters.pricePercentile === 'top25') {
+      filteredData = sorted.slice(-count); // Most expensive 25%
+      console.log('🏨 Applied price top25 filter:', count, 'rooms');
+    }
+  }
+  
+  if (filters.sizePercentile && filteredData.length > 0) {
+    const sorted = [...filteredData].sort((a, b) => (a.room_size || 0) - (b.room_size || 0));
+    const count = Math.ceil(sorted.length * 0.25);
+    
+    if (filters.sizePercentile === 'bottom25') {
+      filteredData = sorted.slice(0, count); // Smallest 25%
+      console.log('🏨 Applied size bottom25 filter:', count, 'rooms');
+    } else if (filters.sizePercentile === 'top25') {
+      filteredData = sorted.slice(-count); // Biggest 25%
+      console.log('🏨 Applied size top25 filter:', count, 'rooms');
+    }
+  }
+  
+  console.log('🏨 Final room count after filters:', filteredData.length);
+  return filteredData;
 }
 
 async function queryPromosWithFilters(filters: PromoFilters) {
@@ -753,14 +818,34 @@ async function queryPromosWithFilters(filters: PromoFilters) {
   }
   
   // Client-side filter for hasUsageLeft (only promos where used_count < max_uses or max_uses is 0 meaning unlimited)
-  let filteredData = data;
-  if (filters.hasUsageLeft === true && data) {
-    filteredData = data.filter(promo => 
+  let filteredData = data || [];
+  if (filters.hasUsageLeft === true && filteredData) {
+    filteredData = filteredData.filter(promo => 
       promo.max_uses === 0 || promo.used_count < promo.max_uses
     );
   }
   
-  console.log('🎟️ Found promos:', filteredData?.length || 0);
+  console.log('🎟️ Found promos before percentile filter:', filteredData?.length || 0);
+  
+  // Apply percentile filtering in code (after DB query)
+  if (filters.discountPercentile && filteredData && filteredData.length > 0) {
+    // Get the discount value (prefer discount_percent, fallback to discount_amount)
+    const getDiscountValue = (promo: { discount_percent: number | null; discount_amount: number | null }) => 
+      promo.discount_percent || promo.discount_amount || 0;
+    
+    const sorted = [...filteredData].sort((a, b) => getDiscountValue(a) - getDiscountValue(b));
+    const count = Math.ceil(sorted.length * 0.25);
+    
+    if (filters.discountPercentile === 'bottom25') {
+      filteredData = sorted.slice(0, count); // Smallest discounts 25%
+      console.log('🎟️ Applied discount bottom25 filter:', count, 'promos');
+    } else if (filters.discountPercentile === 'top25') {
+      filteredData = sorted.slice(-count); // Biggest discounts 25%
+      console.log('🎟️ Applied discount top25 filter:', count, 'promos');
+    }
+  }
+  
+  console.log('🎟️ Final promo count after filters:', filteredData?.length || 0);
   return filteredData;
 }
 
@@ -928,6 +1013,7 @@ async function handleFAQIntent(userQuestion: string, conversationHistory?: histo
     const additionalContext =
       contexts?.map((ctx) => ctx.content).join("\n") || "";
 
+    const hasHistory = conversationHistory && conversationHistory.length > 0;
     const faqPrompt = `Answer user question based on FAQ database.
 
 FAQ Database:
@@ -936,7 +1022,12 @@ ${faqContext}
 ${additionalContext ? `Additional Information:\n${additionalContext}\n` : ""}
 User Question: "${userQuestion}"
 
-Use FAQ database to answer accurately. If no match, ask for clarification.`;
+Instructions:
+- ${hasHistory ? 'Continue the conversation naturally (no greetings)' : 'Greet briefly if first message'}
+- Keep response SHORT and CONCISE (2-3 sentences max)
+- Answer directly from FAQ database
+- Use friendly, conversational tone
+- If no match, ask for clarification briefly`;
 
     // Token monitoring
     const estimatedTokens = estimateTokens(faqPrompt);
@@ -984,29 +1075,35 @@ async function handleRoomsIntent(userQuestion: string, conversationHistory?: his
     console.log("🏨 Query result:", rooms?.length || 0, "rooms");
 
     // Step 3: Generate natural language response from results (or no results)
+    const hasHistory = conversationHistory && conversationHistory.length > 0;
     const responsePrompt = rooms && rooms.length > 0
       ? `User asked: "${userQuestion}"
 
 Found ${rooms.length} available room(s):
 ${JSON.stringify(rooms, null, 2)}
 
-Summarize these rooms for the user:
-- Highlight: price, room_type, guests, bed_type, room_size, amenities
+Instructions:
+- ${hasHistory ? 'Continue the conversation naturally (no greetings)' : 'Greet briefly if first message'}
+- Keep response SHORT and CONCISE (2-4 sentences max)
+- Present rooms as a brief list or summary
+- Highlight: price, room_type, guests, bed_type, room_size
 - Mention promotion_price if available
-- Help user choose the right room`
+- Use friendly, conversational tone`
       : `User asked: "${userQuestion}"
 
 Search result: No rooms found matching the criteria.
 
-Inform the user politely that no rooms match their requirements and suggest:
-- Try adjusting search criteria
-- Contact staff for more options`;
+Instructions:
+- ${hasHistory ? 'Continue the conversation naturally (no greetings)' : 'Greet briefly if first message'}
+- Keep response SHORT (1-2 sentences)
+- Politely inform no rooms match and suggest adjusting criteria`;
 
     // Token monitoring (ไม่นับ history เพราะ chat.ts จะใส่ให้)
     const estimatedTokens = estimateTokens(responsePrompt);
     console.log("📊 Rooms Intent Tokens:", {
       estimatedInputTokens: estimatedTokens,
       roomsFound: rooms.length,
+      percentileApplied: filters.pricePercentile || filters.sizePercentile || 'none',
       filtersApplied: JSON.stringify(filters),
       promptLength: responsePrompt.length
     });
@@ -1048,30 +1145,35 @@ async function handlePromoCodesIntent(userQuestion: string, conversationHistory?
     console.log("🎟️ Query result:", promos?.length || 0, "promo codes");
 
     // Step 3: Generate natural language response from results (or no results)
+    const hasHistory = conversationHistory && conversationHistory.length > 0;
     const responsePrompt = promos && promos.length > 0
       ? `User asked: "${userQuestion}"
 
 Found ${promos.length} promo code(s):
 ${JSON.stringify(promos, null, 2)}
 
-Explain these promo codes to the user:
-- List codes clearly and make them easy to copy
-- Explain discount_percent or discount_amount
-- Mention expires_at if relevant
-- Mention usage limits (max_uses, used_count) if relevant`
+Instructions:
+- ${hasHistory ? 'Continue the conversation naturally (no greetings)' : 'Greet briefly if first message'}
+- Keep response SHORT and CONCISE (2-4 sentences max)
+- List promo codes clearly (easy to copy)
+- Briefly explain discount_percent or discount_amount
+- Mention expires_at only if relevant
+- Use friendly, conversational tone`
       : `User asked: "${userQuestion}"
 
 Search result: No promo codes found matching the criteria.
 
-Inform the user politely that no promotions match their requirements and suggest:
-- Check back later for new promotions
-- Contact staff for current offers`;
+Instructions:
+- ${hasHistory ? 'Continue the conversation naturally (no greetings)' : 'Greet briefly if first message'}
+- Keep response SHORT (1-2 sentences)
+- Politely inform no promos available and suggest checking back later`;
 
     // Token monitoring (ไม่นับ history เพราะ chat.ts จะใส่ให้)
     const estimatedTokens = estimateTokens(responsePrompt);
     console.log("📊 Promo Intent Tokens:", {
       estimatedInputTokens: estimatedTokens,
       promosFound: promos.length,
+      percentileApplied: filters.discountPercentile || 'none',
       filtersApplied: JSON.stringify(filters),
       promptLength: responsePrompt.length
     });
