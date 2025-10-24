@@ -193,7 +193,7 @@ export default function BookingCard({ booking }: Props) {
     !booking.cancelled && !isPastCheckIn(booking.checkInAtRaw);
 
   return (
-    <article className="bg-white border-b border-gray-200 last:border-b-0 mt-6 md:mt-0">
+    <article className="border-b border-gray-400 last:border-b-0 mt-6 md:mt-0">
       <div className="mx-auto max-w-[1120px] p-6">
         {/* Layout หลัก: ซ้ายเป็นภาพ ขวาเป็นรายละเอียด */}
         <div className="grid grid-cols-1 md:grid-cols-[357px_minmax(0,1fr)] md:grid-rows-[auto_auto_auto] md:gap-[48px]">
