@@ -5,7 +5,6 @@ import { useRouter } from "next/router";
 import Image from "next/image";
 import { SearchParams } from "@/components/customer/searchbar/Searchbox";
 import { RoomType } from "@/types/roomTypes";
-import Chatbot from "@/components/Chatbot";
 
 function SearchResultPage() {
   const router = useRouter();
@@ -143,7 +142,7 @@ function SearchResultPage() {
       <div className="bg-[#F7F7FA] min-h-screen flex flex-1 flex-col">
         <div className="h-6" />
         <div className="flex flex-col mt-10 md:mt-20 items-center">
-          <div className="pt-6 md:pt-0 md:fixed md:z-999">
+          <div className="pt-6 md:pt-0 md:fixed md:z-10">
             <SearchBox
               defaultValues={{
                 checkIn: (router.query.checkIn as string) || undefined,
@@ -312,9 +311,6 @@ function SearchResultPage() {
             </div>
           )}
         </div>
-
-        {/* Chatbot */}
-        <Chatbot />
       </div>
     </Layout>
   );
