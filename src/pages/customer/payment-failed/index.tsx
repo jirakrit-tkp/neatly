@@ -167,7 +167,7 @@ const PaymentFailedPage: React.FC = () => {
       <Layout>
         <Navbar />
 
-        <div className="bg-bg flex items-start justify-center">
+        <div className="bg-bg flex items-start justify-center md:pt-40">
           <div className="w-full max-w-[738px] px-0 md:px-4">
             {/* Main Payment Failed Modal */}
             <div className="flex flex-col items-center">

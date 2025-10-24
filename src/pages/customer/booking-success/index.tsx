@@ -131,7 +131,7 @@ const BookingSuccessPage: React.FC = () => {
       <Layout>
         <Navbar />
 
-        <div className="min-h-screen bg-bg flex items-start justify-center">
+        <div className="min-h-screen bg-bg flex items-start justify-center md:pt-40">
           <div className="w-full max-w-[738px] px-0 md:px-0">
             {/* Booking Confirmation Box */}
             <div className="bg-green-800 rounded-none md:rounded shadow-2xl overflow-hidden">
@@ -190,8 +190,8 @@ const BookingSuccessPage: React.FC = () => {
                 {/* Payment and Summary */}
                 <div className="bg-green-700">
                   {/* Payment Status */}
-                  <div className="mt-10 flex justify-end">
-                    <div className="text-green-300 text-base font-inter">
+                  <div className="mt-10 flex justify-start md:justify-end">
+                    <div className="text-green-300 text-base font-inter text-left md:text-right">
                       Payment success via{" "}
                       {paymentMethod === "credit card"
                         ? `Credit Card - *${

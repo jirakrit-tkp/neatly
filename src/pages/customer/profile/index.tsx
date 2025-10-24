@@ -82,9 +82,9 @@ export default function ProfilePage() {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-bg">
+      <div className="min-h-screen bg-bg md:pt-24">
         {/* Main Content */}
-        <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8 mt-10 md:mt-0">
+        <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8 mt-4 md:mt-0">
           <ProfileForm
             onSuccess={handleProfileUpdate}
             onCancel={handleCancel}

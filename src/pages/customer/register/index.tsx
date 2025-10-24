@@ -25,7 +25,7 @@ const RegisterPage = () => {
       />
 
       {/* Main Content with Background */}
-      <div className="min-h-screen bg-center bg-no-repeat relative bg-bg md:bg-cover">
+      <div className="min-h-screen bg-center bg-no-repeat relative bg-bg md:bg-cover md:pt-24">
         {/* Overlay - Desktop only */}
         <div
           className="absolute inset-0 hidden md:block"
@@ -38,17 +38,17 @@ const RegisterPage = () => {
 
         {/* Form Container */}
         <div className="relative z-10 flex items-center justify-center min-h-screen">
-          <div className="w-full max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+          <div className="w-full max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8 mt-4 md:mt-0">
             <div className="bg-bg md:backdrop-blur-sm rounded-lg overflow-hidden">
               {/* Form Header */}
-              <div className="px-4 pt-10 pb-6 md:px-20 md:pt-20">
+              <div className="pt-10 pb-6 md:px-20 md:pt-20">
                 <h1 className="text-[44px] md:text-[68px] font-noto font-medium leading-[125%] tracking-[-2%] text-left text-green-800">
                   Register
                 </h1>
               </div>
 
               {/* Form Content */}
-              <div className="px-4 pb-10 md:px-20 md:pb-20">
+              <div className="pb-10 md:px-20 md:pb-20">
                 <RegisterForm />
               </div>
             </div>

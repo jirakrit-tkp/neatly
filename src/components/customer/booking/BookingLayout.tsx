@@ -12,7 +12,7 @@ export const BookingLayout: React.FC<BookingLayoutProps> = ({
   stepper,
 }) => {
   return (
-    <div className="w-full pt-[72px] md:pt-[48px] md:px-40 bg-bg">
+    <div className="w-full pt-[72px] md:pt-32 md:px-40 bg-bg">
       {/* Header */}
       <div className="px-6 md:px-0">
         <h1 className="text-[44px] md:text-[68px] font-noto font-medium leading-[125%] tracking-[-2%] text-green-800">
