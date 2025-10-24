@@ -58,19 +58,17 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
   const checkOutTime = hasLateCheckOut ? "4:00 PM" : "12:00 PM";
 
   return (
-    <div className="w-full md:w-[358px] h-fit rounded-md overflow-hidden">
+    <div className="w-full md:w-[358px] h-fit md:rounded-md overflow-hidden">
       {/* ส่วนบน - Header (เขียวเข้ม green-800) */}
-      <div className="flex items-center justify-between w-full h-fit px-6 py-4 bg-[var(--color-green-800)] text-[var(--color-white)]">
+      <div className="flex items-center justify-between w-full h-fit px-6 py-4 bg-green-800 text-white">
         <div className="flex items-center">
           <BagIcon className="w-[18px] h-[18px] mr-2 text-green-500" />
-          <h3 className="text-lg font-semibold font-[var(--font-inter)]">
-            Booking Detail
-          </h3>
+          <h3 className="text-lg font-semibold font-inter">Booking Detail</h3>
         </div>
 
         {timeLeft && (
-          <div className="flex items-center justify-center rounded w-[56px] h-[25px] bg-[var(--color-orange-200)]">
-            <span className="text-sm font-semibold leading-none tracking-normal text-[var(--color-orange-700)] font-[var(--font-inter)]">
+          <div className="flex items-center justify-center rounded w-[56px] h-[25px] bg-orange-200">
+            <span className="text-sm font-semibold leading-none tracking-normal text-orange-700 font-inter">
               {timeLeft.minutes.toString().padStart(2, "0")}:
               {timeLeft.seconds.toString().padStart(2, "0")}
             </span>
@@ -79,25 +77,25 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
       </div>
 
       {/* ส่วนล่าง - Content (เขียวอ่อน green-600) */}
-      <div className="flex flex-col p-6 gap-10 bg-[var(--color-green-700)] text-[var(--color-white)]">
+      <div className="flex flex-col p-6 gap-10 bg-green-700 text-white">
         {/* Check-in/Check-out Times */}
         <div className="flex gap-6 mb-4">
           {/* Check-in (Left) */}
           <div className="text-left">
-            <div className="mb-2 text-base font-semibold tracking-tight text-[var(--color-white)] font-[var(--font-inter)]">
+            <div className="mb-2 text-base font-semibold tracking-tight text-white font-inter">
               Check-in
             </div>
-            <div className="text-base font-normal tracking-tight text-[var(--color-white)] font-[var(--font-inter)]">
+            <div className="text-base font-normal tracking-tight text-white font-inter">
               {hasEarlyCheckIn ? "After" : "After"} {checkInTime}
             </div>
           </div>
 
           {/* Check-out (Right) */}
           <div className="text-left">
-            <div className="mb-2 text-base font-semibold tracking-tight text-[var(--color-white)] font-[var(--font-inter)]">
+            <div className="mb-2 text-base font-semibold tracking-tight text-white font-inter">
               Check-out
             </div>
-            <div className="text-base font-normal text-[var(--color-white)] font-[var(--font-inter)]">
+            <div className="text-base font-normal text-white font-inter">
               Before {checkOutTime}
             </div>
           </div>
@@ -105,10 +103,10 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
 
         {/* Dates, Rooms and Guests */}
         <div className="mb-6">
-          <p className="mb-1 text-base font-[var(--font-inter)]">
+          <p className="mb-1 text-base font-inter">
             {formatDate(checkIn)} - {formatDate(checkOut)}
           </p>
-          <p className="text-base font-[var(--font-inter)]">
+          <p className="text-base font-inter">
             {roomCount} Room{roomCount > 1 ? "s" : ""}, {guests} Guest
             {guests > 1 ? "s" : ""}
           </p>
@@ -119,10 +117,10 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
           {/* Room Price */}
           <div className="flex justify-between mb-2">
             <div className="flex flex-col">
-              <div className="text-base tracking-tight text-[var(--color-green-300)] font-[var(--font-inter)]">
+              <div className="text-base tracking-tight text-green-300 font-inter">
                 {roomInfo.name}
               </div>
-              <div className="text-xs text-[var(--color-green-200)] font-[var(--font-inter)] ml-0">
+              <div className="text-xs text-green-200 font-inter ml-0">
                 ({roomCount} room{roomCount > 1 ? "s" : ""}
                 {calculation.nights > 1
                   ? `, ${calculation.nights} nights`
@@ -130,7 +128,7 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
                 )
               </div>
             </div>
-            <div className="text-base tracking-tight text-[var(--color-white)] font-[var(--font-inter)]">
+            <div className="text-base tracking-tight text-white font-inter">
               {formatPrice(calculation.subtotal)}
             </div>
           </div>
@@ -155,15 +153,15 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
                 return (
                   <div key={index} className="flex justify-between mb-2">
                     <div className="flex flex-col">
-                      <div className="text-base tracking-tight text-[var(--color-green-300)] font-[var(--font-inter)]">
+                      <div className="text-base tracking-tight text-green-300 font-inter">
                         {request.name}
                       </div>
-                      <div className="text-xs text-[var(--color-green-200)] font-[var(--font-inter)] ml-0">
+                      <div className="text-xs text-green-200 font-inter ml-0">
                         ({roomCount} {roomsText}
                         {isBreakfast ? nightsText : ""})
                       </div>
                     </div>
-                    <div className="text-base tracking-tight text-[var(--color-white)] font-[var(--font-inter)]">
+                    <div className="text-base tracking-tight text-white font-inter">
                       {formatPrice(totalRequestPrice)}
                     </div>
                   </div>
@@ -175,24 +173,24 @@ export const BookingSummary: React.FC<BookingSummaryProps> = ({
           {/* Promotion Code */}
           {promotionCode && promotionCode.discount > 0 && (
             <div className="flex justify-between mb-2">
-              <div className="text-base text-[var(--color-green-300)] font-[var(--font-inter)]">
+              <div className="text-base text-green-300 font-inter">
                 Promotion ({promotionCode.code})
               </div>
-              <div className="text-base text-white font-[var(--font-inter)]">
+              <div className="text-base text-white font-inter">
                 -{formatPrice(promotionCode.discount)}
               </div>
             </div>
           )}
 
           {/* Divider Line */}
-          <div className="my-4 border-t border-[var(--color-green-600)]"></div>
+          <div className="my-4 border-t border-green-600"></div>
 
           {/* Total */}
           <div className="flex justify-between items-center">
-            <div className="text-base tracking-tight text-[var(--color-green-300)] font-[var(--font-inter)]">
+            <div className="text-base tracking-tight text-green-300 font-inter">
               Total
             </div>
-            <div className="text-xl font-semibold tracking-tight text-[var(--color-white)] font-[var(--font-inter)]">
+            <div className="text-xl font-semibold tracking-tight text-white font-inter">
               {formatCurrency(calculation.total)}
             </div>
           </div>

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
+import Head from "next/head";
 import { BookingConfirmation } from "@/types/booking";
 import { formatCurrency, formatDate } from "@/utils/bookingUtils";
 import Layout from "@/components/Layout";
@@ -122,22 +123,24 @@ const BookingSuccessPage: React.FC = () => {
 
   return (
     <>
-      {/* <Head>
+      <Head>
         <title>Booking Confirmation - Neatly</title>
         <meta name="description" content="Your booking has been confirmed" />
-      </Head> */}
+      </Head>
 
       <Layout>
-        <div className="min-h-screen bg-bg flex items-start justify-center ">
-          <div className="w-full max-w-4xl px-4 mt-20 md:mt-40">
+        <Navbar />
+
+        <div className="min-h-screen bg-bg flex items-start justify-center md:pt-40">
+          <div className="w-full max-w-[738px] px-0 md:px-0">
             {/* Booking Confirmation Box */}
-            <div className="bg-green-800 rounded shadow-2xl overflow-hidden">
+            <div className="bg-green-800 rounded-none md:rounded shadow-2xl overflow-hidden">
               {/* Header */}
-              <div className="p-8 text-center bg-green-800">
-                <h1 className="text-5xl font-medium font-noto leading-tight text-white mb-4">
+              <div className="p-6 pt-10 md:p-8 text-center bg-green-800">
+                <h1 className="text-[44px] font-noto font-medium leading-[125%] tracking-[-2%] text-white mb-4">
                   Thank you for booking
                 </h1>
-                <p className="text-green-400 text-sm font-medium">
+                <p className="text-sm font-inter font-medium leading-[150%] tracking-[-2%] text-green-400">
                   We are looking forward to hosting you at our place.
                   <br />
                   We will send you more information about check-in and staying
@@ -148,36 +151,36 @@ const BookingSuccessPage: React.FC = () => {
               </div>
 
               {/* Booking Details */}
-              <div className="pt-6 pr-10 pb-10 pl-10 bg-green-700 gap-10">
+              <div className="pt-6 pr-6 pb-10 pl-6 md:pr-10 md:pl-10 bg-green-700 gap-10">
                 {/* Main Row: Dates/Guests on left, Check-in/out on right */}
-                <div className="flex justify-between items-start bg-green-600 p-6 rounded">
+                <div className="flex flex-col md:flex-row justify-between items-start bg-green-600 p-4 md:p-6 rounded gap-4 md:gap-0">
                   {/* Left: Dates and Guests */}
                   <div>
-                    <div className="text-white text-base font-inter font-semibold mb-2">
+                    <div className="text-base font-inter font-semibold text-white mb-2">
                       {formatDate(confirmation.checkIn)} -{" "}
                       {formatDate(confirmation.checkOut)}
                     </div>
-                    <div className="text-white text-base font-inter">
+                    <div className="text-base font-inter text-white">
                       {roomCount} Room{roomCount > 1 ? "s" : ""}, {guests} Guest
                       {guests > 1 ? "s" : ""}
                     </div>
                   </div>
 
                   {/* Right: Check-in/Check-out Times */}
-                  <div className="flex gap-8">
-                    <div className="text-center">
-                      <div className="text-white text-base font-inter mb-1">
+                  <div className="flex gap-4 md:gap-8 w-full md:w-auto justify-between md:justify-start">
+                    <div className="text-left">
+                      <div className="text-base text-white font-inter mb-1">
                         Check-in
                       </div>
-                      <div className="text-white text-base font-inter">
+                      <div className="text-base text-white font-inter">
                         After {getCheckInTime()}
                       </div>
                     </div>
-                    <div className="text-center">
-                      <div className="text-white text-base font-inter mb-1">
+                    <div className="text-left">
+                      <div className="text-base text-white font-inter mb-1">
                         Check-out
                       </div>
-                      <div className="text-white text-base font-inter">
+                      <div className="text-base text-white font-inter">
                         Before {getCheckOutTime()}
                       </div>
                     </div>
@@ -187,8 +190,8 @@ const BookingSuccessPage: React.FC = () => {
                 {/* Payment and Summary */}
                 <div className="bg-green-700">
                   {/* Payment Status */}
-                  <div className="mt-10 flex justify-end">
-                    <div className="text-green-300 text-base font-inter">
+                  <div className="mt-10 flex justify-start md:justify-end">
+                    <div className="text-green-300 text-base font-inter text-left md:text-right">
                       Payment success via{" "}
                       {paymentMethod === "credit card"
                         ? `Credit Card - *${
@@ -214,7 +217,7 @@ const BookingSuccessPage: React.FC = () => {
                           )
                         </span>
                       </div>
-                      <span className="text-white text-base font-semibold">
+                      <span className="text-base text-white font-semibold">
                         {calculation.subtotal.toFixed(2)}
                       </span>
                     </div>
@@ -239,7 +242,7 @@ const BookingSuccessPage: React.FC = () => {
                             )
                           </span>
                         </div>
-                        <span className="text-white text-base font-semibold">
+                        <span className="text-base text-white font-semibold">
                           {request.calculated_price.toFixed(2)}
                         </span>
                       </div>
@@ -251,7 +254,7 @@ const BookingSuccessPage: React.FC = () => {
                         <span className="text-green-300 font-inter text-base">
                           Promotion ({promotionCode.code})
                         </span>
-                        <span className="text-white text-base font-semibold">
+                        <span className="text-base text-white font-semibold">
                           -{promotionCode.discount.toFixed(2)}
                         </span>
                       </div>
@@ -274,17 +277,17 @@ const BookingSuccessPage: React.FC = () => {
             </div>
 
             {/* Action Buttons */}
-            <div className="mt-12 mb-12 flex gap-10 justify-center">
+            <div className="mt-6 md:mt-10 mb-6 md:mb-12 flex flex-col sm:flex-row gap-4 sm:gap-10 justify-center items-center">
               <button
                 onClick={handleViewBooking}
-                className="py-4 text-orange-500 text-base font-inter font-semibold border-orange-500 "
+                className="order-2 sm:order-1 w-full max-w-[327px] sm:w-auto px-8 py-4 text-base font-inter font-semibold text-orange-500 rounded"
               >
                 Check Booking Detail
               </button>
 
               <button
                 onClick={handleBackToHome}
-                className="py-4 px-8 bg-orange-600 text-white text-base font-semibold rounded hover:bg-orange-600 transition-colors"
+                className="order-1 sm:order-2 w-full max-w-[327px] sm:w-auto px-8 py-4 text-base font-semibold text-white bg-orange-600 rounded transition-colors hover:bg-orange-700"
               >
                 Back to Home
               </button>

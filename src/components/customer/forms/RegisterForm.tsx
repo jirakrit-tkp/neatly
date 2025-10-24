@@ -25,10 +25,10 @@ export const RegisterForm = () => {
   if (success) {
     return (
       <div className="text-center py-8">
-        <div className="text-[var(--color-green-600)] text-lg font-semibold mb-2">
+        <div className="text-lg font-semibold mb-2 text-green-600">
           Registration successful!
         </div>
-        <p className="text-[var(--color-gray-600)]">
+        <p className="text-gray-600">
           Please check your email to confirm your account
         </p>
       </div>
@@ -38,16 +38,16 @@ export const RegisterForm = () => {
   return (
     <form
       onSubmit={onSubmit}
-      className="space-y-8 customer-forms bg-[var(--color-bg)] rounded-lg"
+      className="space-y-6 md:space-y-10 customer-forms bg-bg rounded-lg"
     >
       {/* Basic Information */}
       <div className="space-y-6">
-        <h3 className="font-inter font-semibold text-[20px] leading-[150%] tracking-[-2%] text-[var(--color-gray-600)]">
+        <h3 className="text-[20px] font-inter font-semibold leading-[150%] tracking-[-2%] text-gray-600 pt-3">
           Basic Information
         </h3>
 
         {/* First Row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
           <FormField label="First name" error={errors.firstName} required>
             <Input
               {...form.register("firstName")}
@@ -66,7 +66,7 @@ export const RegisterForm = () => {
         </div>
 
         {/* Second Row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
           <FormField label="Username" error={errors.username} required>
             <Input
               {...form.register("username")}
@@ -86,7 +86,7 @@ export const RegisterForm = () => {
         </div>
 
         {/* Third Row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
           <FormField label="Password" error={errors.password} required>
             <Input
               {...form.register("password")}
@@ -111,7 +111,7 @@ export const RegisterForm = () => {
         </div>
 
         {/* Fourth Row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
           <FormField label="Phone number" error={errors.phoneNumber} required>
             <Input
               {...form.register("phoneNumber")}
@@ -137,7 +137,7 @@ export const RegisterForm = () => {
         </div>
 
         {/* Fifth Row */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
           <div className="md:col-span-1">
             <FormField label="Country" error={errors.country} required>
               <Controller
@@ -160,7 +160,7 @@ export const RegisterForm = () => {
 
       {/* Profile Picture */}
       <div className="space-y-6 border-t border-gray-300 pt-[20px]">
-        <h3 className="font-inter font-semibold text-[20px] leading-[150%] tracking-[-2%] text-[var(--color-gray-600)]">
+        <h3 className="text-[20px] font-inter font-semibold leading-[150%] tracking-[-2%] text-gray-600">
           Profile Picture
         </h3>
 
@@ -180,8 +180,8 @@ export const RegisterForm = () => {
 
       {/* Error Message */}
       {error && (
-        <div className="bg-[var(--color-red)] border border-[var(--color-red)] rounded-md p-4">
-          <p className="text-sm text-[var(--color-red)]">{error}</p>
+        <div className="p-4 rounded-md bg-red border border-red">
+          <p className="text-sm text-red">{error}</p>
         </div>
       )}
 
