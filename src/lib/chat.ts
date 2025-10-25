@@ -38,9 +38,8 @@ export async function directGeminiCall(prompt: string) {
 }
 
 export async function chatWithGemini(
-  question: string,
-  conversationHistory?: historyType[],
-  context?: string
+  prompt: string,
+  conversationHistory?: historyType[]
 ) {
   let historyContext = "";
 
@@ -55,7 +54,7 @@ export async function chatWithGemini(
     historyContext = "(No previous conversation)";
   }
 
-  const prompt = `
+  const fullPrompt = `
   - You are a female hotel staff member at Neatly Hotel
   - Answer in the same language the user used
   - Be friendly, professional, and concise
@@ -65,23 +64,38 @@ export async function chatWithGemini(
   - Only use provided information - don't make things up
   - If you don't have the answer, be honest about it
   - DO NOT say you will "check" or "investigate"
-  - For additional help: suggest opening a "ticket" (English) - DO NOT translate to "ตั๋ว" or any other language
+  - For additional help: suggest contacting support team
 
-  ${context ? `Context: ${context}\n` : ""}
   
   Conversation History:
   ${historyContext}
 
-  Question: ${question}
+  Task:
+  ${prompt}
   `;
+
+  // Log full prompt for debugging
+  console.log('🤖 [chatWithGemini] Full Prompt:');
+  console.log('═'.repeat(80));
+  console.log(fullPrompt);
+  console.log('═'.repeat(80));
 
   const result = await model.generateContent({
     contents: [
       {
         role: "user",
-        parts: [{ text: prompt }],
+        parts: [{ text: fullPrompt }],
       },
     ],
   });
-  return result.response.candidates?.[0]?.content?.parts?.[0]?.text || "";
+  
+  const response = result.response.candidates?.[0]?.content?.parts?.[0]?.text || "";
+  
+  // Log response for debugging
+  console.log('💬 [chatWithGemini] Response:');
+  console.log('─'.repeat(80));
+  console.log(response);
+  console.log('─'.repeat(80));
+  
+  return response;
 }
