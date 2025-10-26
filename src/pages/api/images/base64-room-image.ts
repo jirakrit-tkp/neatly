@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { createClient } from '@supabase/supabase-js';
-import sharp from 'sharp';
+import Jimp from 'jimp';
 
 // Use service role key for server-side storage access (bypasses RLS)
 const supabaseAdmin = createClient(
@@ -146,17 +146,33 @@ export default async function handler(
     const originalBuffer = await imageBlob.arrayBuffer();
     const originalSize = originalBuffer.byteLength;
     
-    // Resize image based on query parameters
-    const optimizedBuffer = await sharp(Buffer.from(originalBuffer))
-      .resize(targetWidth, targetHeight, {
-        fit: 'cover',
-        position: 'center'
-      })
-      .jpeg({ quality: 75, progressive: true }) // Optimize for web
-      .toBuffer();
+    console.log('🖼️ [Base64 Room Image] Starting image processing...');
+    console.log('   Room name:', roomName);
+    console.log('   Original file size:', (originalSize / 1024).toFixed(2), 'KB');
+    
+    // Resize image based on query parameters using Jimp
+    const image = await Jimp.read(Buffer.from(originalBuffer));
+    const originalWidth = image.getWidth();
+    const originalHeight = image.getHeight();
+    
+    console.log('   Original dimensions:', originalWidth, 'x', originalHeight);
+    console.log('   Target dimensions:', targetWidth, 'x', targetHeight);
+    
+    // Resize with cover fit (similar to sharp's 'cover' fit)
+    await image.cover(targetWidth, targetHeight, Jimp.HORIZONTAL_ALIGN_CENTER | Jimp.VERTICAL_ALIGN_MIDDLE);
+    
+    console.log('   ✂️ After resize:', image.getWidth(), 'x', image.getHeight());
+    
+    // Set quality and convert to JPEG
+    console.log('   🎨 Applying quality: 75');
+    await image.quality(75);
+    const optimizedBuffer = await image.getBufferAsync(Jimp.MIME_JPEG);
     
     const optimizedSize = optimizedBuffer.length;
     const compressionRatio = ((1 - optimizedSize / originalSize) * 100).toFixed(1);
+    
+    console.log('   ✅ Optimized size:', (optimizedSize / 1024).toFixed(2), 'KB');
+    console.log('   💾 Compression ratio:', compressionRatio + '%');
     
     console.log('✅ Image downloaded & optimized:', { 
       roomName, 

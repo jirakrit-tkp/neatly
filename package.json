@@ -2,6 +2,10 @@
   "name": "neatly",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=18.17.0",
+    "npm": ">=9.0.0"
+  },
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
@@ -41,7 +45,7 @@
     "react-hook-form": "^7.63.0",
     "react-input-mask": "^2.0.4",
     "recharts": "^3.2.1",
-    "sharp": "^0.34.4",
+    "jimp": "^0.22.12",
     "sonner": "^2.0.7",
     "stripe": "^19.1.0",
     "tailwind-merge": "^3.3.1",

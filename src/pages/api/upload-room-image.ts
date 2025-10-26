@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import multer from "multer";
-import sharp from "sharp";
+import Jimp from "jimp";
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
@@ -71,14 +71,32 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     }
 
     try {
-      // Optimize image using Sharp
-      const optimizedBuffer = await sharp(file.buffer)
-        .resize(MAX_WIDTH, MAX_HEIGHT, {
-          fit: "inside",
-          withoutEnlargement: true,
-        })
-        .jpeg({ quality: IMAGE_QUALITY, progressive: true })
-        .toBuffer();
+      console.log('📤 [Upload Room Image] Starting image processing...');
+      console.log('   Original file size:', (file.size / 1024).toFixed(2), 'KB');
+      
+      // Optimize image using Jimp (pure JavaScript, no native dependencies)
+      const image = await Jimp.read(file.buffer);
+      const originalWidth = image.getWidth();
+      const originalHeight = image.getHeight();
+      
+      console.log('   Original dimensions:', originalWidth, 'x', originalHeight);
+      
+      // Resize only if image is larger than max dimensions
+      if (originalWidth > MAX_WIDTH || originalHeight > MAX_HEIGHT) {
+        console.log('   ⚠️ Image exceeds max dimensions, resizing...');
+        await image.scaleToFit(MAX_WIDTH, MAX_HEIGHT);
+        console.log('   ✂️ After resize:', image.getWidth(), 'x', image.getHeight());
+      } else {
+        console.log('   ✅ Image within limits, no resize needed');
+      }
+      
+      // Set quality and convert to JPEG
+      console.log('   🎨 Applying quality:', IMAGE_QUALITY);
+      await image.quality(IMAGE_QUALITY);
+      const optimizedBuffer = await image.getBufferAsync(Jimp.MIME_JPEG);
+      
+      console.log('   ✅ Optimized size:', (optimizedBuffer.length / 1024).toFixed(2), 'KB');
+      console.log('   💾 Compression ratio:', ((1 - optimizedBuffer.length / file.size) * 100).toFixed(2) + '%');
 
       // Generate unique filename
       const timestamp = Date.now();
