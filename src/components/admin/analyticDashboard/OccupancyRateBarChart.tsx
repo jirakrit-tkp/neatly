@@ -18,17 +18,30 @@ interface OccupancyChartProps {
   endDate: string;
 }
 
+// Helper: normalize room_type (trim + lowercase)
+const normalizeType = (type?: string) => type?.trim().toLowerCase() ?? "";
+
+// Helper: title-case for display
+const toTitleCase = (str: string) =>
+  str.replace(/\b\w/g, (char) => char.toUpperCase());
+
 const OccupancyBarChart: React.FC<OccupancyChartProps> = ({
   bookings,
   rooms,
   startDate,
   endDate,
 }) => {
-  // Get unique room types and assign colors
+  // ✅ 1. Get unique, normalized room types with colors
+
   const roomTypes = useMemo(() => {
     if (!rooms || rooms.length === 0) return [];
 
-    const uniqueTypes = [...new Set(rooms.map((room) => room.room_type))];
+    const uniqueTypes = [
+      ...new Set(
+        rooms.map((room) => normalizeType(room.room_type)).filter(Boolean) // Remove empty strings
+      ),
+    ];
+
     const colors = [
       "#f97316",
       "#1f2937",
@@ -41,84 +54,83 @@ const OccupancyBarChart: React.FC<OccupancyChartProps> = ({
     return uniqueTypes.map((type, index) => ({
       key: type,
       color: colors[index % colors.length],
-      label: type,
+      label: toTitleCase(type),
     }));
   }, [rooms]);
 
-  // Calculate occupancy data by room type
+  // ✅ 2. Calculate occupancy data by month & normalized room type
   const data = useMemo(() => {
-    if (!bookings || bookings.length === 0 || !rooms || rooms.length === 0)
-      return [];
+    if (!bookings?.length || !rooms?.length) return [];
 
-    // Filter bookings by date range if dates are selected
+    // Filter by selected date range
     let filteredBookings = bookings;
-
     if (startDate && endDate) {
-      filteredBookings = bookings.filter((booking) => {
-        const checkIn = new Date(booking.check_in_date);
-        const checkOut = new Date(booking.check_out_date);
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      filteredBookings = bookings.filter((b) => {
+        const checkIn = new Date(b.check_in_date);
+        const checkOut = new Date(b.check_out_date);
         return checkIn <= end && checkOut >= start;
       });
     }
 
-    // Count rooms by type
+    // Count total rooms by type
     const roomsByType: Record<string, number> = {};
     rooms.forEach((room) => {
-      const type = room.room_type;
+      const type = normalizeType(room.room_type);
       roomsByType[type] = (roomsByType[type] || 0) + 1;
     });
 
-    // Calculate occupancy by month and room type
+    // Build monthly occupancy
     const monthlyData: Record<
       string,
       Record<string, { bookedDays: number; totalDays: number }>
     > = {};
 
     filteredBookings.forEach((booking) => {
-      if (booking.status === "confirmed" || booking.status === "pending") {
-        // Find the room to get its type
-        const room = rooms.find((r) => r.id === booking.room_id);
-        if (!room) return;
+      if (booking.status !== "confirmed" && booking.status !== "pending")
+        return;
 
-        const roomType = room.room_type;
-        const checkIn = new Date(booking.check_in_date);
-        const checkOut = new Date(booking.check_out_date);
+      const room = rooms.find((r) => r.id === booking.room_id);
+      if (!room) return;
 
-        // Iterate through each day of the booking
-        for (
-          let d = new Date(checkIn);
-          d < checkOut;
-          d.setDate(d.getDate() + 1)
-        ) {
-          const monthYear = `${d.toLocaleString("default", {
-            month: "long",
-          })} ${d.getFullYear()}`;
+      const roomType = normalizeType(room.room_type);
+      const checkIn = new Date(booking.check_in_date);
+      const checkOut = new Date(booking.check_out_date);
 
-          if (!monthlyData[monthYear]) {
-            monthlyData[monthYear] = {};
-          }
+      // ADD THIS: Only process days within the selected date range
+      const rangeStart = startDate ? new Date(startDate) : checkIn;
+      const rangeEnd = endDate ? new Date(endDate) : checkOut;
 
-          if (!monthlyData[monthYear][roomType]) {
-            const daysInMonth = new Date(
-              d.getFullYear(),
-              d.getMonth() + 1,
-              0
-            ).getDate();
-            monthlyData[monthYear][roomType] = {
-              bookedDays: 0,
-              totalDays: daysInMonth * (roomsByType[roomType] || 1),
-            };
-          }
+      for (
+        let d = new Date(Math.max(checkIn.getTime(), rangeStart.getTime()));
+        d < checkOut && d <= rangeEnd;
+        d.setDate(d.getDate() + 1)
+      ) {
+        const monthYear = `${d.toLocaleString("default", {
+          month: "long",
+        })} ${d.getFullYear()}`;
 
-          monthlyData[monthYear][roomType].bookedDays += 1;
+        if (!monthlyData[monthYear]) monthlyData[monthYear] = {};
+
+        if (!monthlyData[monthYear][roomType]) {
+          const daysInMonth = new Date(
+            d.getFullYear(),
+            d.getMonth() + 1,
+            0
+          ).getDate();
+          monthlyData[monthYear][roomType] = {
+            bookedDays: 0,
+            totalDays: daysInMonth * (roomsByType[roomType] || 1),
+          };
         }
+
+        monthlyData[monthYear][roomType].bookedDays += 1;
       }
     });
 
-    // Convert to array format with occupancy percentages
+    // Convert to Recharts format
+    // Convert to Recharts format
     const result = Object.entries(monthlyData)
       .map(([month, types]) => {
         const monthData: Record<string, number | string> = { month };
@@ -129,24 +141,52 @@ const OccupancyBarChart: React.FC<OccupancyChartProps> = ({
           );
         });
 
-        // Fill in 0 for room types with no bookings
+        // Fill missing room types with 0
         roomTypes.forEach((rt) => {
-          if (!(rt.key in monthData)) {
-            monthData[rt.key] = 0;
-          }
+          if (!(rt.key in monthData)) monthData[rt.key] = 0;
         });
 
         return monthData;
       })
+      .filter((item) => {
+        // Filter out months outside the date range
+        if (!startDate || !endDate) return true;
+
+        const itemMonth = item.month as string;
+        const itemDate = new Date(itemMonth + " 1, 00:00:00"); // Better parsing
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+
+        // Get year and month for accurate comparison
+        const itemYear = itemDate.getFullYear();
+        const itemMonthNum = itemDate.getMonth();
+        const startYear = start.getFullYear();
+        const startMonth = start.getMonth();
+        const endYear = end.getFullYear();
+        const endMonth = end.getMonth();
+
+        // Check if item is within the date range (inclusive)
+        const isAfterStart =
+          itemYear > startYear ||
+          (itemYear === startYear && itemMonthNum >= startMonth);
+        const isBeforeEnd =
+          itemYear < endYear ||
+          (itemYear === endYear && itemMonthNum <= endMonth);
+
+        return isAfterStart && isBeforeEnd;
+      })
       .sort((a, b) => {
-        const dateA = new Date(a.month as string);
-        const dateB = new Date(b.month as string);
+        // Fix sorting by parsing dates correctly
+        const dateA = new Date((a.month as string) + " 1, 00:00:00");
+        const dateB = new Date((b.month as string) + " 1, 00:00:00");
         return dateA.getTime() - dateB.getTime();
       });
 
     return result;
+    return result;
   }, [bookings, rooms, startDate, endDate, roomTypes]);
 
+  // ✅ 3. Custom tooltip
   const CustomTooltip = ({
     active,
     payload,
@@ -162,7 +202,7 @@ const OccupancyBarChart: React.FC<OccupancyChartProps> = ({
           <p className="font-semibold text-gray-800 mb-2">{label}</p>
           {payload.map((entry, index) => (
             <p key={index} className="text-sm" style={{ color: entry.color }}>
-              {entry.name}: {entry.value}%
+              {toTitleCase(entry.name)}: {entry.value}%
             </p>
           ))}
         </div>
@@ -171,6 +211,7 @@ const OccupancyBarChart: React.FC<OccupancyChartProps> = ({
     return null;
   };
 
+  // ✅ 4. Empty state
   if (data.length === 0) {
     return (
       <div className="w-full bg-white">
@@ -183,6 +224,7 @@ const OccupancyBarChart: React.FC<OccupancyChartProps> = ({
     );
   }
 
+  // ✅ 5. Chart rendering
   return (
     <div className="w-full bg-white">
       <div className="max-w-6xl mx-auto">
@@ -197,6 +239,7 @@ const OccupancyBarChart: React.FC<OccupancyChartProps> = ({
             </div>
           ))}
         </div>
+
         <ResponsiveContainer width="100%" height={400}>
           <BarChart
             data={data}

@@ -6,7 +6,7 @@ import {
   CartesianGrid,
   ResponsiveContainer,
   Area,
-  AreaChart,
+  ComposedChart,
 } from "recharts";
 
 export interface LineChartData {
@@ -37,7 +37,7 @@ export const LineChartComponent = ({
   return (
     <div className={`w-full ${height} ${className}`}>
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart
+        <ComposedChart
           data={data}
           margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
         >
@@ -79,10 +79,10 @@ export const LineChartComponent = ({
             dataKey="value"
             stroke={lineColor}
             strokeWidth={4}
-            dot={{ fill: "#FFFFFF", strokeWidth: 4, r: 5 }}
+            dot={{ fill: "#FFFFFF", strokeWidth: 4, r: 5, stroke: lineColor }}
             activeDot={{ r: 6 }}
           />
-        </AreaChart>
+        </ComposedChart>
       </ResponsiveContainer>
     </div>
   );

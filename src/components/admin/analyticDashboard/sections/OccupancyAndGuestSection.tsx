@@ -37,23 +37,15 @@ const OccupancyAndGuestSection: React.FC<OccupancyAndGuestSectionProps> = ({
     )
       return [];
 
-    // Filter bookings by date range if dates are selected
-    let filteredBookings = bookingsData;
-
-    if (startDate && endDate) {
-      filteredBookings = bookingsData.filter((booking) => {
-        const checkIn = new Date(booking.check_in_date);
-        const checkOut = new Date(booking.check_out_date);
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-
-        // Include booking if it overlaps with the selected date range
-        return checkIn <= end && checkOut >= start;
-      });
-    }
-
     // Calculate total available rooms
     const totalRooms = roomsData.length;
+
+    // Parse date range
+    const rangeStart = startDate ? new Date(startDate) : null;
+    const rangeEnd = endDate ? new Date(endDate) : null;
+
+    // If no date range selected, return empty
+    if (!rangeStart || !rangeEnd) return [];
 
     // Group bookings by month and calculate occupancy rate
     const monthlyOccupancy: Record<
@@ -61,39 +53,59 @@ const OccupancyAndGuestSection: React.FC<OccupancyAndGuestSectionProps> = ({
       { bookedDays: number; totalDays: number }
     > = {};
 
-    filteredBookings.forEach((booking) => {
+    // Initialize all months in the range with 0
+    for (
+      let d = new Date(rangeStart);
+      d <= rangeEnd;
+      d.setMonth(d.getMonth() + 1)
+    ) {
+      const monthYear = `${d.toLocaleString("default", {
+        month: "long",
+      })} ${d.getFullYear()}`;
+
+      const daysInMonth = new Date(
+        d.getFullYear(),
+        d.getMonth() + 1,
+        0
+      ).getDate();
+
+      if (!monthlyOccupancy[monthYear]) {
+        monthlyOccupancy[monthYear] = {
+          bookedDays: 0,
+          totalDays: daysInMonth * totalRooms,
+        };
+      }
+    }
+
+    // Now count booked days
+    bookingsData.forEach((booking) => {
       if (booking.status === "confirmed" || booking.status === "pending") {
         const checkIn = new Date(booking.check_in_date);
         const checkOut = new Date(booking.check_out_date);
 
-        // Calculate days between check-in and check-out
-        const days = Math.ceil(
-          (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)
+        // Skip if booking doesn't overlap with range
+        if (checkOut < rangeStart || checkIn > rangeEnd) return;
+
+        // Iterate through each day of the booking within the range
+        const loopStart = new Date(
+          Math.max(checkIn.getTime(), rangeStart.getTime())
+        );
+        const loopEnd = new Date(
+          Math.min(checkOut.getTime(), rangeEnd.getTime())
         );
 
-        // Iterate through each day of the booking
         for (
-          let d = new Date(checkIn);
-          d < checkOut;
+          let d = new Date(loopStart);
+          d < loopEnd;
           d.setDate(d.getDate() + 1)
         ) {
           const monthYear = `${d.toLocaleString("default", {
             month: "long",
           })} ${d.getFullYear()}`;
 
-          if (!monthlyOccupancy[monthYear]) {
-            const daysInMonth = new Date(
-              d.getFullYear(),
-              d.getMonth() + 1,
-              0
-            ).getDate();
-            monthlyOccupancy[monthYear] = {
-              bookedDays: 0,
-              totalDays: daysInMonth * totalRooms,
-            };
+          if (monthlyOccupancy[monthYear]) {
+            monthlyOccupancy[monthYear].bookedDays += 1;
           }
-
-          monthlyOccupancy[monthYear].bookedDays += 1;
         }
       }
     });
@@ -105,8 +117,8 @@ const OccupancyAndGuestSection: React.FC<OccupancyAndGuestSectionProps> = ({
         value: Math.round((data.bookedDays / data.totalDays) * 100),
       }))
       .sort((a, b) => {
-        const dateA = new Date(a.month);
-        const dateB = new Date(b.month);
+        const dateA = new Date(a.month + " 1");
+        const dateB = new Date(b.month + " 1");
         return dateA.getTime() - dateB.getTime();
       });
   }, [bookingsData, roomsData, startDate, endDate]);
