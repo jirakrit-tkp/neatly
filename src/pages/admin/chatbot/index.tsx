@@ -375,43 +375,43 @@ export default function ChatbotAdmin() {
 
     // Validation
     if (!newContext.content.trim()) {
-      setValidationErrors(prev => ({ ...prev, context: "Please enter a detail" }));
+      setValidationErrors(prev => ({ ...prev, context: "Please enter an information item" }));
       return;
     }
 
     // Split by comma and create multiple contexts
-    const details = newContext.content.split(',').map(detail => detail.trim()).filter(detail => detail.length > 0);
+    const items = newContext.content.split(',').map(item => item.trim()).filter(item => item.length > 0);
     
-    if (details.length === 0) {
-      setValidationErrors(prev => ({ ...prev, context: "Please enter at least one detail" }));
+    if (items.length === 0) {
+      setValidationErrors(prev => ({ ...prev, context: "Please enter at least one information item" }));
       return;
     }
 
     // Check for duplicates with existing contexts
     const existingContexts = contexts.map(ctx => ctx.content.toLowerCase());
-    const duplicateDetails = details.filter(detail => existingContexts.includes(detail.toLowerCase()));
+    const duplicateItems = items.filter(item => existingContexts.includes(item.toLowerCase()));
     
-    if (duplicateDetails.length > 0) {
+    if (duplicateItems.length > 0) {
       setValidationErrors(prev => ({ 
         ...prev, 
-        context: `Duplicate details found: ${duplicateDetails.join(', ')}` 
+        context: `Duplicate information items found: ${duplicateItems.join(', ')}` 
       }));
       return;
     }
 
     // Check for duplicates within the input itself
-    const uniqueDetails = [...new Set(details.map(detail => detail.toLowerCase()))];
-    if (uniqueDetails.length !== details.length) {
+    const uniqueItems = [...new Set(items.map(item => item.toLowerCase()))];
+    if (uniqueItems.length !== items.length) {
       setValidationErrors(prev => ({ 
         ...prev, 
-        context: "Duplicate details found in your input" 
+        context: "Duplicate information items found in your input" 
       }));
       return;
     }
 
     console.log(
-      "🟡 Admin: Starting context creation with details:",
-      details
+      "🟡 Admin: Starting context creation with items:",
+      items
     );
     setLoading(true);
     try {
@@ -421,9 +421,9 @@ export default function ChatbotAdmin() {
       console.log("🔍 Debug: adminUserId is null?", adminUserId === null);
       console.log("🔍 Debug: adminUserId is undefined?", adminUserId === undefined);
       
-      const promises = details.map(detail => {
+      const promises = items.map(item => {
         const payload = { 
-          content: detail,
+          content: item,
           created_by: adminUserId 
         };
         console.log("🔍 Debug: Sending payload:", payload);
@@ -442,16 +442,16 @@ export default function ChatbotAdmin() {
         console.log("✅ Admin: All contexts created successfully");
         setNewContext({ content: "" });
         fetchContexts();
-        showSnackbar("Details added successfully", "success");
+        showSnackbar("Information items added successfully", "success");
       } else {
         console.error("❌ Admin: Some contexts failed to create");
-        setValidationErrors(prev => ({ ...prev, context: "Some details failed to save" }));
-        showSnackbar("Failed to add details", "error");
+        setValidationErrors(prev => ({ ...prev, context: "Some information items failed to save" }));
+        showSnackbar("Failed to add information items", "error");
       }
     } catch (error) {
       console.error("❌ Admin: Error creating contexts:", error);
-      showSnackbar("Error adding details", "error");
-      setValidationErrors(prev => ({ ...prev, context: "Error creating details" }));
+      showSnackbar("Error adding information items", "error");
+      setValidationErrors(prev => ({ ...prev, context: "Error creating information items" }));
     } finally {
       console.log("🟡 Admin: Setting loading to false");
       setLoading(false);
@@ -466,7 +466,7 @@ export default function ChatbotAdmin() {
 
     // Validation
     if (!editingContext.content.trim()) {
-      setEditingContextErrors(prev => ({ ...prev, [editingContext.id]: "Please enter a detail" }));
+      setEditingContextErrors(prev => ({ ...prev, [editingContext.id]: "Please enter an information item" }));
       return;
     }
 
@@ -478,7 +478,7 @@ export default function ChatbotAdmin() {
     if (existingContexts.includes(editingContext.content.toLowerCase())) {
       setEditingContextErrors(prev => ({ 
         ...prev, 
-        [editingContext.id]: "This detail already exists" 
+        [editingContext.id]: "This information item already exists" 
       }));
       return;
     }
@@ -500,13 +500,13 @@ export default function ChatbotAdmin() {
       if (response.ok) {
         setEditingContext(null);
         fetchContexts();
-        showSnackbar("Details updated successfully", "success");
+        showSnackbar("Information item updated successfully", "success");
       } else {
-        showSnackbar("Failed to update details", "error");
+        showSnackbar("Failed to update information item", "error");
       }
     } catch (error) {
       console.error("Error updating context:", error);
-      showSnackbar("Error updating details", "error");
+      showSnackbar("Error updating information item", "error");
     } finally {
       setLoading(false);
     }
@@ -520,13 +520,13 @@ export default function ChatbotAdmin() {
 
       if (response.ok) {
         fetchContexts();
-        showSnackbar("Details deleted successfully", "delete");
+        showSnackbar("Information item deleted successfully", "delete");
       } else {
-        showSnackbar("Failed to delete details", "error");
+        showSnackbar("Failed to delete information item", "error");
       }
     } catch (error) {
       console.error("Error deleting context:", error);
-      showSnackbar("Error deleting details", "error");
+      showSnackbar("Error deleting information item", "error");
     }
   };
 
@@ -702,7 +702,7 @@ export default function ChatbotAdmin() {
             {/* Context Management Section */}
             <div className="mt-8">
               <h2 className="text-lg font-semibold text-gray-600 mb-4">
-                Helpful Details
+                Additional Information
               </h2>
 
               {/* Create New Context */}
@@ -710,7 +710,7 @@ export default function ChatbotAdmin() {
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-900 mb-2">
-                      Detail
+                      Information Item
                     </label>
                     <div className="relative">
                       <textarea
@@ -725,7 +725,7 @@ export default function ChatbotAdmin() {
                             setValidationErrors(prev => ({ ...prev, context: undefined }));
                           }
                         }}
-                        placeholder="Enter detail (separate multiple details with commas)..."
+                        placeholder="Enter information item (separate multiple items with commas)..."
                         className={`w-full bg-white p-3 border rounded-md resize-none outline-none ${
                           validationErrors.context
                             ? "border-[var(--color-red)] focus:ring-[var(--color-red)] focus:border-[var(--color-red)]"
@@ -769,7 +769,7 @@ export default function ChatbotAdmin() {
               {/* Context List */}
               <div className="space-y-2">
                 {/* <h3 className="text-md font-medium text-gray-900">
-                  Existing Details ({contexts.length})
+                  Existing Information Items ({contexts.length})
                 </h3> */}
                 {contexts.length > 0 ? (
                   <div className="flex flex-wrap gap-1">
@@ -791,7 +791,7 @@ export default function ChatbotAdmin() {
                                     setEditingContextErrors(prev => ({ ...prev, [editingContext.id]: undefined }));
                                   }
                                 }}
-                                placeholder="Enter detail (separate multiple details with commas)..."
+                                placeholder="Enter information item (separate multiple items with commas)..."
                                 className={`min-w-[200px] bg-white p-1 border rounded text-sm resize-none outline-none ${
                                   editingContextErrors[editingContext.id]
                                     ? "border-[var(--color-red)]"
@@ -855,7 +855,7 @@ export default function ChatbotAdmin() {
                   </div>
                 ) : (
                   <div className="text-center py-4 text-gray-500">
-                    <p>No contexts found. Create your first context above.</p>
+                    <p>No information items found. Create your first item above.</p>
                   </div>
                 )}
               </div>

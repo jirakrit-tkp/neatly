@@ -6,6 +6,7 @@ import Script from "next/script";
 import { useEffect } from "react";
 import { useRouter } from "next/router";
 import * as gtag from "../lib/gtag";
+import Chatbot from "@/components/Chatbot";
 
 import { Noto_Serif_Display } from "next/font/google";
 
@@ -30,6 +31,11 @@ export default function App({ Component, pageProps }: AppProps) {
     return () => router.events.off("routeChangeComplete", handleRouteChange);
   }, [router.events]);
 
+  // Check if current route should hide chatbot
+  const isAdminPage = router.pathname.startsWith('/admin');
+  const isAuthPage = router.pathname === '/customer/login' || router.pathname === '/customer/register';
+  const shouldHideChatbot = isAdminPage || isAuthPage;
+
   return (
     <>
       {/* GA Script */}
@@ -48,6 +54,9 @@ export default function App({ Component, pageProps }: AppProps) {
       <AuthProvider>
         <HotelInfoProvider>
           <Component {...pageProps} />
+          
+          {/* Show Chatbot on all pages except admin, login, and register */}
+          {!shouldHideChatbot && <Chatbot />}
         </HotelInfoProvider>
       </AuthProvider>
     </>
