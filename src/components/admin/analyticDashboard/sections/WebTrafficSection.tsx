@@ -13,7 +13,7 @@ interface PageViewRecord {
   views: string;
 }
 
-type Timeframe = "Real-time" | "Yesterday" | "Last 7 Days" | "Last 30 days";
+type Timeframe = "Last 24 Hours" | "Yesterday" | "Last 7 Days" | "Last 30 days";
 
 const WebTrafficSection = () => {
   const { setValue } = useForm();
@@ -133,7 +133,7 @@ const WebTrafficSection = () => {
 
     // Filter timeframe
     if (
-      selectedTimeframe === "Real-time" ||
+      selectedTimeframe === "Last 24 Hours" ||
       selectedTimeframe === "Yesterday"
     ) {
       const targetDate = new Date(now);
@@ -344,7 +344,12 @@ const WebTrafficSection = () => {
           </div>
           <div className="flex flex-row border border-white/20 rounded-lg overflow-x-auto whitespace-nowrap gap-2 py-2 px-4 ">
             {(
-              ["Real-time", "Yesterday", "Last 7 Days", "Last 30 days"] as const
+              [
+                "Last 24 Hours",
+                "Yesterday",
+                "Last 7 Days",
+                "Last 30 days",
+              ] as const
             ).map((tf) => (
               <Button
                 key={tf}
