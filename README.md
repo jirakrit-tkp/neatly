@@ -78,17 +78,17 @@ Admins can also **customize chatbot responses** through the dashboard for a more
 ## 🖥️ Preview
 
 Landing Page
-![Neatly Landing Page](./public/landing-page.png)
+![Neatly Landing Page](/public/landing-page.png)
 
 Chatbot
-![Chatbot](./public/chatbot.png)
+![Chatbot](/public/chatbot.png)
 
 Analytics Dashboard
-![Neatly Dashboard](./public/analytics-dashboard.png)
+![Neatly Dashboard](/public/analytics-dashboard.png)
 
 Mobile Responsive
-![Neatly App Preview](./public/responsive.png)
+![Neatly App Preview](/public/responsive.png)
 
-![Neatly Login](./public/login-page.png)
+![Neatly Login](/public/login-page.png)
 
 ---
