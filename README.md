@@ -1,40 +1,94 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/pages/api-reference/create-next-app).
+# 🏨 Neatly
 
-## Getting Started
+A modern, minimalistic, and responsive **hotel booking web application** that allows customers to search, book, and manage room reservations easily.  
+It also integrates an **AI-powered chatbot** for real-time assistance and support.
 
-First, run the development server:
+🔗 **Live Demo:** [https://neatly-eta.vercel.app/](https://neatly-eta.vercel.app/)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+---
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## ⚙️ Tech Stack
 
-You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
+**Frontend**
 
-[API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
+- Next.js
+- React
+- Tailwind CSS
+- Shadcn/UI
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) instead of React pages.
+**Backend & Database**
 
-This project uses [`next/font`](https://nextjs.org/docs/pages/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Supabase
+- Stripe (Payment Integration)
+- Google Analytics
+- Axios
 
-## Learn More
+**AI & Visualization**
 
-To learn more about Next.js, take a look at the following resources:
+- OpenAI API
+- Gemini API
+- Recharts (for charts and analytics visualization)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn-pages-router) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## ✨ Features
 
-## Deploy on Vercel
+### 👤 Customer / User
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- 🔍 Search room availability by date
+- 🏠 View room details and information
+- 🧾 Register / Log-in / Log-out
+- ✏️ Edit personal profile
+- 💬 Live chat with AI chatbot or human agent
+- 🛏️ Book rooms
+- 💳 Pay via credit card or cash
+- 📅 View and manage booking history
+- 🔄 Modify check-in / check-out dates
+- ❌ Cancel booking or request refund
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/pages/building-your-application/deploying) for more details.
+### 🔑 Admin
+
+- 🔐 Log-in / Log-out
+- 📊 Analytics dashboard showing:
+  - Booking trends
+  - Occupancy rate
+  - Revenue insights
+- 👥 Manage customer bookings and view booking details
+- 🏢 Manage rooms & set room statuses
+- 🧩 CRUD operations for room types
+- 🤖 Configure chatbot responses
+- 💬 Accept customer tickets and live chat with users
+
+---
+
+## 🧠 AI Integration
+
+Neatly features a **chatbot assistant** powered by **OpenAI** and **Gemini** APIs.  
+The chatbot helps users with:
+
+- Room recommendations
+- Booking inquiries
+- Basic hotel information
+- Common support questions
+
+Admins can also **customize chatbot responses** through the dashboard for a more personalized user experience.
+
+---
+
+## 🖥️ Preview
+
+Landing Page
+![Neatly Landing Page](./public/landing-page.png)
+
+Chatbot
+![Chatbot](./public/chatbot.png)
+
+Analytics Dashboard
+![Neatly Dashboard](./public/analytics-dashboard.png)
+
+Mobile Responsive
+![Neatly App Preview](./public/responsive.png)
+
+![Neatly Login](./public/login-page.png)
+
+---
